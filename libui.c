@@ -1,66 +1,94 @@
-#include "tree.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <ui.h>
+#include "nim.h"
 
-struct LibUIContext {
-	int n_windows;
-	uiWindow *windows[10];
-};
-
-static int imgui_wait_for_events(ctx) {
-	// If current event tree is NULL:
-	//   Return 1 immediately
-	// else:
-	//   Wait for signal from event queue
-
-	// If imgui onclosing semaphore is signaled, return 0
-	return 0;
+int onClosing(uiWindow *w, void *data) {
+	uiQuit();
+	return 1;
 }
 
-static int imgui_begin(ctx) {
-
-	// If there is a current tree:
-	//   Set current tree to previous tree
-	// Else:
-	//   Allocate a new tree and a previous tree
-
-	return 0;
+uint32_t gen_unique_id() {
+	static uint32_t x = 1;
+	return x++;
 }
 
-void button_click_handler(uiButton *btn, void *data) {
-	trigger_event(ctx, unique_widget_id);
+void on_create(void *priv, struct WidgetHeader *w) {
+	switch (w->type) {
+	case UI_WINDOW: {
+		uiWindow *handle = uiNewWindow("filler", 300, 300, 0);
+		uiBox *container = uiNewVerticalBox();
+		uiWindowSetChild(handle, uiControl(container));
+		uiControlShow(uiControl(handle));
+		uiWindowOnClosing(handle, onClosing, NULL);
+		w->os_handle = (uintptr_t)container;
+		w->unique_id = gen_unique_id();
+		} break;
+	case UI_BUTTON: {
+		uiButton *handle = uiNewButton("filler");
+		w->os_handle = (uintptr_t)handle;
+		w->unique_id = gen_unique_id();
+		} break;
+	case UI_LAYOUT_STATIC: {
+		w->os_handle = (uintptr_t)uiNewHorizontalBox();
+		w->unique_id = gen_unique_id();
+		} break;
+	default:
+		printf("Unhandled widget type %d\n", w->type);
+		break;
+	}
 }
+void on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	if (parent == NULL) {
+		// Handle root element
+		return;
+	}
 
-static uiControl *create_ui_from_widget(struct UnpackedWidget *w) {
-	int unique_widget_id = xxx();
-	if (w->type == UI_BUTTON) {
-		uiButton *b = uiNewButton(w->text);
-		uiButtonOnClicked(b, button_click_handler, (ctx, unique_widget_id));
+	switch (parent->type) {
+	case UI_WINDOW:
+// uiWindow is a container
+//		uiWindowSetChild((uiWindow *)parent->os_handle, (uiControl *)w->os_handle);
+//		break;
+	case UI_LAYOUT_STATIC:
+		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
+		break;
+	default:
+		printf("Append widget to parent\n");
+		break;
 	}
 }
 
-static int imgui_end(ctx) {
-	/*
-	Start parsing prev and curr tree.
-	if (old->type != old->type) {
-		// recycle_views(old->os_handle)
-		// For now, completely ignore old tree and reconstruct UI for new tree.
+int build_my_ui(struct Tree *tree, int state);
+
+int nim_libui_start(void) {
+	struct Tree tree;
+	tree.widget_stack_depth = 0;
+	tree.buffer = malloc(1000);
+	tree.of = 0;
+
+	build_my_ui(&tree, 0);
+
+	struct NimBackend backend = {
+		.header = NULL,
+		.tree = &tree,
+		.of = 0,
+	};
+	backend.create = on_create;
+	backend.append = on_append;
+
+	uiInitOptions o = {0};
+	const char *err;
+
+	err = uiInit(&o);
+	if (err != NULL) {
+		fprintf(stderr, "Error initializing libui-ng: %s\n", err);
+		uiFreeInitError(err);
+		return 1;
 	}
 
-	int diff_code = diff_widget(old, new)
-	if (diff_code & UI_DIFF_TEXT) {
-		uiSetText(old->os_handle)
-	}
-	*/
-}
+	nim_init_tree(&backend, 0, NULL, 0);
 
-static void *parser_thread(void *arg) {
-	// - Call the main imgui loop
-	return NULL;
-}
-
-int main() {
-	// - start parser thread
-
-	// start libui loop
+	uiMain();
+	uiUninit();
 	return 0;
 }
