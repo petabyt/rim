@@ -33,6 +33,18 @@ struct __attribute__((packed)) WidgetPropButton {
 	uint8_t data[];
 };
 
+void nim_setup_tree(struct Tree *tree) {
+	tree->widget_stack_depth = 0;
+	tree->buffer = malloc(1000);
+	tree->of = 0;
+}
+void nim_init_backend(struct NimBackend *backend) {
+	backend->of = 0;
+	backend->header = 0;
+	nim_setup_tree(&backend->tree_new);
+	nim_setup_tree(&backend->tree_old);
+}
+
 void nim_end_widget(struct Tree *tree) {
 	assert(tree->widget_stack_depth != 0);
 	tree->widget_stack_depth--;
@@ -84,7 +96,7 @@ void nim_add_prop_text(struct Tree *tree, enum PropTypes type, const char *value
 	prop->length = 8;
 	prop->type = type;
 	prop->length += copy_string(prop->data, value);
-	tree->of += prop->length;
+	tree->of += (int)prop->length;
 	parent->n_props++;
 }
 
@@ -111,19 +123,19 @@ int nim_next_prop(struct NimBackend *b, struct NimProp *np) {
 int nim_get_prop(struct WidgetHeader *h, struct NimProp *np, int type) {
 	int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)((uint8_t *)h + of);
+		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
 		if ((int)p->type == type) {
-			np->type = p->type;
+			np->type = (int)p->type;
 			np->value = (const char *)p->data;
 			return 0;
 		}
-		of += p->length;
+		of += (int)p->length;
 	}
 	return -1;
 }
 
-int nim_init_tree(struct NimBackend *backend, int base, struct WidgetHeader *parent, int depth) {
-	struct Tree *tree = backend->tree;
+// Initializes a tree with no previous tree
+int nim_init_tree_widgets(struct NimBackend *backend, struct Tree *tree, int base, struct WidgetHeader *parent, int depth) {
 	int of = 0;
 	uint8_t *buffer = tree->buffer + base;
 
@@ -132,23 +144,37 @@ int nim_init_tree(struct NimBackend *backend, int base, struct WidgetHeader *par
 	struct WidgetHeader *h = (struct WidgetHeader *)(buffer + of);
 	of += sizeof(struct WidgetHeader);
 
-	backend->create(NULL, h);
-	backend->append(NULL, h, parent);
+	int rc = backend->create(NULL, h);
+	if (rc) {
+		printf("Couldn't create widget %d\n", h->type);
+		abort();
+	}
+
+	rc = backend->append(NULL, h, parent);
+	if (rc) {
+		printf("Couldn't append widget %d to %d\n", h->type, parent->type);
+		abort();
+	}
 
 	for (size_t i = 0; i < h->n_props; i++) {
-		// Assumes string type
+		// TODO: Assumes string type
 		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
-		of += p->length;
+		of += (int)p->length;
 	}
 
 	for (size_t i = 0; i < h->n_children; i++) {
-		of += nim_init_tree(backend, base + of, h, depth + 1);
+		of += nim_init_tree_widgets(backend, tree, base + of, h, depth + 1);
 	}
 
 	return of;
 }
 
-static int diff_tree_apply(struct Tree *tree_old, struct Tree *tree_new, int *old_of_p, int *new_of_p, int ignore) {
+#define FLAG_DELETE (1 << 0)
+#define FLAG_IGNORE (1 << 1)
+
+static int nim_patch_tree(struct NimBackend *backend, int *old_of_p, int *new_of_p, int flag) {
+	struct Tree *tree_old = &backend->tree_old;
+	struct Tree *tree_new = &backend->tree_new;
 	int old_of = *old_of_p;
 	int new_of = *new_of_p;
 
@@ -158,11 +184,17 @@ static int diff_tree_apply(struct Tree *tree_old, struct Tree *tree_new, int *ol
 	new_of += sizeof(struct WidgetHeader);
 
 	if (old_h->type != new_h->type) {
-		printf("widget %d type changed\n", old_h->unique_id);
-		ignore = 1;
+		// Type has changed in this widget so we'll assume the rest of the tree is unusable
+		flag |= FLAG_DELETE;
 	} else {
-		printf("widget %d same state\n", old_h->unique_id);
+		new_h->unique_id = new_h->unique_id;
 	}
+
+	// TODO: Should there be a function to free the rest of a node
+	// as well as initing the rest of a node?
+
+	// If the type of the node has changed or something else that makes the node unusable, we need to
+	// free the old tree, and init the new tree.
 
 	uint32_t max_n_props = old_h->n_props;
 	if (new_h->n_props > max_n_props) max_n_props = new_h->n_props;
@@ -170,26 +202,28 @@ static int diff_tree_apply(struct Tree *tree_old, struct Tree *tree_new, int *ol
 		struct WidgetProp *old_p = (struct WidgetProp *)(tree_old->buffer + old_of);
 		struct WidgetProp *new_p = (struct WidgetProp *)(tree_new->buffer + new_of);
 
-		if (i >= old_h->n_props) {
-			if (ignore == 0) printf("property added\n");
-			new_of += new_p->length;
-			continue;
-		} else if (i >= new_h->n_props) {
-			if (ignore == 0) printf("property removed\n");
-			old_of += old_p->length;
-			continue;
-		}
+		// If deleting tree, we don't care about properties (unless if there's something that needs to be freed)
+		if (!(flag & FLAG_DELETE)) {
+			if (i >= old_h->n_props) {
+				printf("property added\n");
+				new_of += (int) new_p->length;
+				continue;
+			} else if (i >= new_h->n_props) {
+				printf("property removed\n");
+				old_of += (int) old_p->length;
+				continue;
+			}
 
-		if (ignore == 0) {
 			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
-				printf("property %d same state\n", (int)i);			
+				printf("property %d same state\n", (int) i);
 			} else {
-				printf("property %d in %d changed\n", (int)i, old_h->unique_id);
+				printf("property %d in %d changed\n", (int) i, old_h->unique_id);
+
 			}
 		}
 
-		old_of += old_p->length;
-		new_of += new_p->length;
+		old_of += (int)old_p->length;
+		new_of += (int)new_p->length;
 	}
 
 	uint32_t max_n_child = old_h->n_children;
@@ -198,32 +232,89 @@ static int diff_tree_apply(struct Tree *tree_old, struct Tree *tree_new, int *ol
 	(*new_of_p) = new_of;
 	for (size_t i = 0; i < max_n_child; i++) {
 		if (i >= old_h->n_children) {
-			if (ignore == 0) {
+			if (!(flag & FLAG_IGNORE)) {
 				printf("child added to tree\n");
-				printf("Unimplemented"); abort();
+//				printf("Unimplemented"); abort();
+				backend->append(backend->priv, new_h, )
 			}
-		} else if (i >= old_h->n_children) {
-			if (ignore == 0) {
+		} else if (i >= new_h->n_children) {
+			if (!(flag & FLAG_IGNORE)) {
 				printf("child removed\n");
-				printf("Unimplemented"); abort();
+//				printf("Unimplemented\n"); abort();
 			}
 		} else {
-			diff_tree_apply(tree_old, tree_new, old_of_p, new_of_p, ignore);
+			nim_patch_tree(backend, old_of_p, new_of_p, flag);
 		}
+	}
+
+	if (flag & FLAG_DELETE) {
+		backend->free(backend->priv, old_h);
 	}
 	
 	return 0;
 }
 
-static int diff_tree(struct Tree *tree_old, struct Tree *tree_new) {
+static int diff_tree(struct NimBackend *backend) {
 	int old_of = 0;
 	int new_of = 0;
-	return diff_tree_apply(tree_old, tree_new, &old_of, &new_of, 0);
+	return nim_patch_tree(backend, &old_of, &new_of, 0);
+}
+
+static int build_ui(struct Tree *tree, int state) {
+	nim_add_widget(tree, UI_WINDOW, -1);
+	nim_add_prop_text(tree, UI_PROP_WIN_TITLE, "Title");
+		if (state) {
+			nim_add_widget(tree, UI_LAYOUT_DYNAMIC, 0);
+				nim_add_widget(tree, UI_BUTTON, 0);
+				nim_add_prop_text(tree, UI_PROP_TEXT, "widget will be removed");
+				nim_end_widget(tree);
+			nim_end_widget(tree);
+
+		} else {
+			nim_add_widget(tree, UI_BUTTON, 0);
+			nim_add_prop_text(tree, UI_PROP_TEXT, "Hello World");
+			nim_end_widget(tree);
+		}
+	nim_end_widget(tree);
+	return 0;
+}
+
+static int on_create_widget(void *priv, struct WidgetHeader *w) {
+	printf("Creating a new widget\n");
+	return 0;
+}
+static int on_free_widget(void *priv, struct WidgetHeader *w) {
+	printf("Freeing a widget\n");
+	return 0;
+}
+static int on_tweak_widget(void *priv, struct WidgetHeader *w) {
+	printf("Tweaking a widget\n");
+	return 0;
+}
+static int on_append_widget(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	printf("Appending a widget to x\n");
+	return 0;
+}
+
+int test_differ(void) {
+	struct NimBackend backend;
+	backend.create = on_create_widget;
+	backend.free = on_free_widget;
+	backend.tweak = on_tweak_widget;
+	backend.append = on_append_widget;
+	nim_setup_tree(&backend.tree_new);
+	nim_setup_tree(&backend.tree_old);
+	build_ui(&backend.tree_old, 1);
+	build_ui(&backend.tree_new, 0);
+	diff_tree(&backend);
+
+	return 0;
 }
 
 int nim_libui_start(void);
 
 int main(void) {
+	//test_differ();
 
 	//dump_tree(&tree, 0, 0);
 	//diff_tree(&tree, &tree2);

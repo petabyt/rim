@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ui.h>
+#include <assert.h>
 #include "nim.h"
 
 int onClosing(uiWindow *w, void *data) {
@@ -8,40 +9,55 @@ int onClosing(uiWindow *w, void *data) {
 	return 1;
 }
 
-uint32_t gen_unique_id() {
+uint32_t gen_unique_id(void) {
 	static uint32_t x = 1;
 	return x++;
 }
 
-void on_create(void *priv, struct WidgetHeader *w) {
+int on_destroy(void *priv, struct WidgetHeader *w) {
+	(void)priv;
+	switch (w->type) {
+	case UI_WINDOW:
+		return 0;
+	case UI_BUTTON:
+		return 0;
+	case UI_LAYOUT_STATIC:
+		return 0;
+	}
+	return 1;
+}
+
+int on_create(void *priv, struct WidgetHeader *w) {
+	(void)priv;
+	struct NimProp prop;
 	switch (w->type) {
 	case UI_WINDOW: {
-		uiWindow *handle = uiNewWindow("filler", 300, 300, 0);
+		assert(nim_get_prop(w, &prop, UI_PROP_WIN_TITLE) == 0);
+		uiWindow *handle = uiNewWindow(prop.value, 300, 300, 0);
 		uiBox *container = uiNewVerticalBox();
 		uiWindowSetChild(handle, uiControl(container));
 		uiControlShow(uiControl(handle));
 		uiWindowOnClosing(handle, onClosing, NULL);
 		w->os_handle = (uintptr_t)container;
 		w->unique_id = gen_unique_id();
-		} break;
+		} return 0;
 	case UI_BUTTON: {
-		uiButton *handle = uiNewButton("filler");
+		assert(nim_get_prop(w, &prop, UI_PROP_TEXT) == 0);
+		uiButton *handle = uiNewButton(prop.value);
 		w->os_handle = (uintptr_t)handle;
 		w->unique_id = gen_unique_id();
-		} break;
+		} return 0;
 	case UI_LAYOUT_STATIC: {
 		w->os_handle = (uintptr_t)uiNewHorizontalBox();
 		w->unique_id = gen_unique_id();
-		} break;
-	default:
-		printf("Unhandled widget type %d\n", w->type);
-		break;
+		} return 0;
 	}
+	return 1;
 }
-void on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
+int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
 		// Handle root element
-		return;
+		return 0;
 	}
 
 	switch (parent->type) {
@@ -51,11 +67,9 @@ void on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) 
 //		break;
 	case UI_LAYOUT_STATIC:
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
-		break;
-	default:
-		printf("Append widget to parent\n");
-		break;
+		return 0;
 	}
+	return 1;
 }
 
 int build_my_ui(struct Tree *tree, int state);
@@ -68,11 +82,8 @@ int nim_libui_start(void) {
 
 	build_my_ui(&tree, 0);
 
-	struct NimBackend backend = {
-		.header = NULL,
-		.tree = &tree,
-		.of = 0,
-	};
+	struct NimBackend backend;
+	nim_init_backend(&backend);
 	backend.create = on_create;
 	backend.append = on_append;
 
@@ -86,7 +97,7 @@ int nim_libui_start(void) {
 		return 1;
 	}
 
-	nim_init_tree(&backend, 0, NULL, 0);
+	nim_init_tree_widgets(&backend, &backend.tree_old, 0, NULL, 0);
 
 	uiMain();
 	uiUninit();

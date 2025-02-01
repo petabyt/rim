@@ -27,7 +27,7 @@ extern "C" int build_my_ui(struct Tree *tree, int state) {
 	global_tree = tree;
 	ImGui::Begin("Hello");
 	ImGui::Button("Tester");
-	ImGui::Button("Tester");
+	ImGui::Button("Tester two");
 	ImGui::End();
 	return 0;
 }

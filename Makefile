@@ -4,6 +4,9 @@ all: nim.out
 nim.out: tree.o libui.o imgui.o
 	g++ tree.o libui.o imgui.o -lui -o nim.out
 
+clean:
+	rm *.o *.out
+
 #CFLAGS := -Icimgui/imgui `pkg-config --cflags sdl2` -g
 #CXXFLAGS := $(CFLAGS) -g
 #DEMO_FILES := demo.o cimgui.o ./cimgui/imgui/backends/imgui_impl_sdl2.o
