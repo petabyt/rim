@@ -7,28 +7,28 @@ replacement.
 
 Frontends:
 - [x] `nim_` API
-- [ ] ImGUI 1.8XX
+- [ ] Dear ImGUI
 - [ ] [microui](https://github.com/rxi/microui)
-- [ ] https://github.com/Immediate-Mode-UI/Nuklear
 
 The backend for native-imgui can be swapped too, depending on the needs of each project.
 
 Backends:
 - [ ] Libui (GTK3/win32/Cocoa)
-- [ ] nappgui (GTK3/win32/Cocoa)
 - [ ] https://github.com/wxWidgets/ (GTK3/4, Cocoa, Qt, Win32, etc)
+- [ ] Qt
 
 Advantages over most immediate mode UIs:
 - Respects OS global theme, window decorations, fonts, scaling, etc
 - Screen reader support + other accessibility features
 - (Sometimes) state of the art rendering engines - this means very low resource usage
-- Animations
-- Native file picker windows
-- Embed complex widgets such as webview or video player
+- Animations (such as ripple effect)
+- Native file picker windows, dialogs, etc
+- Embed complex widgets such as a webview or video player
 
 Drawbacks of native-imgui:
 - Much larger RAM usage + binary
 - Doesn't support all imgui widgets/addons
+- Not nearly as flexible as the renderers of some imgui libraries
 
 ## Technical Details
 In order for this to work, we need two threads:

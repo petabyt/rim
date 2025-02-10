@@ -1,3 +1,4 @@
+// Copyright Daniel C 2025
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -5,7 +6,14 @@
 #include <assert.h>
 #include "nim.h"
 
+#define CONFIG_ALIGNMENT_CHECKS
+
+// All data written to/from the tree must be 32 bit aligned. This is so that
+// 4 ldrb/strb don't have to be done.
 inline static int copy_string(uint8_t *to, const char *str) {
+#ifdef CONFIG_ALIGNMENT_CHECKS
+	assert((((uintptr_t)to) & 0b11) == 0);
+#endif
 	size_t len = strlen(str);
 	int aligned_len = (((int)len + 1) / 4 + 1) * 4;
 	memset(to, 0, aligned_len);
@@ -13,25 +21,19 @@ inline static int copy_string(uint8_t *to, const char *str) {
 	return aligned_len;
 }
 inline static int write_u32(uint8_t *from, uint32_t x) {
+#ifdef CONFIG_ALIGNMENT_CHECKS
+	assert((((uintptr_t)from) & 0b11) == 0);
+#endif
 	((uint32_t *)from)[0] = x;
 	return 4;
 }
 inline static uint32_t read_u32(const uint8_t *from, uint32_t *temp) {
+#ifdef CONFIG_ALIGNMENT_CHECKS
+	assert((((uintptr_t)from) & 0b11) == 0);
+#endif
 	*temp = ((uint32_t *)from)[0];
 	return 4;
 }
-
-struct __attribute__((packed)) WidgetProp {
-	uint32_t length;
-	uint32_t type;
-	uint8_t data[];
-};
-
-struct __attribute__((packed)) WidgetPropButton {
-	uint32_t length;
-	uint32_t type;
-	uint8_t data[];
-};
 
 void nim_setup_tree(struct Tree *tree) {
 	tree->widget_stack_depth = 0;
@@ -50,7 +52,7 @@ void nim_end_widget(struct Tree *tree) {
 	tree->widget_stack_depth--;
 }
 
-void nim_add_widget(struct Tree *tree, enum WidgetTypes type, int allowed_children) {
+void nim_add_widget(struct Tree *tree, enum WidgetType type, int allowed_children) {
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
 	h->type = type;
 	h->n_children = 0;
@@ -86,7 +88,7 @@ void nim_add_widget(struct Tree *tree, enum WidgetTypes type, int allowed_childr
 	}
 }
 
-void nim_add_prop_text(struct Tree *tree, enum PropTypes type, const char *value) {
+void nim_add_prop_text(struct Tree *tree, enum PropType type, const char *value) {
 	if (tree->widget_stack_depth == 0) {
 		printf("No widget to add property to\n");
 		abort();
@@ -235,7 +237,7 @@ static int nim_patch_tree(struct NimBackend *backend, int *old_of_p, int *new_of
 			if (!(flag & FLAG_IGNORE)) {
 				printf("child added to tree\n");
 //				printf("Unimplemented"); abort();
-				backend->append(backend->priv, new_h, )
+				//backend->append(backend->priv, new_h, )
 			}
 		} else if (i >= new_h->n_children) {
 			if (!(flag & FLAG_IGNORE)) {

@@ -1,3 +1,5 @@
+// LibUI backend for nim
+// Copyright Daniel C 2025
 #include <stdio.h>
 #include <stdlib.h>
 #include <ui.h>
@@ -72,20 +74,13 @@ int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	return 1;
 }
 
-int build_my_ui(struct Tree *tree, int state);
-
 int nim_libui_start(void) {
-	struct Tree tree;
-	tree.widget_stack_depth = 0;
-	tree.buffer = malloc(1000);
-	tree.of = 0;
-
-	build_my_ui(&tree, 0);
-
 	struct NimBackend backend;
 	nim_init_backend(&backend);
 	backend.create = on_create;
 	backend.append = on_append;
+
+	nim_demo_window1(&backend.tree_old, 0);
 
 	uiInitOptions o = {0};
 	const char *err;

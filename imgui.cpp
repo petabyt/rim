@@ -23,11 +23,28 @@ bool ImGui::Button(const char* label, const ImVec2& size) {
 	return false;
 }
 
-extern "C" int build_my_ui(struct Tree *tree, int state) {
+extern "C" int nim_example_ui(struct Tree *tree, int state) {
 	global_tree = tree;
 	ImGui::Begin("Hello");
 	ImGui::Button("Tester");
 	ImGui::Button("Tester two");
+	ImGui::End();
+	return 0;
+}
+
+extern "C" int nim_demo_window1(struct Tree *tree, int state) {
+	global_tree = tree;
+	ImGui::Begin("Hello");
+	ImGui::Button("Tester");
+	ImGui::Button("Tester two");
+	ImGui::End();
+	return 0;
+}
+
+extern "C" int nim_demo_window2(struct Tree *tree, int state) {
+	global_tree = tree;
+	ImGui::Begin("Hello");
+	ImGui::Button("Tester");
 	ImGui::End();
 	return 0;
 }
