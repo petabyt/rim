@@ -1,11 +1,12 @@
 // im_ generic API
+#include <stdio.h>
 #include "nim.h"
 #include "nim_internal.h"
 #include "im.h"
 
 int im_button(const char *label) {
 	struct NimTree *tree = nim_get_current_tree();
-	nim_add_widget(tree, NIM_LABEL, 0);
+	nim_add_widget(tree, NIM_BUTTON, 0);
 	nim_add_prop_text(tree, NIM_PROP_TEXT, label);
 	nim_end_widget(tree);
 	return nim_last_widget_event();

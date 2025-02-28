@@ -14,6 +14,8 @@ target_include_directories(nim_libui_gtk3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(nim_demo demo.c)
 target_link_libraries(nim_demo nim_libui_gtk3)
+add_executable(test_tree test_tree.c)
+target_link_libraries(test_tree nim_libui_gtk3)
 
 if(DO_IMGUI_BACKEND)
 	add_library(nim_imgui_glfw_vulkan SHARED

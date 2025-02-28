@@ -36,6 +36,30 @@ inline static uint32_t read_u32(const uint8_t *from, uint32_t *temp) {
 	return 4;
 }
 
+const char *nim_eval_widget_type(int type) {
+	switch (type) {
+	case NIM_WINDOW: return "window";
+	case NIM_LABEL: return "label";
+	case NIM_BUTTON: return "button";
+	case NIM_PROGRESS_BAR: return "progress_bar";
+	case NIM_IMAGE: return "image";
+	case NIM_ENTRY: return "entry";
+	case NIM_SPINBOX: return "spinbox";
+	case NIM_SLIDER: return "slider";
+	case NIM_COMBOBOX: return "combobox";
+	case NIM_RADIO: return "radio";
+	case NIM_DATE_PICKER: return "date_picker";
+	case NIM_TABLE: return "table";
+	case NIM_LAYOUT_STATIC: return "layout_static";
+	case NIM_LAYOUT_DYNAMIC: return "layout_dynamic";
+	case NIM_LAYOUT_FLEX: return "layout_flex";
+	case NIM_CUSTOM: return "custom";
+	case NIM_NATIVE: return "native";
+	case NIM_EOF: return "eof";
+	}
+	abort();
+}
+
 int nim_abort(const char *reason) {
 	puts(reason);
 	abort();
@@ -57,18 +81,20 @@ void nim_end_widget(struct NimTree *tree) {
 
 void nim_add_widget(struct NimTree *tree, enum NimWidgetType type, int allowed_children) {
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
+	if (tree->of + sizeof(struct WidgetHeader) > tree->buffer_length) {
+		nim_abort("buffer overflow");
+	}
 	h->type = type;
 	h->n_children = 0;
 	h->n_props = 0;
 	h->os_handle = 0;
-//	h->unique_id = nim_generate_unique_id(ctx);
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
 
-	if (tree->widget_stack_depth) {
-		// Track a potential parent widget (simply a preceeding widget)
+	if (tree->widget_stack_depth != 0) {
+		// Track a potential parent widget (simply a preceding widget)
 		// We want to know if it allows children, and if we can add this widget to it.
-		// If so, increment n_children. Else we end the preceeding widge
+		// If so, increment n_children. Else we end the preceding widget
 		struct WidgetHeader *potential_parent = tree->widget_stack[tree->widget_stack_depth - 1];
 #if 0 // caused problems
 		if (potential_parent->allowed_children != 0xffffffff && potential_parent->allowed_children >= potential_parent->n_children) {
@@ -86,8 +112,7 @@ void nim_add_widget(struct NimTree *tree, enum NimWidgetType type, int allowed_c
 	tree->widget_stack[tree->widget_stack_depth] = h;
 	tree->widget_stack_depth++;
 	if (tree->widget_stack_depth == 5) {
-		printf("Max depth reached\n");
-		abort();
+		nim_abort("Max depth reached");
 	}
 }
 
@@ -117,17 +142,4 @@ int nim_get_prop(struct WidgetHeader *h, struct NimProp *np, int type) {
 		of += (int)p->length;
 	}
 	return -1;
-}
-
-struct NimContext *nim_init(void) {
-	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
-	ctx->of = 0;
-	ctx->header = 0;
-
-	ctx->tree_new = nim_create_tree();
-	ctx->tree_old = nim_create_tree();
-
-	sem_init(&ctx->event_sig, 0, 0);
-
-	return ctx;
 }

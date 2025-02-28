@@ -24,6 +24,7 @@ struct __attribute__((packed)) WidgetHeader {
 	// properties start here
 	// children start here
 };
+_Static_assert(sizeof(struct WidgetHeader) == 28);
 
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
@@ -32,6 +33,7 @@ struct __attribute__((packed)) WidgetProp {
 	uint32_t type;
 	uint8_t data[];
 };
+_Static_assert(sizeof(struct WidgetProp) == 8);
 
 enum NimPropType {
 	NIM_PROP_WIN_TITLE = 1,
@@ -75,6 +77,17 @@ struct NimTree {
 	int of;
 };
 
+struct NimEvent {
+	// Used to trace where the widget is in the tree
+	// So {1, 2, 3} would mean:
+	// - select child 1 of node 0
+	// - select child 2 of selected node
+	// - select child 3 of selected node
+	int branch[5];
+	int widget_type;
+	int event_type;
+};
+
 /// @brief Generic data structure holding information on a property
 struct NimProp {
 	int type;
@@ -105,6 +118,7 @@ struct NimContext {
 	int first_frame;
 
 	sem_t event_sig;
+	struct NimEvent last_event;
 };
 
 /// @brief Create a widget tree
@@ -134,6 +148,8 @@ struct NimTree *nim_get_current_tree(void);
 
 // Get event code for last created event
 int nim_last_widget_event(void);
+
+const char *nim_eval_widget_type(int type);
 
 int nim_abort(const char *reason);
 

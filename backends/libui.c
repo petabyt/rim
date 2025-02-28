@@ -8,6 +8,12 @@
 #include <nim.h>
 #include <nim_internal.h>
 
+struct Priv {
+	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
+	/// If 0, it will be uiWindow
+	int make_window_a_layout;
+};
+
 int onClosing(uiWindow *w, void *data) {
 	uiQuit();
 	return 1;
@@ -17,27 +23,29 @@ int on_destroy(void *priv, struct WidgetHeader *w) {
 	(void)priv;
 	switch (w->type) {
 	case NIM_WINDOW:
-		return 0;
 	case NIM_BUTTON:
-		return 0;
 	case NIM_LAYOUT_STATIC:
-		return 0;
+		uiControlDestroy((uiControl *)w->os_handle);
 	}
 	return 1;
 }
 
 int on_create(void *priv, struct WidgetHeader *w) {
-	(void)priv;
+	struct Priv *p = priv;
 	struct NimProp prop;
 	switch (w->type) {
 	case NIM_WINDOW: {
 		assert(nim_get_prop(w, &prop, NIM_PROP_WIN_TITLE) == 0);
 		uiWindow *handle = uiNewWindow(prop.value, 300, 300, 0);
-		uiBox *container = uiNewVerticalBox();
-		uiWindowSetChild(handle, uiControl(container));
-		uiControlShow(uiControl(handle));
 		uiWindowOnClosing(handle, onClosing, NULL);
-		w->os_handle = (uintptr_t)container;
+		if (p->make_window_a_layout) {
+			uiBox *container = uiNewVerticalBox();
+			uiWindowSetChild(handle, uiControl(container));
+			uiControlShow(uiControl(handle));
+			w->os_handle = (uintptr_t)container;
+		} else {
+			w->os_handle = (uintptr_t)handle;
+		}
 		} return 0;
 	case NIM_BUTTON: {
 		assert(nim_get_prop(w, &prop, NIM_PROP_TEXT) == 0);
@@ -51,7 +59,7 @@ int on_create(void *priv, struct WidgetHeader *w) {
 	return 1;
 }
 int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	(void)priv;
+	struct Priv *p = priv;
 	if (parent == NULL) {
 		// Handle root element
 		return 0;
@@ -59,9 +67,12 @@ int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 
 	switch (parent->type) {
 	case NIM_WINDOW:
-// uiWindow is a container currently
-//		uiWindowSetChild((uiWindow *)parent->os_handle, (uiControl *)w->os_handle);
-//		break;
+		if (p->make_window_a_layout) {
+			uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
+		} else {
+			uiWindowSetChild((uiWindow *)parent->os_handle, (uiControl *)w->os_handle);
+		}
+		break;
 	case NIM_LAYOUT_STATIC:
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
 		return 0;
@@ -94,6 +105,11 @@ static void *ui_thread(void *arg) {
 int nim_libui_init(nim_ctx_t *ctx) {
 	ctx->create = on_create;
 	ctx->append = on_append;
+	ctx->priv = malloc(sizeof(struct Priv));
+	struct Priv *p = ctx->priv;
+	p->make_window_a_layout = 1;
+
+	// TODO: start thread
 }
 
 #if 0

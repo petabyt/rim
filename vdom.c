@@ -190,6 +190,9 @@ int test_differ(void) {
 }
 
 struct NimTree *nim_get_current_tree(void) {
+	if (global_context == NULL) {
+		nim_abort("global_context null");
+	}
 	return global_context->tree_new;
 }
 
@@ -197,13 +200,34 @@ int nim_last_widget_event(void) {
 	return 0;
 }
 
-int nim_poll(struct NimContext *ctx) {
-	// Wait for the event signal
-	sem_wait(&ctx->event_sig);
-	//
-	global_context = NULL;
+struct NimContext *nim_init(void) {
+	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
+	ctx->of = 0;
+	ctx->header = 0;
 
-	sem_post(&ctx->event_sig);
+	ctx->tree_new = nim_create_tree();
+	ctx->tree_old = nim_create_tree();
+
+	sem_init(&ctx->event_sig, 0, 0);
+
+	global_context = ctx;
+
+	return ctx;
+}
+
+int nim_poll(struct NimContext *ctx) {
+	if (ctx->first_frame) {
+		// Wait for the event signal
+		sem_wait(&ctx->event_sig);
+	} else {
+		nim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL, 0);
+	}
+
+	if (ctx->first_frame) {
+		sem_post(&ctx->event_sig);
+	}
+
+	ctx->first_frame = 1;
 
 	return 1;
 }

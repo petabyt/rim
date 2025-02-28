@@ -16,6 +16,15 @@ extern "C" struct NimTree *nim_get_current_tree() {
 	return global_context->tree_new;
 }
 
+struct NimContext *nim_init(void) {
+	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
+	ctx->of = 0;
+	ctx->header = 0;
+	ctx->tree_new = nim_create_tree();
+
+	return ctx;
+}
+
 extern "C" nim_ctx_t *nim_imgui_init(void) {
 	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
 	ctx->tree_new = nim_create_tree();
