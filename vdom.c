@@ -195,15 +195,22 @@ struct NimTree *nim_get_current_tree(void) {
 	}
 	return global_context->tree_new;
 }
-
+nim_ctx_t *nim_get_global_ctx(void) {
+	return global_context;
+}
 int nim_last_widget_event(void) {
 	return 0;
+}
+
+void nim_on_widget_event(void *ctx, int event_type) {
+	
 }
 
 struct NimContext *nim_init(void) {
 	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
 	ctx->of = 0;
 	ctx->header = 0;
+	ctx->event_counter = 1;
 
 	ctx->tree_new = nim_create_tree();
 	ctx->tree_old = nim_create_tree();
@@ -216,18 +223,26 @@ struct NimContext *nim_init(void) {
 }
 
 int nim_poll(struct NimContext *ctx) {
-	if (ctx->first_frame) {
-		// Wait for the event signal
-		sem_wait(&ctx->event_sig);
-	} else {
+	// If new tree has gained contents, init the tree
+	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
+		printf("nim_init_tree_widgets\n");
 		nim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL, 0);
 	}
 
-	if (ctx->first_frame) {
-		sem_post(&ctx->event_sig);
+	if (ctx->event_counter) {
+		ctx->event_counter--;
+	} else {
+		//sem_post(&ctx->event_sig);
+		sem_wait(&ctx->event_sig);
 	}
 
-	ctx->first_frame = 1;
+#if 1
+		// Switch trees, reuse old tree as new trees
+		struct NimTree *temp = ctx->tree_old;
+		ctx->tree_old = ctx->tree_new;
+		ctx->tree_new = temp;
+		ctx->tree_new->of = 0; // reset current tree, ready to be built again
+#endif
 
 	return 1;
 }

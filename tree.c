@@ -9,8 +9,8 @@
 
 #define CONFIG_ALIGNMENT_CHECKS
 
-// All data written to/from the tree must be 32 bit aligned. This is so that
-// 4 ldrb/strb don't have to be done.
+// All data written to/from the tree must be 32 bit aligned
+// to make sure misaligned reads/writes won't happen.
 inline static int copy_string(uint8_t *to, const char *str) {
 #ifdef CONFIG_ALIGNMENT_CHECKS
 	assert((((uintptr_t)to) & 0b11) == 0);

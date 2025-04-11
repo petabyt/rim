@@ -65,8 +65,7 @@ enum NimWidgetType {
 
 enum NimWidgetEvent {
 	NIM_EVENT_NONE = 0,
-	NIM_EVENT_CLICK_DOWN = 1,
-	NIM_EVENT_CLICK_UP = 2,
+	NIM_EVENT_CLICK = 1,
 };
 
 struct NimTree {
@@ -114,8 +113,8 @@ struct NimContext {
 	nim_on_tweak_widget *tweak;
 	nim_on_append_widget *append;
 
-	// Set to 1 after first frame (for nim_poll)
-	int first_frame;
+	// Dummy event counter
+	int event_counter;
 
 	sem_t event_sig;
 	struct NimEvent last_event;
@@ -149,9 +148,13 @@ struct NimTree *nim_get_current_tree(void);
 // Get event code for last created event
 int nim_last_widget_event(void);
 
+void nim_on_widget_event(void *ctx, int event_type);
+
 const char *nim_eval_widget_type(int type);
 
 int nim_abort(const char *reason);
+
+nim_ctx_t *nim_get_global_ctx(void);
 
 // Demo UIs
 int nim_demo_window1(int state);

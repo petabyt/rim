@@ -1,8 +1,10 @@
+#include <stdio.h>
 #include "nim.h"
 #include "im.h"
 
 int main() {
 	struct NimContext *ctx = nim_init();
+	nim_libui_init(ctx);
 	int show_more = 0;
 
 	while (nim_poll(ctx)) {
