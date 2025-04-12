@@ -93,30 +93,39 @@ struct NimProp {
 	const char *value;
 };
 
-typedef int nim_on_create_widget(void *priv, struct WidgetHeader *w);
-typedef int nim_on_free_widget(void *priv, struct WidgetHeader *w);
-typedef int nim_on_tweak_widget(void *priv, struct WidgetHeader *w);
-typedef int nim_on_append_widget(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
+typedef void nim_on_run_callback(void *priv);
+
+typedef int nim_on_create_widget(struct NimContext *ctx, struct WidgetHeader *w);
+typedef int nim_on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w);
+typedef int nim_on_append_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+typedef int nim_on_destroy_widget(struct NimContext *ctx, struct WidgetHeader *w);
+typedef int nim_on_run(struct NimContext *ctx, nim_on_run_callback *callback);
 
 struct NimContext {
 	struct WidgetHeader *header;
 	struct NimTree *tree_old;
 	struct NimTree *tree_new;
-	int of;
+	//int of;
 
 	// Backend context pointer
 	void *priv;
 
-	// Virtual DOM handlers
+	/// @brief Create a backend widget given the widget header
 	nim_on_create_widget *create;
-	nim_on_free_widget *free;
+	/// @brief Change a property of a backend widget
 	nim_on_tweak_widget *tweak;
+	/// @brief Append a backend widget to a parent backend widget.
+	/// @todo What should happen if a widget can't be appended to something?
 	nim_on_append_widget *append;
+	/// @brief Destroy the backend widget and all of its children
+	nim_on_destroy_widget *destroy;
+	/// @brief Queue a function to run in the UI backend thread
+	nim_on_run *run;
 
 	// Dummy event counter
 	int event_counter;
 
-	sem_t event_sig;
+	sem_t event_sig; // main event signal
 	struct NimEvent last_event;
 };
 

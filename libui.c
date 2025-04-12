@@ -13,7 +13,10 @@ struct Priv {
 	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
 	/// If 0, it will be uiWindow
 	int make_window_a_layout;
+
 	pthread_t thread;
+
+	sem_t wait_until_ready;
 };
 
 int onClosing(uiWindow *w, void *data) {
@@ -21,8 +24,7 @@ int onClosing(uiWindow *w, void *data) {
 	return 1;
 }
 
-int on_destroy(void *priv, struct WidgetHeader *w) {
-	(void)priv;
+int on_destroy(struct NimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
 	case NIM_WINDOW:
 	case NIM_BUTTON:
@@ -36,8 +38,8 @@ void button_clicked(uiButton *button, void *arg) {
 	puts("Clicked");
 }
 
-int on_create(void *priv, struct WidgetHeader *w) {
-	struct Priv *p = priv;
+int on_create(struct NimContext *ctx, struct WidgetHeader *w) {
+	struct Priv *p = ctx->priv;
 	struct NimProp prop;
 	switch (w->type) {
 	case NIM_WINDOW: {
@@ -65,10 +67,10 @@ int on_create(void *priv, struct WidgetHeader *w) {
 	}
 	return 1;
 }
-int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	struct Priv *p = priv;
+int on_append(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	struct Priv *p = ctx->priv;
 	if (parent == NULL) {
-		// Handle root element
+		// Handle root element, being appended to nothing?
 		return 0;
 	}
 
@@ -79,7 +81,7 @@ int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 		} else {
 			uiWindowSetChild((uiWindow *)parent->os_handle, (uiControl *)w->os_handle);
 		}
-		break;
+		return 0;
 	case NIM_LAYOUT_STATIC:
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
 		return 0;
@@ -87,13 +89,24 @@ int on_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	return 1;
 }
 
+int on_tweak(struct NimContext *ctx, struct WidgetHeader *w) {
+	// TODO
+	return 1;
+}
+
+int on_run(struct NimContext *ctx, nim_on_run_callback *callback) {
+	uiQueueMain(callback, ctx);
+	return 0;
+}
+
 static void *ui_thread(void *arg) {
-	nim_ctx_t *backend = arg;
+	nim_ctx_t *ctx = arg;
+	struct Priv *p = ctx->priv;
 
 	uiInitOptions o = {0};
 	const char *err;
 
-	printf("Dothing nothing\n");
+	printf("Calling uiInit\n");
 	fflush(stdout);
 	err = uiInit(&o);
 	if (err != NULL) {
@@ -102,6 +115,7 @@ static void *ui_thread(void *arg) {
 		return NULL;
 	}
 
+	sem_post(&p->wait_until_ready);
 	uiMain();
 	uiUninit();
 
@@ -118,9 +132,15 @@ static void handle_int(int code) {
 int nim_libui_init(nim_ctx_t *ctx) {
 	ctx->create = on_create;
 	ctx->append = on_append;
+	ctx->tweak = on_tweak;
+	ctx->append = on_append;
+	ctx->destroy = on_destroy;
+	ctx->run = on_run;
+
 	ctx->priv = malloc(sizeof(struct Priv));
 	struct Priv *p = ctx->priv;
 	p->make_window_a_layout = 1;
+	sem_init(&p->wait_until_ready, 0, 0);
 
 	if (pthread_create(&p->thread, NULL, ui_thread, (void *)ctx) != 0) {
 		perror("pthread_create() error");
@@ -128,35 +148,6 @@ int nim_libui_init(nim_ctx_t *ctx) {
 	}
 
 	signal(SIGINT, handle_int);
+
+	sem_wait(&p->wait_until_ready);
 }
-
-int nim_libui_ui_rebuild(nim_ctx_t *ctx) {
-	return 0;
-}
-
-#if 0
-int nim_libNIM_start(void) {
-	struct NimContext backend;
-	nim_init_backend(&backend);
-	backend.create = on_create;
-	backend.append = on_append;
-
-//	sem_t event_signal;
-	pthread_t thid;
-	void *ret;
-
-	if (pthread_create(&thid, NULL, ui_thread, &backend) != 0) {
-		perror("pthread_create() error");
-		return 1;
-	}
-
-//	sem_init(&event_signal, 0, 1);
-
-	if (pthread_join(thid, &ret) != 0) {
-		perror("pthread_create() error");
-		return -1;
-	}
-
-	return 0;
-}
-#endif

@@ -22,15 +22,15 @@ int nim_init_tree_widgets(struct NimContext *ctx, struct NimTree *tree, int base
 	struct WidgetHeader *h = (struct WidgetHeader *)(buffer + of);
 	of += sizeof(struct WidgetHeader);
 
-	int rc = ctx->create(NULL, h);
+	int rc = ctx->create(ctx, h);
 	if (rc) {
 		printf("Couldn't create widget %d\n", h->type);
 		abort();
 	}
 
-	rc = ctx->append(NULL, h, parent);
+	rc = ctx->append(ctx, h, parent);
 	if (rc) {
-		printf("Couldn't append widget %d to %d\n", h->type, parent->type);
+		printf("Couldn't append widget '%s' to '%s'\n", nim_eval_widget_type(h->type), nim_eval_widget_type(parent->type));
 		abort();
 	}
 
@@ -126,7 +126,7 @@ static int nim_patch_tree(struct NimContext *ctx, int *old_of_p, int *new_of_p, 
 	}
 
 	if (flag & FLAG_DELETE) {
-		ctx->free(ctx->priv, old_h);
+		ctx->destroy(ctx->priv, old_h);
 	}
 
 	return 0;
@@ -157,19 +157,19 @@ static int build_ui(struct NimTree *tree, int state) {
 	return 0;
 }
 
-static int on_create_widget(void *priv, struct WidgetHeader *w) {
+static int on_create_widget(struct NimContext *ctx, struct WidgetHeader *w) {
 	printf("Creating a new widget\n");
 	return 0;
 }
-static int on_free_widget(void *priv, struct WidgetHeader *w) {
+static int on_free_widget(struct NimContext *ctx, struct WidgetHeader *w) {
 	printf("Freeing a widget\n");
 	return 0;
 }
-static int on_tweak_widget(void *priv, struct WidgetHeader *w) {
+static int on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w) {
 	printf("Tweaking a widget\n");
 	return 0;
 }
-static int on_append_widget(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
+static int on_append_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	printf("Appending a widget to x\n");
 	return 0;
 }
@@ -177,7 +177,7 @@ static int on_append_widget(void *priv, struct WidgetHeader *w, struct WidgetHea
 int test_differ(void) {
 	struct NimContext ctx;
 	ctx.create = on_create_widget;
-	ctx.free = on_free_widget;
+	ctx.destroy = on_free_widget;
 	ctx.tweak = on_tweak_widget;
 	ctx.append = on_append_widget;
 	ctx.tree_new = nim_create_tree();
@@ -208,7 +208,7 @@ void nim_on_widget_event(void *ctx, int event_type) {
 
 struct NimContext *nim_init(void) {
 	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
-	ctx->of = 0;
+	//ctx->of = 0;
 	ctx->header = 0;
 	ctx->event_counter = 1;
 
@@ -222,11 +222,16 @@ struct NimContext *nim_init(void) {
 	return ctx;
 }
 
+static void work_tree(void *priv) {
+	struct NimContext *ctx = (struct NimContext *)priv;
+	printf("Initializing the tree for the first time\n");
+	nim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL, 0);
+}
+
 int nim_poll(struct NimContext *ctx) {
 	// If new tree has gained contents, init the tree
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
-		printf("nim_init_tree_widgets\n");
-		nim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL, 0);
+		ctx->run(ctx, work_tree);
 	}
 
 	if (ctx->event_counter) {
