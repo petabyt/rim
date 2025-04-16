@@ -24,7 +24,7 @@ int nim_init_tree_widgets(struct NimContext *ctx, struct NimTree *tree, int base
 
 	int rc = ctx->create(ctx, h);
 	if (rc) {
-		printf("Couldn't create widget %d\n", h->type);
+		printf("Couldn't create widget %s\n", nim_eval_widget_type(h->type));
 		abort();
 	}
 
@@ -65,7 +65,9 @@ static int nim_patch_tree(struct NimContext *ctx, int *old_of_p, int *new_of_p, 
 		// Type has changed in this widget so we'll assume the rest of the tree is unusable
 		flag |= FLAG_DELETE;
 	} else {
-		new_h->unique_id = new_h->unique_id;
+		// Same type, copy over handles
+		new_h->unique_id = old_h->unique_id;
+		new_h->os_handle = old_h->os_handle;
 	}
 
 	// TODO: Should there be a function to free the rest of a node
@@ -93,10 +95,10 @@ static int nim_patch_tree(struct NimContext *ctx, int *old_of_p, int *new_of_p, 
 			}
 
 			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
-				printf("property %d same state\n", (int) i);
+				printf("property %d same state\n", (int)i);
 			} else {
-				printf("property %d in %d changed\n", (int) i, old_h->unique_id);
-
+				printf("property %d in %d changed\n", (int)i, old_h->unique_id);
+				ctx->tweak(ctx, new_h, new_p);
 			}
 		}
 
@@ -132,61 +134,10 @@ static int nim_patch_tree(struct NimContext *ctx, int *old_of_p, int *new_of_p, 
 	return 0;
 }
 
-static int diff_tree(struct NimContext *ctx) {
+int nim_diff_tree(struct NimContext *ctx) {
 	int old_of = 0;
 	int new_of = 0;
 	return nim_patch_tree(ctx, &old_of, &new_of, 0);
-}
-
-static int build_ui(struct NimTree *tree, int state) {
-	nim_add_widget(tree, NIM_WINDOW, -1);
-	nim_add_prop_text(tree, NIM_PROP_WIN_TITLE, "Title");
-		if (state) {
-			nim_add_widget(tree, NIM_LAYOUT_DYNAMIC, 0);
-				nim_add_widget(tree, NIM_BUTTON, 0);
-				nim_add_prop_text(tree, NIM_PROP_TEXT, "widget will be removed");
-				nim_end_widget(tree);
-			nim_end_widget(tree);
-
-		} else {
-			nim_add_widget(tree, NIM_BUTTON, 0);
-			nim_add_prop_text(tree, NIM_PROP_TEXT, "Hello World");
-			nim_end_widget(tree);
-		}
-	nim_end_widget(tree);
-	return 0;
-}
-
-static int on_create_widget(struct NimContext *ctx, struct WidgetHeader *w) {
-	printf("Creating a new widget\n");
-	return 0;
-}
-static int on_free_widget(struct NimContext *ctx, struct WidgetHeader *w) {
-	printf("Freeing a widget\n");
-	return 0;
-}
-static int on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w) {
-	printf("Tweaking a widget\n");
-	return 0;
-}
-static int on_append_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	printf("Appending a widget to x\n");
-	return 0;
-}
-
-int test_differ(void) {
-	struct NimContext ctx;
-	ctx.create = on_create_widget;
-	ctx.destroy = on_free_widget;
-	ctx.tweak = on_tweak_widget;
-	ctx.append = on_append_widget;
-	ctx.tree_new = nim_create_tree();
-	ctx.tree_old = nim_create_tree();
-	build_ui(ctx.tree_old, 1);
-	build_ui(ctx.tree_new, 0);
-	diff_tree(&ctx);
-
-	return 0;
 }
 
 struct NimTree *nim_get_current_tree(void) {
@@ -202,13 +153,13 @@ int nim_last_widget_event(void) {
 	return 0;
 }
 
-void nim_on_widget_event(void *ctx, int event_type) {
-	
+void nim_on_widget_event(struct NimContext *ctx, enum NimWidgetEvent event, int unique_id) {
+	printf("TODO: Do something to give state loop event info\n");
+	sem_post(&ctx->event_sig);
 }
 
 struct NimContext *nim_init(void) {
 	struct NimContext *ctx = (struct NimContext *)calloc(1, sizeof(struct NimContext));
-	//ctx->of = 0;
 	ctx->header = 0;
 	ctx->event_counter = 1;
 
@@ -228,10 +179,19 @@ static void work_tree(void *priv) {
 	nim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL, 0);
 }
 
+static void diff_tree(void *priv) {
+	struct NimContext *ctx = (struct NimContext *)priv;
+	printf("Diffing tree\n");
+	nim_diff_tree(ctx);
+}
+
 int nim_poll(struct NimContext *ctx) {
-	// If new tree has gained contents, init the tree
+	// If new tree has gained contents and old tree is empty, init the tree
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		ctx->run(ctx, work_tree);
+	} else {
+		ctx->run(ctx, diff_tree);
+		printf("Run tree differ now\n");
 	}
 
 	if (ctx->event_counter) {
@@ -241,13 +201,11 @@ int nim_poll(struct NimContext *ctx) {
 		sem_wait(&ctx->event_sig);
 	}
 
-#if 1
-		// Switch trees, reuse old tree as new trees
-		struct NimTree *temp = ctx->tree_old;
-		ctx->tree_old = ctx->tree_new;
-		ctx->tree_new = temp;
-		ctx->tree_new->of = 0; // reset current tree, ready to be built again
-#endif
+	// Switch trees, reuse old tree as new tree
+	struct NimTree *temp = ctx->tree_old;
+	ctx->tree_old = ctx->tree_new;
+	ctx->tree_new = temp;
+	nim_reset_tree(ctx->tree_new);
 
 	return 1;
 }

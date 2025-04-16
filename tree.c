@@ -65,12 +65,16 @@ int nim_abort(const char *reason) {
 	abort();
 }
 
+void nim_reset_tree(struct NimTree *tree) {
+	tree->widget_stack_depth = 0;
+	tree->of = 0;
+}
+
 struct NimTree *nim_create_tree(void) {
 	struct NimTree *tree = (struct NimTree *)malloc(sizeof(struct NimTree));
-	tree->widget_stack_depth = 0;
 	tree->buffer = malloc(1000);
 	tree->buffer_length = 1000;
-	tree->of = 0;
+	nim_reset_tree(tree);
 	return tree;
 }
 
@@ -88,6 +92,7 @@ void nim_add_widget(struct NimTree *tree, enum NimWidgetType type, int allowed_c
 	h->n_children = 0;
 	h->n_props = 0;
 	h->os_handle = 0;
+	h->unique_id = tree->of; // Use a better ID instead of an offset?
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
 

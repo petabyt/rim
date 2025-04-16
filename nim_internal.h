@@ -96,7 +96,7 @@ struct NimProp {
 typedef void nim_on_run_callback(void *priv);
 
 typedef int nim_on_create_widget(struct NimContext *ctx, struct WidgetHeader *w);
-typedef int nim_on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w);
+typedef int nim_on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop);
 typedef int nim_on_append_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 typedef int nim_on_destroy_widget(struct NimContext *ctx, struct WidgetHeader *w);
 typedef int nim_on_run(struct NimContext *ctx, nim_on_run_callback *callback);
@@ -132,6 +132,9 @@ struct NimContext {
 /// @brief Create a widget tree
 struct NimTree *nim_create_tree(void);
 
+/// @brief Reset a tree to empty
+void nim_reset_tree(struct NimTree *tree);
+
 /// @brief Setup fields of NimBackend
 void nim_init_backend(struct NimContext *backend);
 
@@ -157,13 +160,19 @@ struct NimTree *nim_get_current_tree(void);
 // Get event code for last created event
 int nim_last_widget_event(void);
 
-void nim_on_widget_event(void *ctx, int event_type);
+/// @brief backend calls this when a widget has an event
+void nim_on_widget_event(struct NimContext *ctx, enum NimWidgetEvent event, int unique_id);
 
+// Run the differ using old and new tree
+int nim_diff_tree(struct NimContext *ctx);
+
+// debugging only
 const char *nim_eval_widget_type(int type);
-
+// debugging only
 int nim_abort(const char *reason);
 
-nim_ctx_t *nim_get_global_ctx(void);
+/// @brief To be used sparingly, hopefully not permanently
+struct NimContext *nim_get_global_ctx(void);
 
 // Demo UIs
 int nim_demo_window1(int state);

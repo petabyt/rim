@@ -19,11 +19,6 @@ struct Priv {
 	sem_t wait_until_ready;
 };
 
-int onClosing(uiWindow *w, void *data) {
-	uiQuit();
-	return 1;
-}
-
 int on_destroy(struct NimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
 	case NIM_WINDOW:
@@ -34,8 +29,16 @@ int on_destroy(struct NimContext *ctx, struct WidgetHeader *w) {
 	return 1;
 }
 
-void button_clicked(uiButton *button, void *arg) {
-	puts("Clicked");
+static int window_closed(uiWindow *w, void *arg) {
+	uiQuit();
+	struct NimContext *ctx = nim_get_global_ctx();
+	nim_on_widget_event(ctx, NIM_EVENT_CLICK, (int)(uintptr_t)arg);
+	return 1;
+}
+
+static void button_clicked(uiButton *button, void *arg) {
+	struct NimContext *ctx = nim_get_global_ctx();
+	nim_on_widget_event(ctx, NIM_EVENT_CLICK, (int)(uintptr_t)arg);
 }
 
 int on_create(struct NimContext *ctx, struct WidgetHeader *w) {
@@ -45,7 +48,7 @@ int on_create(struct NimContext *ctx, struct WidgetHeader *w) {
 	case NIM_WINDOW: {
 		assert(nim_get_prop(w, &prop, NIM_PROP_WIN_TITLE) == 0);
 		uiWindow *handle = uiNewWindow(prop.value, 300, 300, 0);
-		uiWindowOnClosing(handle, onClosing, NULL);
+		uiWindowOnClosing(handle, window_closed, (void *)(uintptr_t)w->unique_id);
 		if (p->make_window_a_layout) {
 			uiBox *container = uiNewVerticalBox();
 			uiWindowSetChild(handle, uiControl(container));
@@ -58,7 +61,12 @@ int on_create(struct NimContext *ctx, struct WidgetHeader *w) {
 	case NIM_BUTTON: {
 		assert(nim_get_prop(w, &prop, NIM_PROP_TEXT) == 0);
 		uiButton *handle = uiNewButton(prop.value);
-		uiButtonOnClicked(handle, button_clicked, 0);
+		uiButtonOnClicked(handle, button_clicked, (void *)(uintptr_t)w->unique_id);
+		w->os_handle = (uintptr_t)handle;
+		} return 0;
+	case NIM_LABEL: {
+		assert(nim_get_prop(w, &prop, NIM_PROP_TEXT) == 0);
+		uiLabel *handle = uiNewLabel(prop.value);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case NIM_LAYOUT_STATIC: {
@@ -89,8 +97,14 @@ int on_append(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 	return 1;
 }
 
-int on_tweak(struct NimContext *ctx, struct WidgetHeader *w) {
-	// TODO
+int on_tweak(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop) {
+	switch (w->type) {
+	case NIM_LABEL:
+		if (prop->type == NIM_PROP_TEXT) {
+			uiLabelSetText((uiLabel *)w->os_handle, (const char *)prop->data);
+			return 0;
+		}
+	}
 	return 1;
 }
 
@@ -150,4 +164,5 @@ int nim_libui_init(nim_ctx_t *ctx) {
 	signal(SIGINT, handle_int);
 
 	sem_wait(&p->wait_until_ready);
+	return 0;
 }

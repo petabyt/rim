@@ -9,6 +9,7 @@ int dump_widget_location(void) {
 		printf("parent type %s child %d\n", nim_eval_widget_type(tree->widget_stack[i]->type), tree->widget_stack[i]->n_children - 1);
 	}
 	printf("child is type: %s\n", nim_eval_widget_type(tree->widget_stack[tree->widget_stack_depth]->type));
+	return 0;
 }
 
 int main() {
