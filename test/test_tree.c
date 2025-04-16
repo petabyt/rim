@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "nim.h"
-#include "im.h"
-#include "nim_internal.h"
+#include <nim.h>
+#include <im.h>
+#include <nim_internal.h>
 
 int dump_widget_location(void) {
 	struct NimTree *tree = nim_get_current_tree();
@@ -17,7 +17,7 @@ int main() {
 	nim_libui_init(ctx);
 	int show_more = 0;
 
-	if (im_window("My Window", 640, 480, 0)) {
+	if (im_window("My Window", 640, 480)) {
 		if (im_button("Show More")) {
 			show_more = 1;
 		}

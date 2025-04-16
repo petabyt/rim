@@ -1,5 +1,5 @@
 test: all
-	cmake-build-debug/nim_demo
+	build/nim_demo
 
 all:
-	cmake --build cmake-build-debug
+	cmake --build build

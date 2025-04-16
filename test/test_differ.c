@@ -1,8 +1,8 @@
 // runtime and virtual DOM implementation
 #include <stdio.h>
 
-#include "nim.h"
-#include "nim_internal.h"
+#include <nim.h>
+#include <nim_internal.h>
 
 static int on_create_widget(struct NimContext *ctx, struct WidgetHeader *w) {
 	printf("Creating a new widget\n");

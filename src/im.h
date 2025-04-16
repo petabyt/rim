@@ -1,0 +1,77 @@
+// Dear-ImGUI wrapper
+// Last edited 2025/4/13
+#ifndef IM_H
+#define IM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+API rules:
+- im_<widget>
+  - Create/start a widget with minimal arguments
+- im_<widget>_ex
+  - Create/start a widget with complete arguments
+- im_end_<widget>
+  - Ends a widget
+
+ - Must only accept units of length/width/size in dp, not pixels.
+*/
+
+enum NimReturnCode {
+	NIM_NONE = 0,
+	NIM_CLICKED = 1,
+	NIM_SELECTED = 2,
+	NIM_CHILDREN_VISIBLE = 3,
+};
+
+struct NimModifier {
+	unsigned int color;
+	unsigned int width_x_type;
+	unsigned int width_x;
+	unsigned int width_y_type;
+	unsigned int width_y;
+	unsigned int margin[4];
+	unsigned int padding[4];
+};
+
+int im_get_dpi(void);
+#define dp_to_px(dp) ((im_get_dpi() * dp) / 160)
+
+int im_push_disabled(void);
+int im_pop_disabled(void);
+
+/// @returns NIM_CHILDREN_VISIBLE
+int im_tab(void);
+int im_add_tab_item(const char *title);
+void im_end_tab_item(void);
+void im_end_tab(void);
+
+int im_combo_box(const char *label, const char *preview);
+int im_add_combo_box_item(const char *label, int *selected);
+void im_end_combo_box(void);
+
+int im_checkbox_label(const char *label, int *checked);
+
+int im_button(const char *label);
+int im_button_ex(const char *label, struct NimModifier *mod);
+int im_label(const char *label);
+
+int im_window(const char *name, int width_dp, int height_dp);
+int im_window_ex(const char *name, int width_dp, int height_dp, int flags);
+void im_end_window(void);
+
+/// @param buffer Buffer that the text will be read from, and where characters will be written to
+/// @param size Size of buffer
+void im_multiline_entry(char *buffer, unsigned int size);
+
+/// @param buffer Buffer that the text will be read from, and where characters will be written to
+/// @param size Size of buffer
+void im_entry(const char *label, char *buffer, unsigned int size);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
