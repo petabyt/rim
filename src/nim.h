@@ -18,6 +18,8 @@ int nim_update(void);
 
 /// @brief Initializes the libui virtual dom
 int nim_libui_init(nim_ctx_t *ctx);
+
+/// @brief Creates a new instance
 nim_ctx_t *nim_imgui_init(void);
 
 enum NimBackend {

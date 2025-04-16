@@ -1,6 +1,5 @@
 // runtime and virtual DOM implementation
 #include <stdio.h>
-
 #include <nim.h>
 #include <nim_internal.h>
 
@@ -12,7 +11,7 @@ static int on_free_widget(struct NimContext *ctx, struct WidgetHeader *w) {
 	printf("Freeing a widget\n");
 	return 0;
 }
-static int on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w) {
+static int on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop) {
 	printf("Tweaking a widget\n");
 	return 0;
 }

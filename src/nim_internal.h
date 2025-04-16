@@ -17,6 +17,9 @@ struct __attribute__((packed)) WidgetHeader {
 	uint32_t n_props;
 	// Unique ID (only modified by UI backend and tree patcher)
 	uint32_t unique_id;
+
+	uint32_t res0; // extra 4 bytes to ensure 8 alignment
+
 	// Pointer handle for UI backend
 	// Note: may not be aligned by 8 bytes. May need to do two 32 bit loads.
 	uintptr_t os_handle;
@@ -24,7 +27,7 @@ struct __attribute__((packed)) WidgetHeader {
 	// properties start here
 	// children start here
 };
-_Static_assert(sizeof(struct WidgetHeader) == 28);
+_Static_assert(sizeof(struct WidgetHeader) == 28+4, "fail size");
 
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
@@ -33,16 +36,19 @@ struct __attribute__((packed)) WidgetProp {
 	uint32_t type;
 	uint8_t data[];
 };
-_Static_assert(sizeof(struct WidgetProp) == 8);
+_Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 
 enum NimPropType {
 	NIM_PROP_WIN_TITLE = 1,
 	NIM_PROP_WIN_WIDTH = 2,
 	NIM_PROP_WIN_HEIGHT = 3,
 	NIM_PROP_TEXT,
+	NIM_PROP_META,
 };
 
 enum NimWidgetType {
+	// 1-0xfff is reserved for Nim
+	// >=0x1000 is reserved for custom widgets
 	NIM_WINDOW = 1,
 	NIM_LABEL,
 	NIM_BUTTON,

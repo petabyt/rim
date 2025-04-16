@@ -25,6 +25,17 @@ int im_window(const char *name, int width, int height) {
 	return 1;
 }
 
+void im_entry(const char *label, char *buffer, unsigned int size) {
+	struct NimTree *tree = nim_get_current_tree();
+	nim_add_widget(tree, NIM_LABEL, 0);
+	nim_add_prop_text(tree, NIM_PROP_TEXT, label);
+	nim_end_widget(tree);
+	if (nim_last_widget_event()) {
+		// TODO:
+		//strncpy(buffer, event->buffer, size);
+	}
+}
+
 static int im_end(void) {
 	struct NimTree *tree = nim_get_current_tree();
 	nim_end_widget(tree);
