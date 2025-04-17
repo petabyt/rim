@@ -1,13 +1,13 @@
-Nim is an immediate-mode UI library that renders down to native retained-mode widgets.
+Rim is an immediate-mode UI library that renders down to native retained-mode widgets.
 
 Unlike libraries like dear-imgui, it doesn't render everything from scratch. Instead, it uses the OS's native retained-mode UI toolkit while still having an immediate-mode API.
 
 ```
 int main() {
-	struct NimContext *ctx = nim_init();
-	nim_libui_init(ctx);
+	struct RimContext *ctx = rim_init();
+	rim_libui_init(ctx);
 	int show_more = 0;
-	while (nim_poll(ctx)) {
+	while (rim_poll(ctx)) {
 		if (im_window("My Window", 640, 480, 0)) {
 			if (im_button("Show More")) {
 				show_more = 1;

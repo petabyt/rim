@@ -4,8 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-#include "nim.h"
-#include "nim_internal.h"
+#include "rim_internal.h"
 
 #define CONFIG_ALIGNMENT_CHECKS
 
@@ -36,57 +35,57 @@ inline static uint32_t read_u32(const uint8_t *from, uint32_t *temp) {
 	return 4;
 }
 
-const char *nim_eval_widget_type(int type) {
+const char *rim_eval_widget_type(int type) {
 	switch (type) {
-	case NIM_WINDOW: return "window";
-	case NIM_LABEL: return "label";
-	case NIM_BUTTON: return "button";
-	case NIM_PROGRESS_BAR: return "progress_bar";
-	case NIM_IMAGE: return "image";
-	case NIM_ENTRY: return "entry";
-	case NIM_SPINBOX: return "spinbox";
-	case NIM_SLIDER: return "slider";
-	case NIM_COMBOBOX: return "combobox";
-	case NIM_RADIO: return "radio";
-	case NIM_DATE_PICKER: return "date_picker";
-	case NIM_TABLE: return "table";
-	case NIM_LAYOUT_STATIC: return "layout_static";
-	case NIM_LAYOUT_DYNAMIC: return "layout_dynamic";
-	case NIM_LAYOUT_FLEX: return "layout_flex";
-	case NIM_CUSTOM: return "custom";
-	case NIM_NATIVE: return "native";
-	case NIM_EOF: return "eof";
+	case RIM_WINDOW: return "window";
+	case RIM_LABEL: return "label";
+	case RIM_BUTTON: return "button";
+	case RIM_PROGRESS_BAR: return "progress_bar";
+	case RIM_IMAGE: return "image";
+	case RIM_ENTRY: return "entry";
+	case RIM_SPINBOX: return "spinbox";
+	case RIM_SLIDER: return "slider";
+	case RIM_COMBOBOX: return "combobox";
+	case RIM_RADIO: return "radio";
+	case RIM_DATE_PICKER: return "date_picker";
+	case RIM_TABLE: return "table";
+	case RIM_LAYOUT_STATIC: return "layout_static";
+	case RIM_LAYOUT_DYNAMIC: return "layout_dynamic";
+	case RIM_LAYOUT_FLEX: return "layout_flex";
+	case RIM_CUSTOM: return "custom";
+	case RIM_NATIVE: return "native";
+	case RIM_EOF: return "eof";
 	}
 	abort();
 }
 
-int nim_abort(const char *reason) {
+int rim_abort(const char *reason) {
 	puts(reason);
 	abort();
 }
 
-void nim_reset_tree(struct NimTree *tree) {
+void rim_reset_tree(struct RimTree *tree) {
 	tree->widget_stack_depth = 0;
 	tree->of = 0;
 }
 
-struct NimTree *nim_create_tree(void) {
-	struct NimTree *tree = (struct NimTree *)malloc(sizeof(struct NimTree));
+struct RimTree *rim_create_tree(void) {
+	struct RimTree *tree = (struct RimTree *)malloc(sizeof(struct RimTree));
 	tree->buffer = malloc(1000);
 	tree->buffer_length = 1000;
-	nim_reset_tree(tree);
+	rim_reset_tree(tree);
 	return tree;
 }
 
-void nim_end_widget(struct NimTree *tree) {
+void rim_end_widget(struct RimTree *tree) {
 	assert(tree->widget_stack_depth != 0);
 	tree->widget_stack_depth--;
 }
 
-void nim_add_widget(struct NimTree *tree, enum NimWidgetType type, int allowed_children) {
+void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children) {
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
 	if (tree->of + sizeof(struct WidgetHeader) > tree->buffer_length) {
-		nim_abort("buffer overflow");
+		rim_abort("buffer overflow");
 	}
 	h->type = type;
 	h->n_children = 0;
@@ -117,11 +116,11 @@ void nim_add_widget(struct NimTree *tree, enum NimWidgetType type, int allowed_c
 	tree->widget_stack[tree->widget_stack_depth] = h;
 	tree->widget_stack_depth++;
 	if (tree->widget_stack_depth == 5) {
-		nim_abort("Max depth reached");
+		rim_abort("Max depth reached");
 	}
 }
 
-void nim_add_prop_text(struct NimTree *tree, enum NimPropType type, const char *value) {
+void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *value) {
 	if (tree->widget_stack_depth == 0) {
 		printf("No widget to add property to\n");
 		abort();
@@ -135,7 +134,7 @@ void nim_add_prop_text(struct NimTree *tree, enum NimPropType type, const char *
 	parent->n_props++;
 }
 
-int nim_get_prop(struct WidgetHeader *h, struct NimProp *np, int type) {
+int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type) {
 	int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);

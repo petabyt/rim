@@ -1,12 +1,12 @@
 ## Virtual DOM Technical Details
 
 In order for this to work, we need two threads:
-1. **UI State thread** which will be running the `while (nim_poll(ctx)) { ... }` UI loop (this be `main()`)
+1. **UI State thread** which will be running the `while (rim_poll(ctx)) { ... }` UI loop (this be `main()`)
 2. **Backend thread**, which will call `uiMain`/`wxEntry`/etc
   Those calls will block, but code can still be run on this thread with functions like `uiQueueMain`
 
 ### UI State Thread responsibilities
-- `nim_poll` will be listening to events from the backend thread
+- `rim_poll` will be listening to events from the backend thread
 - An input list from the backend must be processed in order to know which buttons have been clicked
 - Build a tree through the frontend API
 - Send the current tree and the last tree to the backend thread
@@ -59,7 +59,7 @@ had a click event associated with it.
 2. If there is an event, we need to try and check any of the events appear to point to the current widget.
   - It is guaranteed that the event will come from a widget that was created in the previous tree.
     1. Only one event is processed at a time.
-    2. Each time `nim_poll` returns `1`, only a single event will be processed.
+    2. Each time `rim_poll` returns `1`, only a single event will be processed.
 
 ## Events
 Events include button presses, keypresses, and other widget inputs. Only one event will be processed at a time.
@@ -68,7 +68,7 @@ In the case of retained mode backend:
 - The event handler function requires an argument (that is set for each widget)
 
 ## event handler function
-For any event type, accepts a single argument: `struct NimEvent`
+For any event type, accepts a single argument: `struct RimEvent`
 - This struct will reside in the widget tree as a property of the widget in question.
-- When the UI is refreshed, the onClick handler will be set every time with the `struct NimEvent` structure as an argument
-The event handler function will copy it to the NimContext struct and trigger an event. The code in `nim_poll` will see there is an event, and return `1` for the widget that corresponds to that event.
+- When the UI is refreshed, the onClick handler will be set every time with the `struct RimEvent` structure as an argument
+The event handler function will copy it to the RimContext struct and trigger an event. The code in `rim_poll` will see there is an event, and return `1` for the widget that corresponds to that event.

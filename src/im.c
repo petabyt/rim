@@ -1,44 +1,44 @@
 // im_ generic API
-#include "nim_internal.h"
+#include "rim_internal.h"
 #include "im.h"
 
 int im_button(const char *label) {
-	struct NimTree *tree = nim_get_current_tree();
-	nim_add_widget(tree, NIM_BUTTON, 0);
-	nim_add_prop_text(tree, NIM_PROP_TEXT, label);
-	nim_end_widget(tree);
-	return nim_last_widget_event();
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_BUTTON, 0);
+	rim_add_prop_text(tree, RIM_PROP_TEXT, label);
+	rim_end_widget(tree);
+	return rim_last_widget_event();
 }
 
 int im_label(const char *label) {
-	struct NimTree *tree = nim_get_current_tree();
-	nim_add_widget(tree, NIM_LABEL, 0);
-	nim_add_prop_text(tree, NIM_PROP_TEXT, label);
-	nim_end_widget(tree);
-	return nim_last_widget_event();
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_LABEL, 0);
+	rim_add_prop_text(tree, RIM_PROP_TEXT, label);
+	rim_end_widget(tree);
+	return rim_last_widget_event();
 }
 
 int im_window(const char *name, int width, int height) {
-	struct NimTree *tree = nim_get_current_tree();
-	nim_add_widget(tree, NIM_WINDOW, -1);
-	nim_add_prop_text(tree, NIM_PROP_WIN_TITLE, name);
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_WINDOW, -1);
+	rim_add_prop_text(tree, RIM_PROP_WIN_TITLE, name);
 	return 1;
 }
 
 void im_entry(const char *label, char *buffer, unsigned int size) {
-	struct NimTree *tree = nim_get_current_tree();
-	nim_add_widget(tree, NIM_LABEL, 0);
-	nim_add_prop_text(tree, NIM_PROP_TEXT, label);
-	nim_end_widget(tree);
-	if (nim_last_widget_event()) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_LABEL, 0);
+	rim_add_prop_text(tree, RIM_PROP_TEXT, label);
+	rim_end_widget(tree);
+	if (rim_last_widget_event()) {
 		// TODO:
-		//strncpy(buffer, event->buffer, size);
+		// strncpy(buffer, event->buffer, size);
 	}
 }
 
 static int im_end(void) {
-	struct NimTree *tree = nim_get_current_tree();
-	nim_end_widget(tree);
+	struct RimTree *tree = rim_get_current_tree();
+	rim_end_widget(tree);
 	return 0;
 }
 void im_end_window(void) { im_end(); }

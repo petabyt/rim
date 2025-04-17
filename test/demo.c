@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include <nim.h>
+#include <rim.h>
 #include <im.h>
 
 int main() {
-	struct NimContext *ctx = nim_init();
-	nim_libui_init(ctx);
+	struct RimContext *ctx = rim_init();
+	rim_libui_init(ctx);
 	int show_more = 0;
 	int counter = 0;
-	while (nim_poll(ctx)) {
+	while (rim_poll(ctx)) {
 		if (im_window("My Window", 640, 480)) {
 			char buffer[64];
 			sprintf(buffer, "Events: %d\n", counter);
@@ -23,5 +23,5 @@ int main() {
 		}
 	}
 
-	return 0;	
+	return 0;
 }

@@ -19,14 +19,14 @@ API rules:
  - Must only accept units of length/width/size in dp, not pixels.
 */
 
-enum NimReturnCode {
-	NIM_NONE = 0,
-	NIM_CLICKED = 1,
-	NIM_SELECTED = 2,
-	NIM_CHILDREN_VISIBLE = 3,
+enum ImReturnCode {
+	IM_NONE = 0,
+	IM_CLICKED = 1,
+	IM_SELECTED = 2,
+	IM_CHILDREN_VISIBLE = 3,
 };
 
-struct NimModifier {
+struct ImModifier {
 	unsigned int color;
 	unsigned int width_x_type;
 	unsigned int width_x;
@@ -37,12 +37,12 @@ struct NimModifier {
 };
 
 int im_get_dpi(void);
-#define dp_to_px(dp) ((im_get_dpi() * dp) / 160)
+#define dp_to_px(dp) ((im_get_dpi() * (dp)) / 160)
 
 int im_push_disabled(void);
 int im_pop_disabled(void);
 
-/// @returns NIM_CHILDREN_VISIBLE
+/// @returns IM_CHILDREN_VISIBLE
 int im_tab(void);
 int im_add_tab_item(const char *title);
 void im_end_tab_item(void);
@@ -55,7 +55,7 @@ void im_end_combo_box(void);
 int im_checkbox_label(const char *label, int *checked);
 
 int im_button(const char *label);
-int im_button_ex(const char *label, struct NimModifier *mod);
+int im_button_ex(const char *label, struct ImModifier *mod);
 int im_label(const char *label);
 
 int im_window(const char *name, int width_dp, int height_dp);

@@ -1,5 +1,5 @@
-#ifndef NIM_INTERNAL_H
-#define NIM_INTERNAL_H
+#ifndef RIM_INTERNAL_H
+#define RIM_INTERNAL_H
 
 #include <stdint.h>
 #include <semaphore.h>
@@ -27,7 +27,7 @@ struct __attribute__((packed)) WidgetHeader {
 	// properties start here
 	// children start here
 };
-_Static_assert(sizeof(struct WidgetHeader) == 28+4, "fail size");
+_Static_assert(sizeof(struct WidgetHeader) == 28 + 4, "fail size");
 
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
@@ -38,43 +38,43 @@ struct __attribute__((packed)) WidgetProp {
 };
 _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 
-enum NimPropType {
-	NIM_PROP_WIN_TITLE = 1,
-	NIM_PROP_WIN_WIDTH = 2,
-	NIM_PROP_WIN_HEIGHT = 3,
-	NIM_PROP_TEXT,
-	NIM_PROP_META,
+enum RimPropType {
+	RIM_PROP_WIN_TITLE = 1,
+	RIM_PROP_WIN_WIDTH = 2,
+	RIM_PROP_WIN_HEIGHT = 3,
+	RIM_PROP_TEXT,
+	RIM_PROP_META,
 };
 
-enum NimWidgetType {
-	// 1-0xfff is reserved for Nim
+enum RimWidgetType {
+	// 1-0xfff is reserved for Rim
 	// >=0x1000 is reserved for custom widgets
-	NIM_WINDOW = 1,
-	NIM_LABEL,
-	NIM_BUTTON,
-	NIM_PROGRESS_BAR,
-	NIM_IMAGE,
-	NIM_ENTRY,
-	NIM_SPINBOX,
-	NIM_SLIDER,
-	NIM_COMBOBOX,
-	NIM_RADIO,
-	NIM_DATE_PICKER,
-	NIM_TABLE,
-	NIM_LAYOUT_STATIC,
-	NIM_LAYOUT_DYNAMIC,
-	NIM_LAYOUT_FLEX,
-	NIM_CUSTOM,
-	NIM_NATIVE,
-	NIM_EOF,
+	RIM_WINDOW = 1,
+	RIM_LABEL,
+	RIM_BUTTON,
+	RIM_PROGRESS_BAR,
+	RIM_IMAGE,
+	RIM_ENTRY,
+	RIM_SPINBOX,
+	RIM_SLIDER,
+	RIM_COMBOBOX,
+	RIM_RADIO,
+	RIM_DATE_PICKER,
+	RIM_TABLE,
+	RIM_LAYOUT_STATIC,
+	RIM_LAYOUT_DYNAMIC,
+	RIM_LAYOUT_FLEX,
+	RIM_CUSTOM,
+	RIM_NATIVE,
+	RIM_EOF,
 };
 
-enum NimWidgetEvent {
-	NIM_EVENT_NONE = 0,
-	NIM_EVENT_CLICK = 1,
+enum RimWidgetEvent {
+	RIM_EVENT_NONE = 0,
+	RIM_EVENT_CLICK = 1,
 };
 
-struct NimTree {
+struct RimTree {
 	struct WidgetHeader *widget_stack[5];
 	int widget_stack_depth;
 	uint8_t *buffer;
@@ -82,7 +82,7 @@ struct NimTree {
 	int of;
 };
 
-struct NimEvent {
+struct RimEvent {
 	// Used to trace where the widget is in the tree
 	// So {1, 2, 3} would mean:
 	// - select child 1 of node 0
@@ -94,94 +94,94 @@ struct NimEvent {
 };
 
 /// @brief Generic data structure holding information on a property
-struct NimProp {
+struct RimProp {
 	int type;
 	const char *value;
 };
 
-typedef void nim_on_run_callback(void *priv);
+typedef void rim_on_run_callback(void *priv);
 
-typedef int nim_on_create_widget(struct NimContext *ctx, struct WidgetHeader *w);
-typedef int nim_on_tweak_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop);
-typedef int nim_on_append_widget(struct NimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-typedef int nim_on_destroy_widget(struct NimContext *ctx, struct WidgetHeader *w);
-typedef int nim_on_run(struct NimContext *ctx, nim_on_run_callback *callback);
+typedef int rim_on_create_widget(struct RimContext *ctx, struct WidgetHeader *w);
+typedef int rim_on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop);
+typedef int rim_on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+typedef int rim_on_destroy_widget(struct RimContext *ctx, struct WidgetHeader *w);
+typedef int rim_on_run(struct RimContext *ctx, rim_on_run_callback *callback);
 
-struct NimContext {
+struct RimContext {
 	struct WidgetHeader *header;
-	struct NimTree *tree_old;
-	struct NimTree *tree_new;
-	//int of;
+	struct RimTree *tree_old;
+	struct RimTree *tree_new;
+	// int of;
 
 	// Backend context pointer
 	void *priv;
 
 	/// @brief Create a backend widget given the widget header
-	nim_on_create_widget *create;
+	rim_on_create_widget *create;
 	/// @brief Change a property of a backend widget
-	nim_on_tweak_widget *tweak;
+	rim_on_tweak_widget *tweak;
 	/// @brief Append a backend widget to a parent backend widget.
 	/// @todo What should happen if a widget can't be appended to something?
-	nim_on_append_widget *append;
+	rim_on_append_widget *append;
 	/// @brief Destroy the backend widget and all of its children
-	nim_on_destroy_widget *destroy;
+	rim_on_destroy_widget *destroy;
 	/// @brief Queue a function to run in the UI backend thread
-	nim_on_run *run;
+	rim_on_run *run;
 
 	// Dummy event counter
 	int event_counter;
 
 	sem_t event_sig; // main event signal
-	struct NimEvent last_event;
+	struct RimEvent last_event;
 };
 
 /// @brief Create a widget tree
-struct NimTree *nim_create_tree(void);
+struct RimTree *rim_create_tree(void);
 
 /// @brief Reset a tree to empty
-void nim_reset_tree(struct NimTree *tree);
+void rim_reset_tree(struct RimTree *tree);
 
-/// @brief Setup fields of NimBackend
-void nim_init_backend(struct NimContext *backend);
+/// @brief Setup fields of RimBackend
+void rim_init_backend(struct RimContext *backend);
 
 /// @brief Add widget to tree and make it the current widget
-void nim_add_widget(struct NimTree *tree, enum NimWidgetType type, int allowed_children);
+void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children);
 /// @brief End adding properties or children to the current widget and switch to it's parent
-void nim_end_widget(struct NimTree *tree);
+void rim_end_widget(struct RimTree *tree);
 /// @brief Add a property with a string being the only payload
-void nim_add_prop_text(struct NimTree *tree, enum NimPropType type, const char *value);
+void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *value);
 
 /// @brief Find property in widget from PropType
-int nim_get_prop(struct WidgetHeader *h, struct NimProp *np, int type);
+int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
 
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.
 /// @brief The start widget and all of it's sublings will be appended to `parent`.
 /// @depth Optional, for debugging
-int nim_init_tree_widgets(struct NimContext *ctx, struct NimTree *tree, int base, struct WidgetHeader *parent, int depth);
+int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent, int depth);
 
 /// @brief Returns a pointer to the tree to currently append to.
 /// Will never return NULL.
-struct NimTree *nim_get_current_tree(void);
+struct RimTree *rim_get_current_tree(void);
 
 // Get event code for last created event
-int nim_last_widget_event(void);
+int rim_last_widget_event(void);
 
 /// @brief backend calls this when a widget has an event
-void nim_on_widget_event(struct NimContext *ctx, enum NimWidgetEvent event, int unique_id);
+void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id);
 
 // Run the differ using old and new tree
-int nim_diff_tree(struct NimContext *ctx);
+int rim_diff_tree(struct RimContext *ctx);
 
 // debugging only
-const char *nim_eval_widget_type(int type);
+const char *rim_eval_widget_type(int type);
 // debugging only
-int nim_abort(const char *reason);
+int rim_abort(const char *reason);
 
 /// @brief To be used sparingly, hopefully not permanently
-struct NimContext *nim_get_global_ctx(void);
+struct RimContext *rim_get_global_ctx(void);
 
 // Demo UIs
-int nim_demo_window1(int state);
-int nim_demo_window2(int state);
+int rim_demo_window1(int state);
+int rim_demo_window2(int state);
 
 #endif
