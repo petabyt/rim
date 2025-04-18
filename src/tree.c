@@ -6,6 +6,14 @@
 #include <assert.h>
 #include "rim_internal.h"
 
+// Ensure 'size' can fit into the space left in the buffer
+static void ensure_buffer_size(struct RimTree *tree, unsigned int size) {
+	if (tree->buffer_length < (tree->of + size)) {
+		tree->buffer = realloc(tree->buffer, size + 1000);
+		tree->buffer_length = size + 1000;
+	}
+}
+
 #define CONFIG_ALIGNMENT_CHECKS
 
 // All data written to/from the tree must be 32 bit aligned
@@ -83,10 +91,8 @@ void rim_end_widget(struct RimTree *tree) {
 }
 
 void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children) {
+	ensure_buffer_size(tree, sizeof(struct WidgetHeader));
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
-	if (tree->of + sizeof(struct WidgetHeader) > tree->buffer_length) {
-		rim_abort("buffer overflow");
-	}
 	h->type = type;
 	h->n_children = 0;
 	h->n_props = 0;
@@ -100,7 +106,10 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 		// We want to know if it allows children, and if we can add this widget to it.
 		// If so, increment n_children. Else we end the preceding widget
 		struct WidgetHeader *potential_parent = tree->widget_stack[tree->widget_stack_depth - 1];
-#if 0 // caused problems
+
+		// TODO: Ending widget a widget automatically caused issues
+		// allowed_children is potentially not even needed in the first place
+#if 0
 		if (potential_parent->allowed_children != 0xffffffff && potential_parent->allowed_children >= potential_parent->n_children) {
 			end_widget(tree);
 		}
@@ -115,7 +124,7 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 
 	tree->widget_stack[tree->widget_stack_depth] = h;
 	tree->widget_stack_depth++;
-	if (tree->widget_stack_depth == 5) {
+	if (tree->widget_stack_depth == TREE_MAX_DEPTH) {
 		rim_abort("Max depth reached");
 	}
 }
@@ -125,6 +134,7 @@ void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *
 		printf("No widget to add property to\n");
 		abort();
 	}
+	ensure_buffer_size(tree, sizeof(struct WidgetProp) + strlen(value) + 1); // nitpick: double strlen
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
 	prop->length = 8;

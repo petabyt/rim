@@ -11,7 +11,7 @@ static int on_free_widget(struct RimContext *ctx, struct WidgetHeader *w) {
 	printf("Freeing a widget\n");
 	return 0;
 }
-static int on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop) {
+static int on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
 	printf("Tweaking a widget\n");
 	return 0;
 }

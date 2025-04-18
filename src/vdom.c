@@ -36,7 +36,6 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 	}
 
 	for (size_t i = 0; i < h->n_props; i++) {
-		// TODO: Assumes string type
 		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
 		of += (int)p->length;
 	}
@@ -84,29 +83,38 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		struct WidgetProp *old_p = (struct WidgetProp *)(tree_old->buffer + old_of);
 		struct WidgetProp *new_p = (struct WidgetProp *)(tree_new->buffer + new_of);
 
-		// If deleting tree, we don't care about properties (unless if there's something that needs to be freed)
-		if (!(flag & FLAG_DELETE)) {
+		// TODO: Should compare prop types?
+
+		if (flag & FLAG_DELETE) {
+			// If deleting tree, we don't care about properties (unless if there's something that needs to be freed)			
+		} else {
 			if (i >= old_h->n_props) {
-				printf("property added\n");
+				ctx->tweak(ctx, new_h, new_p, NIM_PROP_ADDED);
 				new_of += (int)new_p->length;
 				continue;
 			} else if (i >= new_h->n_props) {
-				printf("property removed\n");
+				// This is a naive way of doing this because properties could not be ordered in the same
+				// way as in the last tree, leading to a the wrong property being removed.
+				ctx->tweak(ctx, new_h, old_p, NIM_PROP_REMOVED);
 				old_of += (int)old_p->length;
 				continue;
 			}
 
 			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
-				printf("property %d same state\n", (int)i);
+				// Property has the same state
 			} else {
-				printf("property %d in %d changed\n", (int)i, old_h->unique_id);
-				ctx->tweak(ctx, new_h, new_p);
+				ctx->tweak(ctx, new_h, new_p, NIM_PROP_CHANGED);
 			}
 		}
 
 		old_of += (int)old_p->length;
 		new_of += (int)new_p->length;
 	}
+
+	// TODO this is broken, need to:
+	// diff():
+	//   if child added: ctx->create, append to parent
+	//   if child removed: delete, remove from parent
 
 	uint32_t max_n_child = old_h->n_children;
 	if (new_h->n_children > max_n_child)
@@ -117,6 +125,7 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		if (i >= old_h->n_children) {
 			if (!(flag & FLAG_IGNORE)) {
 				printf("child added to tree\n");
+				backend->append
 				//				printf("Unimplemented"); abort();
 				// backend->append(backend->priv, new_h, )
 			}

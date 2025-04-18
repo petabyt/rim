@@ -74,11 +74,18 @@ enum RimWidgetEvent {
 	RIM_EVENT_CLICK = 1,
 };
 
+enum RimPropTrigger {
+	RIM_PROP_CHANGED,
+	RIM_PROP_ADDED,
+	RIM_PROP_REMOVED,
+}
+
 struct RimTree {
-	struct WidgetHeader *widget_stack[5];
+#define TREE_MAX_DEPTH 5
+	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
-	int buffer_length;
+	unsigned int buffer_length;
 	int of;
 };
 
@@ -102,7 +109,7 @@ struct RimProp {
 typedef void rim_on_run_callback(void *priv);
 
 typedef int rim_on_create_widget(struct RimContext *ctx, struct WidgetHeader *w);
-typedef int rim_on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop);
+typedef int rim_on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
 typedef int rim_on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 typedef int rim_on_destroy_widget(struct RimContext *ctx, struct WidgetHeader *w);
 typedef int rim_on_run(struct RimContext *ctx, rim_on_run_callback *callback);
@@ -111,7 +118,6 @@ struct RimContext {
 	struct WidgetHeader *header;
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
-	// int of;
 
 	// Backend context pointer
 	void *priv;
