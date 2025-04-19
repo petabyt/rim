@@ -8,10 +8,6 @@
 
 static struct RimContext *global_context = NULL;
 
-int rim_generate_unique_id(struct RimContext *ctx) {
-	return 0;
-}
-
 // Initializes a tree with no previous tree
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
 	int of = 0;
@@ -24,14 +20,12 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 
 	int rc = ctx->create(ctx, h);
 	if (rc) {
-		printf("Couldn't create widget %s\n", rim_eval_widget_type(h->type));
-		abort();
+		rim_abort("Couldn't create widget %s\n", rim_eval_widget_type(h->type));
 	}
 
 	rc = ctx->append(ctx, h, parent);
 	if (rc) {
-		printf("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
-		abort();
+		rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
 	}
 
 	for (size_t i = 0; i < h->n_props; i++) {
@@ -69,10 +63,11 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 		rim_abort("Couldn't destroy widget\n");
 	}
 
+	h->is_detached = 1;
+
 	rc = ctx->destroy(ctx, h);
 	if (rc) {
-		printf("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
-		abort();
+		rim_abort("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
 	}
 
 	return of;
@@ -81,28 +76,25 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
 static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, struct WidgetHeader *parent) {
-	int old_of = *old_of_p;
-	int new_of = *new_of_p;
+	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
+	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
 
-	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + old_of);
-	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + new_of);
-
+	// Special handling for when the new tree has nothing, and the old tree didn't
 	if (ctx->tree_new->of == 0) {
 		if (ctx->tree_old->of != 0) {
-			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, parent);
+			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
 		}
 		return 0;
 	}
 	if (ctx->tree_old->of == 0) {
-		rim_abort("Should this function init the tree\n");
+		rim_abort("Should this function init the tree?\n");
 	}
 
 	if (old_h->type != new_h->type) {
 		// Type has changed in this widget so we'll assume the rest of the tree is unusable.
 		// So: Destroy widgets in old tree, init widgets in new tree.
-		// Only problem is that rim_init_tree_widgets will append widgets to the end
-		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, parent);
-		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, parent);
+		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
+		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, (*new_of_p), parent);
 		return 0;
 	} else {
 		// Same type, copy over handles
@@ -110,24 +102,24 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		new_h->os_handle = old_h->os_handle;
 	}
 
-	new_of += sizeof(struct WidgetHeader);
-	old_of += sizeof(struct WidgetHeader);
+	(*new_of_p) += sizeof(struct WidgetHeader);
+	(*old_of_p) += sizeof(struct WidgetHeader);
 
 	uint32_t max_n_props = max(old_h->n_props, new_h->n_props);
 	for (size_t i = 0; i < max_n_props; i++) {
-		struct WidgetProp *old_p = (struct WidgetProp *)(ctx->tree_old->buffer + old_of);
-		struct WidgetProp *new_p = (struct WidgetProp *)(ctx->tree_new->buffer + new_of);
+		struct WidgetProp *old_p = (struct WidgetProp *)(ctx->tree_old->buffer + (*old_of_p));
+		struct WidgetProp *new_p = (struct WidgetProp *)(ctx->tree_new->buffer + (*new_of_p));
 
 		// TODO: Rewrite and test the types of both properties
 		if (i >= old_h->n_props) {
 			ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED);
-			new_of += (int)new_p->length;
+			(*new_of_p) += (int)new_p->length;
 			continue;
 		} else if (i >= new_h->n_props) {
 			// This is a naive way of doing this because properties could not be ordered in the same
 			// way as in the last tree, leading to a the wrong property being removed.
 			ctx->tweak(ctx, new_h, old_p, RIM_PROP_ADDED);
-			old_of += (int)old_p->length;
+			(*old_of_p) += (int)old_p->length;
 			continue;
 		}
 
@@ -137,14 +129,12 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 			ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED);
 		}
 
-		old_of += (int)old_p->length;
-		new_of += (int)new_p->length;
+		(*old_of_p) += (int)old_p->length;
+		(*new_of_p) += (int)new_p->length;
 	}
 
 	uint32_t max_n_child = max(old_h->n_children, new_h->n_children);
 
-	(*old_of_p) = old_of;
-	(*new_of_p) = new_of;
 	for (size_t i = 0; i < max_n_child; i++) {
 		if (i >= old_h->n_children) {
 			// Child added to tree
@@ -165,20 +155,19 @@ int rim_diff_tree(struct RimContext *ctx) {
 	int new_of = 0;
 	return rim_patch_tree(ctx, &old_of, &new_of, NULL);
 }
-
-struct RimTree *rim_get_current_tree(void) {
-	if (global_context == NULL) {
-		rim_abort("global_context null");
-	}
-	return global_context->tree_new;
-}
 rim_ctx_t *rim_get_global_ctx(void) {
+	if (global_context == NULL) {
+		rim_abort("global_context is NULL\n");
+	}
 	return global_context;
+}
+struct RimTree *rim_get_current_tree(void) {
+	return rim_get_global_ctx()->tree_new;
 }
 int rim_last_widget_event(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	if (ctx->event_counter) {
-		// Checking the last created widget for the unique ID is a very nieve way of doing this
+		// Checking the last created widget for the unique ID is a very naive way of doing this
 		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth];
 		if (match->unique_id == ctx->last_event.unique_id) {
 			ctx->event_counter--;
@@ -191,7 +180,7 @@ int rim_last_widget_event(void) {
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
 	ctx->last_event.type = event;
 	ctx->last_event.unique_id = unique_id;
-	ctx->event_counter++;
+	ctx->event_counter += 2;
 	sem_post(&ctx->event_sig);
 }
 

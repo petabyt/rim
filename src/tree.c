@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdarg.h>
 #include "rim_internal.h"
 
 // Ensure 'size' can fit into the space left in the buffer
@@ -67,8 +68,11 @@ const char *rim_eval_widget_type(int type) {
 	abort();
 }
 
-int rim_abort(const char *reason) {
-	puts(reason);
+void rim_abort(char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
 	abort();
 }
 
@@ -97,6 +101,7 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	h->n_children = 0;
 	h->n_props = 0;
 	h->os_handle = 0;
+	h->is_detached = 0;
 	h->unique_id = tree->of; // Use a better ID instead of an offset?
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
@@ -131,8 +136,7 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 
 void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *value) {
 	if (tree->widget_stack_depth == 0) {
-		printf("No widget to add property to\n");
-		abort();
+		rim_abort("No widget to add property to\n");
 	}
 	ensure_buffer_size(tree, sizeof(struct WidgetProp) + strlen(value) + 1); // nitpick: double strlen
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
@@ -178,10 +182,13 @@ int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
 		of += p->length;
 	}
 
-	for (size_t i = 0; i < parent->n_children; i++) {
+	unsigned int skip = 0;
+
+	for (unsigned int i = 0; i < parent->n_children; i++) {
 		struct WidgetHeader *c = (struct WidgetHeader *)(parent->data + of);
+		if (c->is_detached) skip++;
 		if (w->unique_id == c->unique_id) {
-			return (int)i;
+			return (int)(i - skip);
 		}
 		of += rim_get_node_length(c);
 	}

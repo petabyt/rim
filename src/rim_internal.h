@@ -17,8 +17,8 @@ struct __attribute__((packed)) WidgetHeader {
 	uint32_t n_props;
 	// Unique ID (only modified by UI backend and tree patcher)
 	uint32_t unique_id;
-
-	uint32_t res0; // extra 4 bytes to ensure 8 alignment
+	// 1 if this node is dead (has no effect on backend)
+	uint32_t is_detached;
 
 	// Pointer handle for UI backend
 	// Note: may not be aligned by 8 bytes. May need to do two 32 bit loads.
@@ -127,7 +127,6 @@ struct RimContext {
 	/// @brief Queue a function to run in the UI backend thread
 	int (*run)(struct RimContext *ctx, rim_on_run_callback *callback);
 
-
 	// Only one event is processed at a time
 	struct RimEvent last_event;
 	// Used by rim_poll for how many times to return
@@ -155,20 +154,19 @@ void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *
 /// @brief Find property in widget from PropType
 int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
 
+/// @brief Find the length of a node (so it can be skipped through)
 unsigned int rim_get_node_length(struct WidgetHeader *w);
 
+// Get the index of a child using it's parent
 int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent);
 
+/// @brief Find a node in a tree via it's ID
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id);
 
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.
 /// @brief The start widget and all of it's sublings will be appended to `parent`.
 /// @depth Optional, for debugging
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent);
-
-/// @brief Returns a pointer to the tree to currently append to.
-/// Will never return NULL.
-struct RimTree *rim_get_current_tree(void);
 
 // Get event code for last created event
 int rim_last_widget_event(void);
@@ -181,8 +179,13 @@ int rim_diff_tree(struct RimContext *ctx);
 
 // debugging only
 const char *rim_eval_widget_type(int type);
+
 // debugging only
-int rim_abort(const char *reason);
+void rim_abort(char *fmt, ...);
+
+/// @brief Returns a pointer to the tree to currently append to.
+/// Will never return NULL.
+struct RimTree *rim_get_current_tree(void);
 
 /// @brief To be used sparingly, hopefully not permanently
 struct RimContext *rim_get_global_ctx(void);

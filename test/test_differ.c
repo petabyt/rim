@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <rim.h>
+#include <im.h>
 #include <rim_internal.h>
 
 static int on_create_widget(struct RimContext *ctx, struct WidgetHeader *w) {
@@ -58,29 +59,43 @@ static int build_ui(struct RimTree *tree, int state) {
 	return 0;
 }
 
+static void build_ui2(int state) {
+	if (im_window("My Window", 400, 400)) {
+		char buffer[64];
+		sprintf(buffer, "State: %04d\n", state);
+		im_label(buffer);
+		if (state & 1) {
+			im_label("Hello, World");
+		}
+		if (im_button("Show More")) {
+			
+		}
+	}
+}
+
+static void swap_trees(struct RimContext *ctx) {
+	struct RimTree *temp = ctx->tree_old;
+	ctx->tree_old = ctx->tree_new;
+	ctx->tree_new = temp;
+	rim_reset_tree(ctx->tree_new);
+}
+
 int main(void) {
-	struct RimContext ctx;
-	ctx.create = on_create_widget;
-	ctx.destroy = on_free_widget;
-	ctx.tweak = on_tweak_widget;
-	ctx.append = on_append_widget;
-	ctx.remove = on_remove_widget;
-	ctx.tree_new = rim_create_tree();
-	ctx.tree_old = rim_create_tree();
-	build_ui(ctx.tree_old, 1);
-	build_ui(ctx.tree_new, 0);
-	rim_init_tree_widgets(&ctx, ctx.tree_old, 0, NULL);
-	printf("--- diff 1 ---\n");
-	rim_diff_tree(&ctx);
+	struct RimContext *ctx = rim_init();
+	ctx->create = on_create_widget;
+	ctx->destroy = on_free_widget;
+	ctx->tweak = on_tweak_widget;
+	ctx->append = on_append_widget;
+	ctx->remove = on_remove_widget;
+	build_ui2(0);
+	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
 
-	struct RimTree *temp = ctx.tree_old;
-	ctx.tree_old = ctx.tree_new;
-	ctx.tree_new = temp;
-	rim_reset_tree(ctx.tree_new);
-	build_ui(ctx.tree_new, 2);
-
-	printf("--- diff 2 ---\n");
-	rim_diff_tree(&ctx);
+	for (int i = 0; i < 10; i++) {
+		swap_trees(ctx);
+		build_ui2(i);
+		printf("--- diff %d ---\n", i);
+		rim_diff_tree(ctx);
+	}
 
 	return 0;
 }
