@@ -188,3 +188,25 @@ int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
 
 	return -1;
 }
+int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id) {
+	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
+
+	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + (*of));
+
+	if (h->unique_id == unique_id) return 1;
+
+	(*of) += sizeof(struct WidgetHeader);
+
+	for (size_t i = 0; i < h->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(tree->buffer + (*of));
+		(*of) += (int)p->length;
+	}
+
+	for (size_t i = 0; i < h->n_children; i++) {
+		if (rim_find_in_tree(tree, of, unique_id)) {
+			return 1;
+		}
+	}
+
+	return 0;
+}

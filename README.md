@@ -1,5 +1,5 @@
 # Rim
-*Retained <- Immediate Mode UI*
+*Retained &larr; Immediate Mode UI*
 
 A virtual DOM for retained mode UI libraries.
 

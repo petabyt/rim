@@ -80,9 +80,6 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-#define FLAG_DELETE (1 << 0)
-#define FLAG_IGNORE (1 << 1)
-
 static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, struct WidgetHeader *parent) {
 	int old_of = *old_of_p;
 	int new_of = *new_of_p;
@@ -144,8 +141,7 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		new_of += (int)new_p->length;
 	}
 
-	uint32_t max_n_child = old_h->n_children;
-	if (new_h->n_children > max_n_child) max_n_child = new_h->n_children;
+	uint32_t max_n_child = max(old_h->n_children, new_h->n_children);
 
 	(*old_of_p) = old_of;
 	(*new_of_p) = new_of;
@@ -180,6 +176,15 @@ rim_ctx_t *rim_get_global_ctx(void) {
 	return global_context;
 }
 int rim_last_widget_event(void) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	if (ctx->event_counter) {
+		// Checking the last created widget for the unique ID is a very nieve way of doing this
+		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth];
+		if (match->unique_id == ctx->last_event.unique_id) {
+			ctx->event_counter--;
+			return ctx->last_event.type;
+		}
+	}
 	return 0;
 }
 
@@ -209,21 +214,25 @@ static void work_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
 	printf("Initializing the tree for the first time\n");
 	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
+	sem_post(&ctx->event_sig);
 }
 
 static void diff_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
 	printf("Diffing tree\n");
 	rim_diff_tree(ctx);
+	sem_post(&ctx->event_sig);
 }
 
 int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
 		ctx->run(ctx, work_tree);
+		sem_wait(&ctx->event_sig);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents
 		ctx->run(ctx, diff_tree);
+		sem_wait(&ctx->event_sig);
 	}
 
 	if (ctx->event_counter) {

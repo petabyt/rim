@@ -77,21 +77,21 @@ int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		} else {
 			w->os_handle = (uintptr_t)handle;
 		}
-	} return 0;
+		} return 0;
 	case RIM_BUTTON: {
 		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
 		uiButton *handle = uiNewButton(prop.value);
 		uiButtonOnClicked(handle, button_clicked, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
-	} return 0;
+		} return 0;
 	case RIM_LABEL: {
 		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
 		uiLabel *handle = uiNewLabel(prop.value);
 		w->os_handle = (uintptr_t)handle;
-	} return 0;
+		} return 0;
 	case RIM_LAYOUT_STATIC: {
 		w->os_handle = (uintptr_t)uiNewHorizontalBox();
-	} return 0;
+		} return 0;
 	}
 	return 1;
 }

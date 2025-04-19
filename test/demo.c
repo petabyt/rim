@@ -8,15 +8,15 @@ int main(void) {
 	int show_more = 0;
 	int counter = 0;
 	while (rim_poll(ctx)) {
-		if (im_window("My Window", 640, 480)) {
+		if (im_window("My Window", 400, 400)) {
 			char buffer[64];
-			sprintf(buffer, "Events: %d\n", counter);
+			sprintf(buffer, "Events: %04d\n", counter);
 			im_label(buffer);
 
 			if (im_button("Show More")) {
-				show_more = 1;
+				show_more = !show_more;
 			}
-			if (counter & 1) {
+			if (show_more) {
 				im_label("Hello, World");
 			}
 			counter++;

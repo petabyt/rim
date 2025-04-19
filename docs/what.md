@@ -8,7 +8,7 @@ int main() {
 	rim_libui_init(ctx);
 	int show_more = 0;
 	while (rim_poll(ctx)) {
-		if (im_window("My Window", 400, 400, 0)) {
+		if (im_window("My Window", 400, 400)) {
 			if (im_button("Show More")) {
 				show_more = 1;
 			}

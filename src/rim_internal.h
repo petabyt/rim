@@ -104,12 +104,6 @@ struct RimProp {
 typedef void rim_on_run_callback(void *priv);
 
 struct RimContext;
-typedef int rim_on_create_widget(struct RimContext *ctx, struct WidgetHeader *w);
-typedef int rim_on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
-typedef int rim_on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-typedef int rim_on_remove_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-typedef int rim_on_destroy_widget(struct RimContext *ctx, struct WidgetHeader *w);
-typedef int rim_on_run(struct RimContext *ctx, rim_on_run_callback *callback);
 
 struct RimContext {
 	struct WidgetHeader *header;
@@ -120,18 +114,18 @@ struct RimContext {
 	void *priv;
 
 	/// @brief Create a backend widget given the widget header
-	rim_on_create_widget *create;
+	int (*create)(struct RimContext *ctx, struct WidgetHeader *w);
 	/// @brief Change a property of a backend widget
-	rim_on_tweak_widget *tweak;
+	int (*tweak)(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
 	/// @brief Append a backend widget to a parent backend widget.
 	/// @todo What should happen if a widget can't be appended to something?
-	rim_on_append_widget *append;
+	int (*append)(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 	/// @brief Remove a widget from a parent
-	rim_on_remove_widget *remove;
+	int (*remove)(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 	/// @brief Free the widget from memory
-	rim_on_destroy_widget *destroy;
+	int (*destroy)(struct RimContext *ctx, struct WidgetHeader *w);
 	/// @brief Queue a function to run in the UI backend thread
-	rim_on_run *run;
+	int (*run)(struct RimContext *ctx, rim_on_run_callback *callback);
 
 
 	// Only one event is processed at a time
@@ -164,6 +158,8 @@ int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
 unsigned int rim_get_node_length(struct WidgetHeader *w);
 
 int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent);
+
+int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id);
 
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.
 /// @brief The start widget and all of it's sublings will be appended to `parent`.
