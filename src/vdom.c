@@ -184,14 +184,16 @@ int rim_last_widget_event(void) {
 }
 
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
-	printf("TODO: Do something to give state loop event info\n");
+	ctx->last_event.type = event;
+	ctx->last_event.unique_id = unique_id;
+	ctx->event_counter++;
 	sem_post(&ctx->event_sig);
 }
 
 struct RimContext *rim_init(void) {
 	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
 	ctx->header = 0;
-	ctx->event_counter = 1;
+	ctx->event_counter = 1; // 1 event for rim_poll to be called twice at beginning
 
 	ctx->tree_new = rim_create_tree();
 	ctx->tree_old = rim_create_tree();
@@ -229,6 +231,10 @@ int rim_poll(rim_ctx_t *ctx) {
 	} else {
 		// Wait on external event
 		sem_wait(&ctx->event_sig);
+		// For now just close on any window event
+		if (ctx->last_event.type == RIM_EVENT_WINDOW_CLOSE) {
+			return 0;
+		}
 	}
 
 	// Switch trees, reuse old tree as new tree

@@ -2,7 +2,7 @@
 #include <rim.h>
 #include <im.h>
 
-int main() {
+int main(void) {
 	struct RimContext *ctx = rim_init();
 	rim_libui_init(ctx);
 	int show_more = 0;

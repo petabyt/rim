@@ -91,14 +91,8 @@ struct RimTree {
 };
 
 struct RimEvent {
-	// Used to trace where the widget is in the tree
-	// So {1, 2, 3} would mean:
-	// - select child 1 of node 0
-	// - select child 2 of selected node
-	// - select child 3 of selected node
-	int branch[5];
-	int widget_type;
-	int event_type;
+	int unique_id;
+	enum RimWidgetEvent type;
 };
 
 /// @brief Generic data structure holding information on a property
@@ -139,11 +133,13 @@ struct RimContext {
 	/// @brief Queue a function to run in the UI backend thread
 	rim_on_run *run;
 
-	// Dummy event counter
-	int event_counter;
 
-	sem_t event_sig; // main event signal
+	// Only one event is processed at a time
 	struct RimEvent last_event;
+	// Used by rim_poll for how many times to return
+	int event_counter;
+	// main event signal
+	sem_t event_sig;
 };
 
 /// @brief Create a widget tree
