@@ -16,7 +16,7 @@ int main() {
 			if (im_button("Show More")) {
 				show_more = 1;
 			}
-			if (show_more) {
+			if (counter & 1) {
 				im_label("Hello, World");
 			}
 			counter++;

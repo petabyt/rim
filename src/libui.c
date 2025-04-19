@@ -19,12 +19,32 @@ struct Priv {
 	sem_t wait_until_ready;
 };
 
+int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	if (parent == NULL) {
+		// Is this even needed?
+		uiControlHide((uiControl *)w->os_handle);
+		return 0;
+	}
+
+	switch (parent->type) {
+	case RIM_WINDOW:
+	case RIM_LAYOUT_STATIC: {
+		int index = rim_get_child_index(w, parent);
+		if (index == -1) rim_abort("child index failed\n");
+		uiBoxDelete((uiBox *)parent->os_handle, index);
+		} return 0;
+	}
+	return 1;
+}
+
 int on_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
 	case RIM_WINDOW:
 	case RIM_BUTTON:
+	case RIM_LABEL:
 	case RIM_LAYOUT_STATIC:
 		uiControlDestroy((uiControl *)w->os_handle);
+		return 0;
 	}
 	return 1;
 }
@@ -32,7 +52,7 @@ int on_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 static int window_closed(uiWindow *w, void *arg) {
 	uiQuit();
 	struct RimContext *ctx = rim_get_global_ctx();
-	rim_on_widget_event(ctx, RIM_EVENT_CLICK, (int)(uintptr_t)arg);
+	rim_on_widget_event(ctx, RIM_EVENT_WINDOW_CLOSE, (int)(uintptr_t)arg);
 	return 1;
 }
 
@@ -100,8 +120,11 @@ int on_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 	}
 	return 1;
 }
+int on_unappend(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	return 0;
+}
 
-int on_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop) {
+int on_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
 	switch (w->type) {
 	case RIM_LABEL:
 		if (prop->type == RIM_PROP_TEXT) {
@@ -153,6 +176,7 @@ int rim_libui_init(rim_ctx_t *ctx) {
 	ctx->tweak = on_tweak;
 	ctx->append = on_append;
 	ctx->destroy = on_destroy;
+	ctx->remove = on_remove;
 	ctx->run = on_run;
 
 	ctx->priv = malloc(sizeof(struct Priv));

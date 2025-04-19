@@ -157,3 +157,34 @@ int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type) {
 	}
 	return -1;
 }
+
+unsigned int rim_get_node_length(struct WidgetHeader *w) {
+	unsigned int of = 0;
+	for (size_t i = 0; i < w->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(w->data + of);
+		of += p->length;
+	}
+	for (size_t i = 0; i < w->n_children; i++) {
+		struct WidgetHeader *c = (struct WidgetHeader *)(w->data + of);
+		of += rim_get_node_length(c);
+	}
+	return sizeof(struct WidgetHeader) + of;
+}
+
+int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
+	unsigned int of = 0;
+	for (size_t i = 0; i < parent->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(parent->data + of);
+		of += p->length;
+	}
+
+	for (size_t i = 0; i < parent->n_children; i++) {
+		struct WidgetHeader *c = (struct WidgetHeader *)(parent->data + of);
+		if (w->unique_id == c->unique_id) {
+			return (int)i;
+		}
+		of += rim_get_node_length(c);
+	}
+
+	return -1;
+}

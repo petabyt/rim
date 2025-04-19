@@ -72,16 +72,17 @@ enum RimWidgetType {
 enum RimWidgetEvent {
 	RIM_EVENT_NONE = 0,
 	RIM_EVENT_CLICK = 1,
+	RIM_EVENT_WINDOW_CLOSE = 2,
 };
 
 enum RimPropTrigger {
 	RIM_PROP_CHANGED,
 	RIM_PROP_ADDED,
 	RIM_PROP_REMOVED,
-}
+};
 
-struct RimTree {
 #define TREE_MAX_DEPTH 5
+struct RimTree {
 	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
@@ -108,9 +109,11 @@ struct RimProp {
 
 typedef void rim_on_run_callback(void *priv);
 
+struct RimContext;
 typedef int rim_on_create_widget(struct RimContext *ctx, struct WidgetHeader *w);
 typedef int rim_on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
 typedef int rim_on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+typedef int rim_on_remove_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 typedef int rim_on_destroy_widget(struct RimContext *ctx, struct WidgetHeader *w);
 typedef int rim_on_run(struct RimContext *ctx, rim_on_run_callback *callback);
 
@@ -129,7 +132,9 @@ struct RimContext {
 	/// @brief Append a backend widget to a parent backend widget.
 	/// @todo What should happen if a widget can't be appended to something?
 	rim_on_append_widget *append;
-	/// @brief Destroy the backend widget and all of its children
+	/// @brief Remove a widget from a parent
+	rim_on_remove_widget *remove;
+	/// @brief Free the widget from memory
 	rim_on_destroy_widget *destroy;
 	/// @brief Queue a function to run in the UI backend thread
 	rim_on_run *run;
@@ -160,10 +165,14 @@ void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *
 /// @brief Find property in widget from PropType
 int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
 
+unsigned int rim_get_node_length(struct WidgetHeader *w);
+
+int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent);
+
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.
 /// @brief The start widget and all of it's sublings will be appended to `parent`.
 /// @depth Optional, for debugging
-int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent, int depth);
+int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent);
 
 /// @brief Returns a pointer to the tree to currently append to.
 /// Will never return NULL.

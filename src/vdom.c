@@ -13,12 +13,11 @@ int rim_generate_unique_id(struct RimContext *ctx) {
 }
 
 // Initializes a tree with no previous tree
-int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent, int depth) {
+int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
 	int of = 0;
 	uint8_t *buffer = tree->buffer + base;
 
-	if (tree->of < (int)sizeof(struct WidgetHeader))
-		return 0;
+	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
 
 	struct WidgetHeader *h = (struct WidgetHeader *)(buffer + of);
 	of += sizeof(struct WidgetHeader);
@@ -41,106 +40,125 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 	}
 
 	for (size_t i = 0; i < h->n_children; i++) {
-		of += rim_init_tree_widgets(ctx, tree, base + of, h, depth + 1);
+		of += rim_init_tree_widgets(ctx, tree, base + of, h);
 	}
 
 	return of;
 }
 
+int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
+	int of = 0;
+	uint8_t *buffer = tree->buffer + base;
+
+	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
+
+	struct WidgetHeader *h = (struct WidgetHeader *)(buffer + of);
+	of += sizeof(struct WidgetHeader);
+
+	for (size_t i = 0; i < h->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
+		of += (int)p->length;
+	}
+
+	for (size_t i = 0; i < h->n_children; i++) {
+		of += rim_destroy_tree_widgets(ctx, tree, base + of, parent);
+	}
+
+	int rc = ctx->remove(ctx, h, parent);
+	if (rc) {
+		rim_abort("Couldn't destroy widget\n");
+	}
+
+	rc = ctx->destroy(ctx, h);
+	if (rc) {
+		printf("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
+		abort();
+	}
+
+	return of;
+}
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 #define FLAG_DELETE (1 << 0)
 #define FLAG_IGNORE (1 << 1)
 
-static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, int flag) {
-	struct RimTree *tree_old = ctx->tree_old;
-	struct RimTree *tree_new = ctx->tree_new;
+static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, struct WidgetHeader *parent) {
 	int old_of = *old_of_p;
 	int new_of = *new_of_p;
 
-	struct WidgetHeader *old_h = (struct WidgetHeader *)(tree_old->buffer + old_of);
-	old_of += sizeof(struct WidgetHeader);
-	struct WidgetHeader *new_h = (struct WidgetHeader *)(tree_new->buffer + new_of);
-	new_of += sizeof(struct WidgetHeader);
+	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + old_of);
+	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + new_of);
+
+	if (ctx->tree_new->of == 0) {
+		if (ctx->tree_old->of != 0) {
+			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, parent);
+		}
+		return 0;
+	}
+	if (ctx->tree_old->of == 0) {
+		rim_abort("Should this function init the tree\n");
+	}
 
 	if (old_h->type != new_h->type) {
-		// Type has changed in this widget so we'll assume the rest of the tree is unusable
-		flag |= FLAG_DELETE;
+		// Type has changed in this widget so we'll assume the rest of the tree is unusable.
+		// So: Destroy widgets in old tree, init widgets in new tree.
+		// Only problem is that rim_init_tree_widgets will append widgets to the end
+		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, parent);
+		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, parent);
+		return 0;
 	} else {
 		// Same type, copy over handles
 		new_h->unique_id = old_h->unique_id;
 		new_h->os_handle = old_h->os_handle;
 	}
 
-	// TODO: Should there be a function to free the rest of a node
-	// as well as initing the rest of a node?
+	new_of += sizeof(struct WidgetHeader);
+	old_of += sizeof(struct WidgetHeader);
 
-	// If the type of the node has changed or something else that makes the node unusable, we need to
-	// free the old tree, and init the new tree.
-
-	uint32_t max_n_props = old_h->n_props;
-	if (new_h->n_props > max_n_props)
-		max_n_props = new_h->n_props;
+	uint32_t max_n_props = max(old_h->n_props, new_h->n_props);
 	for (size_t i = 0; i < max_n_props; i++) {
-		struct WidgetProp *old_p = (struct WidgetProp *)(tree_old->buffer + old_of);
-		struct WidgetProp *new_p = (struct WidgetProp *)(tree_new->buffer + new_of);
+		struct WidgetProp *old_p = (struct WidgetProp *)(ctx->tree_old->buffer + old_of);
+		struct WidgetProp *new_p = (struct WidgetProp *)(ctx->tree_new->buffer + new_of);
 
-		// TODO: Should compare prop types?
+		// TODO: Rewrite and test the types of both properties
+		if (i >= old_h->n_props) {
+			ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED);
+			new_of += (int)new_p->length;
+			continue;
+		} else if (i >= new_h->n_props) {
+			// This is a naive way of doing this because properties could not be ordered in the same
+			// way as in the last tree, leading to a the wrong property being removed.
+			ctx->tweak(ctx, new_h, old_p, RIM_PROP_ADDED);
+			old_of += (int)old_p->length;
+			continue;
+		}
 
-		if (flag & FLAG_DELETE) {
-			// If deleting tree, we don't care about properties (unless if there's something that needs to be freed)			
+		if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
+			// Property has the same state
 		} else {
-			if (i >= old_h->n_props) {
-				ctx->tweak(ctx, new_h, new_p, NIM_PROP_ADDED);
-				new_of += (int)new_p->length;
-				continue;
-			} else if (i >= new_h->n_props) {
-				// This is a naive way of doing this because properties could not be ordered in the same
-				// way as in the last tree, leading to a the wrong property being removed.
-				ctx->tweak(ctx, new_h, old_p, NIM_PROP_REMOVED);
-				old_of += (int)old_p->length;
-				continue;
-			}
-
-			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
-				// Property has the same state
-			} else {
-				ctx->tweak(ctx, new_h, new_p, NIM_PROP_CHANGED);
-			}
+			ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED);
 		}
 
 		old_of += (int)old_p->length;
 		new_of += (int)new_p->length;
 	}
 
-	// TODO this is broken, need to:
-	// diff():
-	//   if child added: ctx->create, append to parent
-	//   if child removed: delete, remove from parent
-
 	uint32_t max_n_child = old_h->n_children;
-	if (new_h->n_children > max_n_child)
-		max_n_child = new_h->n_children;
+	if (new_h->n_children > max_n_child) max_n_child = new_h->n_children;
+
 	(*old_of_p) = old_of;
 	(*new_of_p) = new_of;
 	for (size_t i = 0; i < max_n_child; i++) {
 		if (i >= old_h->n_children) {
-			if (!(flag & FLAG_IGNORE)) {
-				printf("child added to tree\n");
-				backend->append
-				//				printf("Unimplemented"); abort();
-				// backend->append(backend->priv, new_h, )
-			}
+			// Child added to tree
+			(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, (*new_of_p), new_h);
 		} else if (i >= new_h->n_children) {
-			if (!(flag & FLAG_IGNORE)) {
-				printf("child removed\n");
-				//				printf("Unimplemented\n"); abort();
-			}
+			// Child removed from tree
+			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), old_h);
 		} else {
-			rim_patch_tree(ctx, old_of_p, new_of_p, flag);
+			rim_patch_tree(ctx, old_of_p, new_of_p, new_h);
 		}
-	}
-
-	if (flag & FLAG_DELETE) {
-		ctx->destroy(ctx->priv, old_h);
 	}
 
 	return 0;
@@ -149,7 +167,7 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 int rim_diff_tree(struct RimContext *ctx) {
 	int old_of = 0;
 	int new_of = 0;
-	return rim_patch_tree(ctx, &old_of, &new_of, 0);
+	return rim_patch_tree(ctx, &old_of, &new_of, NULL);
 }
 
 struct RimTree *rim_get_current_tree(void) {
@@ -188,7 +206,7 @@ struct RimContext *rim_init(void) {
 static void work_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
 	printf("Initializing the tree for the first time\n");
-	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL, 0);
+	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
 }
 
 static void diff_tree(void *priv) {
@@ -198,18 +216,18 @@ static void diff_tree(void *priv) {
 }
 
 int rim_poll(rim_ctx_t *ctx) {
-	// If new tree has gained contents and old tree is empty, init the tree
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
+		// If new tree has gained contents and old tree is empty, init the tree
 		ctx->run(ctx, work_tree);
-	} else {
+	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
+		// Only run differ if both trees have contents
 		ctx->run(ctx, diff_tree);
-		printf("Run tree differ now\n");
 	}
 
 	if (ctx->event_counter) {
 		ctx->event_counter--;
 	} else {
-		// sem_post(&ctx->event_sig);
+		// Wait on external event
 		sem_wait(&ctx->event_sig);
 	}
 

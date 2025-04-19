@@ -4,19 +4,27 @@
 #include <rim_internal.h>
 
 static int on_create_widget(struct RimContext *ctx, struct WidgetHeader *w) {
-	printf("Creating a new widget\n");
+	printf("Creating a new widget '%s'\n", rim_eval_widget_type(w->type));
 	return 0;
 }
 static int on_free_widget(struct RimContext *ctx, struct WidgetHeader *w) {
-	printf("Freeing a widget\n");
+	printf("Freeing a widget '%s'\n", rim_eval_widget_type(w->type));
 	return 0;
 }
 static int on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
-	printf("Tweaking a widget\n");
+	if (type == RIM_PROP_ADDED) {
+		printf("Adding prop to widget '%s'\n", rim_eval_widget_type(w->type));
+	} else if (type == RIM_PROP_CHANGED) {
+		printf("Changing prop in '%s'\n", rim_eval_widget_type(w->type));
+	} else if (type == RIM_PROP_REMOVED) {
+		printf("Removing prop from '%s'\n", rim_eval_widget_type(w->type));
+	}
 	return 0;
 }
 static int on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	printf("Appending a widget to x\n");
+	const char *parent_type = "(root)";
+	if (parent != NULL) parent_type = rim_eval_widget_type(parent->type);
+	printf("Appending widget '%s' to '%s'\n", rim_eval_widget_type(w->type), parent_type);
 	return 0;
 }
 
@@ -29,7 +37,6 @@ static int build_ui(struct RimTree *tree, int state) {
 				rim_add_prop_text(tree, RIM_PROP_TEXT, "widget will be removed");
 				rim_end_widget(tree);
 			rim_end_widget(tree);
-
 		} else {
 			rim_add_widget(tree, RIM_BUTTON, 0);
 			rim_add_prop_text(tree, RIM_PROP_TEXT, "Hello World");
@@ -49,6 +56,7 @@ int main(void) {
 	ctx.tree_old = rim_create_tree();
 	build_ui(ctx.tree_old, 1);
 	build_ui(ctx.tree_new, 0);
+	rim_init_tree_widgets(&ctx, ctx.tree_old, 0, NULL);
 	rim_diff_tree(&ctx);
 
 	return 0;
