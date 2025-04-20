@@ -42,9 +42,10 @@ _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 
 enum RimPropType {
 	RIM_PROP_WIN_TITLE = 1,
-	RIM_PROP_WIN_WIDTH = 2,
-	RIM_PROP_WIN_HEIGHT = 3,
+	RIM_PROP_WIN_WIDTH,
+	RIM_PROP_WIN_HEIGHT,
 	RIM_PROP_TEXT,
+	RIM_PROP_LABEL,
 	RIM_PROP_META,
 };
 
@@ -77,6 +78,7 @@ enum RimWidgetEvent {
 	RIM_EVENT_NONE = 0,
 	RIM_EVENT_CLICK = 1,
 	RIM_EVENT_WINDOW_CLOSE = 2,
+	RIM_EVENT_VALUE_CHANGED = 3,
 };
 
 enum RimPropTrigger {
@@ -95,8 +97,11 @@ struct RimTree {
 };
 
 struct RimEvent {
+	int is_valid;
 	int unique_id;
 	enum RimWidgetEvent type;
+	void *data;
+	unsigned int data_length;
 };
 
 /// @brief Generic data structure holding information on a property
@@ -134,6 +139,7 @@ struct RimContext {
 	// Only one event is processed at a time
 	struct RimEvent last_event;
 	// Used by rim_poll for how many times to return
+	// TODO: confusing, rename to to_nop_counter or something that would indicate it doesn't effect events
 	int event_counter;
 	// main event signal
 	sem_t event_sig;

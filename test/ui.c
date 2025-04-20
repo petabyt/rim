@@ -8,12 +8,15 @@ int main(void) {
 	int show_more = 1;
 	int counter = 0;
 	int selected = 0;
+	char buffer[64] = "asd";
 	while (rim_poll(ctx)) {
 		if (im_window("My Window", 500, 500)) {
 			if (im_tab_bar(&selected)) {
 				if (im_tab("Tab thing")) {
+					im_entry("lbl", buffer, sizeof(buffer));
+					im_label(buffer);
 					if (im_button("Hello")) {
-						printf("Thing\n");
+						snprintf(buffer, sizeof(buffer), "Changed");
 					}
 					im_end_tab();
 				}

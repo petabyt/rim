@@ -8,6 +8,7 @@
 #include <rim.h>
 #include <rim_internal.h>
 #include <signal.h>
+#include <string.h>
 
 struct Priv {
 	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
@@ -17,10 +18,6 @@ struct Priv {
 	pthread_t thread;
 
 	sem_t wait_until_ready;
-};
-
-struct TabPriv {
-	int x;
 };
 
 int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
@@ -53,6 +50,7 @@ int on_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	case RIM_BUTTON:
 	case RIM_LABEL:
 	case RIM_LAYOUT_STATIC:
+	case RIM_ENTRY:
 		uiControlDestroy((uiControl *)w->os_handle);
 		return 0;
 	}
@@ -69,6 +67,17 @@ static int window_closed(uiWindow *w, void *arg) {
 static void button_clicked(uiButton *button, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	rim_on_widget_event(ctx, RIM_EVENT_CLICK, (int)(uintptr_t)arg);
+}
+
+static void on_changed(uiEntry *entry, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+
+	char *text = uiEntryText(entry);
+	ctx->last_event.data_length = strlen(text) + 1;
+	ctx->last_event.data = malloc(ctx->last_event.data_length);
+	strcpy(ctx->last_event.data, text);
+	
+	rim_on_widget_event(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg);
 }
 
 int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
@@ -105,6 +114,13 @@ int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	case RIM_LABEL: {
 		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
 		uiLabel *handle = uiNewLabel(prop.value);
+		w->os_handle = (uintptr_t)handle;
+		} return 0;
+	case RIM_ENTRY: {
+		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
+		uiEntry *handle = uiNewEntry();
+		uiEntrySetText(handle, prop.value);
+		uiEntryOnChanged(handle, on_changed, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_LAYOUT_STATIC: {
@@ -156,6 +172,11 @@ int on_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *
 	case RIM_LABEL:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiLabelSetText((uiLabel *)w->os_handle, (const char *)prop->data);
+			return 0;
+		}
+	case RIM_ENTRY:
+		if (prop->type == RIM_PROP_TEXT) {
+			uiEntrySetText((uiEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
 	}

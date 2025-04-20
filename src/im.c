@@ -1,4 +1,5 @@
 // im_ generic API
+#include <stdio.h>
 #include "rim_internal.h"
 #include "im.h"
 
@@ -42,10 +43,13 @@ int im_tab(const char *title) {
 
 void im_entry(const char *label, char *buffer, unsigned int size) {
 	struct RimTree *tree = rim_get_current_tree();
-	rim_add_widget(tree, RIM_LABEL, 0);
-	rim_add_prop_text(tree, RIM_PROP_TEXT, label);
+	rim_add_widget(tree, RIM_ENTRY, 0);
+	rim_add_prop_text(tree, RIM_PROP_TEXT, buffer);
+	rim_add_prop_text(tree, RIM_PROP_LABEL, label);
 	rim_end_widget(tree);
-	if (rim_last_widget_event()) {
+	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
+		struct RimContext *ctx = rim_get_global_ctx();
+		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
 		// TODO:
 		// strncpy(buffer, event->buffer, size);
 	}

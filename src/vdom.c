@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "rim.h"
 #include "rim_internal.h"
 
@@ -116,13 +115,17 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 
 		// TODO: Rewrite and test the types of both properties
 		if (i >= old_h->n_props) {
-			ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED);
+			if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+				rim_abort("Failed to add property\n");
+			}
 			(*new_of_p) += (int)new_p->length;
 			continue;
 		} else if (i >= new_h->n_props) {
 			// This is a naive way of doing this because properties could not be ordered in the same
 			// way as in the last tree, leading to a the wrong property being removed.
-			ctx->tweak(ctx, new_h, old_p, RIM_PROP_ADDED);
+			if (ctx->tweak(ctx, new_h, old_p, RIM_PROP_ADDED)) {
+				rim_abort("Failed to add property");
+			}
 			(*old_of_p) += (int)old_p->length;
 			continue;
 		}
@@ -130,7 +133,9 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
 			// Property has the same state
 		} else {
-			ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED);
+			if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
+				rim_abort("Failed to change property\n");
+			}
 		}
 
 		(*old_of_p) += (int)old_p->length;
@@ -174,7 +179,7 @@ int rim_last_widget_event(void) {
 		// Checking the last created widget for the unique ID is a very naive way of doing this
 		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth];
 		if (match->unique_id == ctx->last_event.unique_id) {
-			ctx->event_counter--;
+			ctx->last_event.is_valid = 0;
 			return ctx->last_event.type;
 		}
 	}
@@ -182,9 +187,10 @@ int rim_last_widget_event(void) {
 }
 
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
+	ctx->last_event.is_valid = 1;
 	ctx->last_event.type = event;
 	ctx->last_event.unique_id = unique_id;
-	ctx->event_counter += 2;
+	ctx->event_counter += 1;
 	sem_post(&ctx->event_sig);
 }
 
