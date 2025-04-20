@@ -8,6 +8,10 @@
 
 static struct RimContext *global_context = NULL;
 
+int rim_get_dpi(void) {
+	return 96;
+}
+
 // Initializes a tree with no previous tree
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
 	int of = 0;

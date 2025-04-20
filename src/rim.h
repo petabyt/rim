@@ -1,6 +1,10 @@
 #ifndef NAITVE_IMGUI_H
 #define NAITVE_IMGUI_H
 
+int rim_get_dpi(void);
+
+#define rim_dp_to_px(dp) ((rim_get_dpi() * (dp)) / 160)
+
 /// @brief Internal structure that maintains the state of the UI
 typedef struct RimContext rim_ctx_t;
 

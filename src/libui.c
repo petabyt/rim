@@ -19,6 +19,10 @@ struct Priv {
 	sem_t wait_until_ready;
 };
 
+struct TabPriv {
+	int x;
+};
+
 int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
 		// Is this even needed?
@@ -27,6 +31,11 @@ int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 	}
 
 	switch (parent->type) {
+	case RIM_TAB_BAR: {
+		int index = rim_get_child_index(w, parent);
+		if (index == -1) rim_abort("child index failed\n");
+		uiTabDelete((uiTab *)parent->os_handle, index);
+		} return 0;
 	case RIM_WINDOW:
 	case RIM_LAYOUT_STATIC: {
 		int index = rim_get_child_index(w, parent);
@@ -39,6 +48,7 @@ int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 
 int on_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
+	case RIM_TAB:
 	case RIM_WINDOW:
 	case RIM_BUTTON:
 	case RIM_LABEL:
@@ -67,7 +77,15 @@ int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
 	case RIM_WINDOW: {
 		assert(rim_get_prop(w, &prop, RIM_PROP_WIN_TITLE) == 0);
-		uiWindow *handle = uiNewWindow(prop.value, 300, 300, 0);
+
+		uint32_t win_width, win_height;
+		assert(rim_get_prop_u32(w, RIM_PROP_WIN_WIDTH, &win_width) == 0);
+		assert(rim_get_prop_u32(w, RIM_PROP_WIN_HEIGHT, &win_height) == 0);
+
+		win_width = rim_dp_to_px(win_width);
+		win_height = rim_dp_to_px(win_height);
+
+		uiWindow *handle = uiNewWindow(prop.value, (int)win_width, (int)win_height, 0);
 		uiWindowOnClosing(handle, window_closed, (void *)(uintptr_t)w->unique_id);
 		if (p->make_window_a_layout) {
 			uiBox *container = uiNewVerticalBox();
@@ -92,6 +110,12 @@ int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	case RIM_LAYOUT_STATIC: {
 		w->os_handle = (uintptr_t)uiNewHorizontalBox();
 		} return 0;
+	case RIM_TAB_BAR: {
+		w->os_handle = (uintptr_t)uiNewTab();
+		} return 0;
+	case RIM_TAB: {
+		w->os_handle = (uintptr_t)uiNewVerticalBox();
+		} return 0;
 	}
 	return 1;
 }
@@ -102,6 +126,8 @@ int on_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 		return 0;
 	}
 
+	struct RimProp prop;
+
 	switch (parent->type) {
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
@@ -111,7 +137,12 @@ int on_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 		}
 		return 0;
 	case RIM_LAYOUT_STATIC:
+	case RIM_TAB:
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
+		return 0;
+	case RIM_TAB_BAR:
+		assert(rim_get_prop(w, &prop, RIM_PROP_WIN_TITLE) == 0);
+		uiTabAppend((uiTab *)parent->os_handle, (const char *)prop.value, (uiControl *)w->os_handle);
 		return 0;
 	}
 	return 1;

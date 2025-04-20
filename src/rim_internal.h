@@ -17,7 +17,9 @@ struct __attribute__((packed)) WidgetHeader {
 	uint32_t n_props;
 	// Unique ID (only modified by UI backend and tree patcher)
 	uint32_t unique_id;
-	// 1 if this node is dead (has no effect on backend)
+	// 1 if this node is dead
+	// This is set when the node has been removed from it's parent, and it must be skipped
+	// when counting the order of other nodes
 	uint32_t is_detached;
 
 	// Pointer handle for UI backend
@@ -61,6 +63,8 @@ enum RimWidgetType {
 	RIM_RADIO,
 	RIM_DATE_PICKER,
 	RIM_TABLE,
+	RIM_TAB_BAR,
+	RIM_TAB,
 	RIM_LAYOUT_STATIC,
 	RIM_LAYOUT_DYNAMIC,
 	RIM_LAYOUT_FLEX,
@@ -151,6 +155,8 @@ void rim_end_widget(struct RimTree *tree);
 /// @brief Add a property with a string being the only payload
 void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *value);
 
+void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
+
 /// @brief Find property in widget from PropType
 int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
 
@@ -167,6 +173,8 @@ int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id)
 /// @brief The start widget and all of it's sublings will be appended to `parent`.
 /// @depth Optional, for debugging
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent);
+
+int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val);
 
 // Get event code for last created event
 int rim_last_widget_event(void);

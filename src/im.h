@@ -1,5 +1,5 @@
 // Dear-ImGUI wrapper
-// Last edited 2025/4/13
+// Last edited 2025/4/19
 #ifndef IM_H
 #define IM_H
 
@@ -36,17 +36,14 @@ struct ImModifier {
 	unsigned int padding[4];
 };
 
-int im_get_dpi(void);
-#define dp_to_px(dp) ((im_get_dpi() * (dp)) / 160)
-
 int im_push_disabled(void);
 int im_pop_disabled(void);
 
 /// @returns IM_CHILDREN_VISIBLE
-int im_tab(void);
-int im_add_tab_item(const char *title);
-void im_end_tab_item(void);
+int im_tab_bar(int *selected);
+int im_tab(const char *title);
 void im_end_tab(void);
+void im_end_tab_bar(void);
 
 int im_combo_box(const char *label, const char *preview);
 int im_add_combo_box_item(const char *label, int *selected);

@@ -58,6 +58,8 @@ const char *rim_eval_widget_type(int type) {
 	case RIM_RADIO: return "radio";
 	case RIM_DATE_PICKER: return "date_picker";
 	case RIM_TABLE: return "table";
+	case RIM_TAB: return "tab";
+	case RIM_TAB_BAR: return "tab_bar";
 	case RIM_LAYOUT_STATIC: return "layout_static";
 	case RIM_LAYOUT_DYNAMIC: return "layout_dynamic";
 	case RIM_LAYOUT_FLEX: return "layout_flex";
@@ -148,6 +150,20 @@ void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *
 	parent->n_props++;
 }
 
+void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val) {
+	if (tree->widget_stack_depth == 0) {
+		rim_abort("No widget to add property to\n");
+	}
+	ensure_buffer_size(tree, sizeof(struct WidgetProp) + 4);
+	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
+	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
+	prop->length = 12;
+	prop->type = type;
+	memcpy(prop->data, &val, 4);
+	tree->of += (int)prop->length;
+	parent->n_props++;
+}
+
 int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type) {
 	int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
@@ -155,6 +171,19 @@ int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type) {
 		if ((int)p->type == type) {
 			np->type = (int)p->type;
 			np->value = (const char *)p->data;
+			return 0;
+		}
+		of += (int)p->length;
+	}
+	return -1;
+}
+
+int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
+	int of = 0;
+	for (size_t i = 0; i < h->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
+		if ((int)p->type == type) {
+			memcpy(val, p->data, 4);
 			return 0;
 		}
 		of += (int)p->length;

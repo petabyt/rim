@@ -8,7 +8,7 @@ int main(void) {
 	int show_more = 1;
 	int counter = 0;
 	while (rim_poll(ctx)) {
-		if (im_window("My Window", 400, 400)) {
+		if (im_window("My Window", 200, 200)) {
 			char buffer[64];
 			sprintf(buffer, "Events: %04d\n", counter);
 			im_label(buffer);
