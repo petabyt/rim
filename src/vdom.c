@@ -237,7 +237,6 @@ struct RimContext *rim_init(void) {
 
 static void work_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-	printf("Initializing the tree for the first time\n");
 //	pthread_mutex_lock(&ctx->event_mutex);
 	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
 //	pthread_mutex_unlock(&ctx->event_mutex);
@@ -246,7 +245,6 @@ static void work_tree(void *priv) {
 
 static void diff_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-	printf("Starting to diff\n");
 //	pthread_mutex_lock(&ctx->event_mutex);
 	rim_diff_tree(ctx);
 //	pthread_mutex_unlock(&ctx->event_mutex);
@@ -286,7 +284,6 @@ int rim_poll(rim_ctx_t *ctx) {
 
 	// Switch trees, reuse old tree as new tree
 	//pthread_mutex_lock(&ctx->event_mutex);
-	printf("Swapping tree\n");
 	struct RimTree *temp = ctx->tree_old;
 	ctx->tree_old = ctx->tree_new;
 	ctx->tree_new = temp;

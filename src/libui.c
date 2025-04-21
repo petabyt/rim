@@ -70,7 +70,6 @@ static void button_clicked(uiButton *button, void *arg) {
 }
 
 static void on_changed(uiEntry *entry, void *arg) {
-	puts("on_changed");
 	struct RimContext *ctx = rim_get_global_ctx();
 
 	pthread_mutex_lock(&ctx->event_mutex);

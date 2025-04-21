@@ -90,6 +90,7 @@ enum RimPropTrigger {
 
 #define TREE_MAX_DEPTH 5
 struct RimTree {
+	int counter;
 	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;

@@ -82,6 +82,7 @@ void rim_abort(char *fmt, ...) {
 void rim_reset_tree(struct RimTree *tree) {
 	tree->widget_stack_depth = 0;
 	tree->of = 0;
+	tree->counter = 0;
 }
 
 struct RimTree *rim_create_tree(void) {
@@ -105,9 +106,11 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	h->n_props = 0;
 	h->os_handle = 0;
 	h->is_detached = 0;
-	h->unique_id = tree->of; // Use a better ID instead of an offset?
+	h->unique_id = tree->counter;
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
+
+	tree->counter++;
 
 	if (tree->widget_stack_depth != 0) {
 		// Track a potential parent widget (simply a preceding widget)
