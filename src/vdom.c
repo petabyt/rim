@@ -213,6 +213,20 @@ void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int 
 	sem_post(&ctx->event_sig);
 }
 
+void rim_trigger_event(void) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	if (ctx->last_event.is_valid) {
+		sem_wait(&ctx->event_consumed_sig);
+	}
+	pthread_mutex_lock(&ctx->event_mutex);
+	ctx->last_event.is_valid = 1;
+	ctx->last_event.type = RIM_EVENT_NONE;
+	ctx->last_event.unique_id = 0;
+	ctx->event_counter = 0;
+	pthread_mutex_unlock(&ctx->event_mutex);
+	sem_post(&ctx->event_sig);
+}
+
 struct RimContext *rim_init(void) {
 	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
 	ctx->header = 0;
@@ -280,6 +294,11 @@ int rim_poll(rim_ctx_t *ctx) {
 		if (ctx->last_event.type == RIM_EVENT_WINDOW_CLOSE) {
 			return 0;
 		}
+	}
+
+	// Clear out external events
+	if (ctx->last_event.is_valid && ctx->last_event.type == RIM_EVENT_NONE) {
+		ctx->last_event.is_valid = 0;
 	}
 
 	// Switch trees, reuse old tree as new tree

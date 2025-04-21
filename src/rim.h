@@ -18,7 +18,7 @@ int rim_poll(rim_ctx_t *ctx);
 
 /// @brief Can be called from any other thread to trigger an update to the UI.
 /// Caller will have to ensure thread safety between any data shared between threads.
-int rim_update(void);
+void rim_trigger_event(void);
 
 /// @brief Initializes the libui virtual dom
 int rim_libui_init(rim_ctx_t *ctx);

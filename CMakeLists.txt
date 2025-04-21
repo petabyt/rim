@@ -27,3 +27,6 @@ target_link_libraries(test_tree rim_libui_gtk3)
 
 add_executable(test_differ test/test_differ.c)
 target_link_libraries(test_differ rim_libui_gtk3)
+
+add_executable(thread test/thread.c)
+target_link_libraries(thread rim_libui_gtk3)

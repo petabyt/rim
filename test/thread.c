@@ -1,0 +1,40 @@
+#include <stdio.h>
+#include <rim.h>
+#include <im.h>
+#include <pthread.h>
+#include <unistd.h>
+
+void *ext(void *arg) {
+	while (1) {
+		usleep(1000000);
+		rim_trigger_event();
+	}
+	return NULL;
+}
+
+int main(void) {
+	struct RimContext *ctx = rim_init();
+	rim_libui_init(ctx);
+	int show_more = 1;
+	int counter = 0;
+
+	pthread_t thread;
+	pthread_create(&thread, 0, ext, NULL);
+	
+	while (rim_poll(ctx)) {
+		if (im_window("My Window", 500, 500)) {
+			char buffer[64];
+			sprintf(buffer, "Events: %04d\n", counter);
+			im_label(buffer);
+			if (show_more) {
+				im_label("Hello, World");
+			}
+			if (im_button("Show More")) {
+				show_more = !show_more;
+			}
+			counter++;
+		}
+	}
+
+	return 0;
+}
