@@ -26,6 +26,10 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 		rim_abort("Couldn't create widget %s\n", rim_eval_widget_type(h->type));
 	}
 
+	if (h->os_handle == 0x0) {
+		rim_abort("BUG: h->os_handle is null %x\n");
+	}
+
 	rc = ctx->append(ctx, h, parent);
 	if (rc) {
 		rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
@@ -73,6 +77,8 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 		rim_abort("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
 	}
 
+	h->os_handle = 0;
+
 	return of;
 }
 
@@ -103,6 +109,10 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		// Same type, copy over handles
 		new_h->unique_id = old_h->unique_id;
 		new_h->os_handle = old_h->os_handle;
+	}
+
+	if (new_h->os_handle == 0x0) {
+		rim_abort("BUG: new_h->os_handle is null '%s'\n", rim_eval_widget_type(new_h->type));
 	}
 
 	(*new_of_p) += sizeof(struct WidgetHeader);
@@ -175,22 +185,31 @@ struct RimTree *rim_get_current_tree(void) {
 }
 int rim_last_widget_event(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
-	if (ctx->event_counter) {
+	pthread_mutex_lock(&ctx->event_mutex);
+	if (ctx->last_event.is_valid) {
 		// Checking the last created widget for the unique ID is a very naive way of doing this
 		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth];
 		if (match->unique_id == ctx->last_event.unique_id) {
 			ctx->last_event.is_valid = 0;
+			sem_post(&ctx->event_consumed_sig);
+			pthread_mutex_unlock(&ctx->event_mutex);
 			return ctx->last_event.type;
 		}
 	}
+	pthread_mutex_unlock(&ctx->event_mutex);
 	return 0;
 }
 
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
+	if (ctx->last_event.is_valid) {
+		sem_wait(&ctx->event_consumed_sig);
+	}
+	pthread_mutex_lock(&ctx->event_mutex);
 	ctx->last_event.is_valid = 1;
 	ctx->last_event.type = event;
 	ctx->last_event.unique_id = unique_id;
-	ctx->event_counter += 1;
+	ctx->event_counter = 1;
+	pthread_mutex_unlock(&ctx->event_mutex);
 	sem_post(&ctx->event_sig);
 }
 
@@ -203,6 +222,13 @@ struct RimContext *rim_init(void) {
 	ctx->tree_old = rim_create_tree();
 
 	sem_init(&ctx->event_sig, 0, 0);
+	sem_init(&ctx->run_done_signal, 0, 0);
+	sem_init(&ctx->event_consumed_sig, 0, 0);
+
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&ctx->event_mutex, &attr);
 
 	global_context = ctx;
 
@@ -212,26 +238,39 @@ struct RimContext *rim_init(void) {
 static void work_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
 	printf("Initializing the tree for the first time\n");
+//	pthread_mutex_lock(&ctx->event_mutex);
 	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
-	sem_post(&ctx->event_sig);
+//	pthread_mutex_unlock(&ctx->event_mutex);
+	sem_post(&ctx->run_done_signal);
 }
 
 static void diff_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-	printf("Diffing tree\n");
+	printf("Starting to diff\n");
+//	pthread_mutex_lock(&ctx->event_mutex);
 	rim_diff_tree(ctx);
-	sem_post(&ctx->event_sig);
+//	pthread_mutex_unlock(&ctx->event_mutex);
+	sem_post(&ctx->run_done_signal);
 }
 
 int rim_poll(rim_ctx_t *ctx) {
+	if (ctx->last_event.is_valid) {
+		rim_abort("Event ignored\n");
+	}
+
+	//pthread_mutex_unlock(&ctx->event_mutex);
+
+	void usleep(unsigned int us);
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
 		ctx->run(ctx, work_tree);
-		sem_wait(&ctx->event_sig);
+		sem_wait(&ctx->run_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents
 		ctx->run(ctx, diff_tree);
-		sem_wait(&ctx->event_sig);
+		sem_wait(&ctx->run_done_signal);
+	} else {
+		printf("Empty frame\n");
 	}
 
 	if (ctx->event_counter) {
@@ -246,6 +285,8 @@ int rim_poll(rim_ctx_t *ctx) {
 	}
 
 	// Switch trees, reuse old tree as new tree
+	//pthread_mutex_lock(&ctx->event_mutex);
+	printf("Swapping tree\n");
 	struct RimTree *temp = ctx->tree_old;
 	ctx->tree_old = ctx->tree_new;
 	ctx->tree_new = temp;

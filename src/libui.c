@@ -70,14 +70,17 @@ static void button_clicked(uiButton *button, void *arg) {
 }
 
 static void on_changed(uiEntry *entry, void *arg) {
+	puts("on_changed");
 	struct RimContext *ctx = rim_get_global_ctx();
+
+	pthread_mutex_lock(&ctx->event_mutex);
 
 	char *text = uiEntryText(entry);
 	ctx->last_event.data_length = strlen(text) + 1;
 	ctx->last_event.data = malloc(ctx->last_event.data_length);
 	strcpy(ctx->last_event.data, text);
-	
 	rim_on_widget_event(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg);
+	pthread_mutex_unlock(&ctx->event_mutex);
 }
 
 int on_create(struct RimContext *ctx, struct WidgetHeader *w) {

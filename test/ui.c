@@ -16,7 +16,7 @@ int main(void) {
 					im_entry("lbl", buffer, sizeof(buffer));
 					im_label(buffer);
 					if (im_button("Hello")) {
-						snprintf(buffer, sizeof(buffer), "Changed");
+						snprintf(buffer, sizeof(buffer), "changed %04d", counter++);
 					}
 					im_end_tab();
 				}

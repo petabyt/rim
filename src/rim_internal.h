@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
@@ -136,6 +137,9 @@ struct RimContext {
 	/// @brief Queue a function to run in the UI backend thread
 	int (*run)(struct RimContext *ctx, rim_on_run_callback *callback);
 
+	sem_t run_done_signal;
+
+	pthread_mutex_t event_mutex;
 	// Only one event is processed at a time
 	struct RimEvent last_event;
 	// Used by rim_poll for how many times to return
@@ -143,6 +147,7 @@ struct RimContext {
 	int event_counter;
 	// main event signal
 	sem_t event_sig;
+	sem_t event_consumed_sig;
 };
 
 /// @brief Create a widget tree
