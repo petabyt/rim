@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 /*
-API rules:
+Widget function naming:
 - im_<widget>
   - Create/start a widget with minimal arguments
 - im_<widget>_ex
@@ -17,6 +17,16 @@ API rules:
   - Ends a widget
 
  - Must only accept units of length/width/size in dp, not pixels.
+
+Property functions:
+- Handle widget-specific properties
+- Handle pushing/popping the same properties
+
+im_disable();
+im_push_last_prop();
+...
+im_pop_prop();
+
 */
 
 enum ImReturnCode {
@@ -38,6 +48,9 @@ struct ImModifier {
 
 int im_push_disabled(void);
 int im_pop_disabled(void);
+
+void im_set_last_tooltip(const char *label);
+void im_set_last_disabled(int opt);
 
 /// @returns IM_CHILDREN_VISIBLE
 int im_tab_bar(int *selected);
@@ -67,6 +80,15 @@ void im_multiline_entry(char *buffer, unsigned int size);
 /// @param size Size of buffer
 void im_entry(const char *label, char *buffer, unsigned int size);
 
+#if 0
+if (im_begin_tab_bar(&selected)) {
+	if (im_begin_tab("Hello")) {
+		im_label("Hello");
+		im_end_tab();
+	}
+	im_end_tab_bar();
+}
+#endif
 #ifdef __cplusplus
 }
 #endif

@@ -1,4 +1,4 @@
-// im_ generic API
+// Immediate-mode 'im_' API implementation for Rim
 #include <stdio.h>
 #include "rim_internal.h"
 #include "im.h"
@@ -50,8 +50,6 @@ void im_entry(const char *label, char *buffer, unsigned int size) {
 	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
-		// TODO:
-		// strncpy(buffer, event->buffer, size);
 	}
 }
 

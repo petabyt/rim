@@ -5,12 +5,6 @@
 #include "rim.h"
 #include "rim_internal.h"
 
-static struct RimContext *global_context = NULL;
-
-int rim_get_dpi(void) {
-	return 96;
-}
-
 // Initializes a tree with no previous tree
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
 	int of = 0;
@@ -123,7 +117,6 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		struct WidgetProp *old_p = (struct WidgetProp *)(ctx->tree_old->buffer + (*old_of_p));
 		struct WidgetProp *new_p = (struct WidgetProp *)(ctx->tree_new->buffer + (*new_of_p));
 
-		// TODO: Rewrite and test the types of both properties
 		if (i >= old_h->n_props) {
 			if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
 				rim_abort("Failed to add property\n");
@@ -131,20 +124,24 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 			(*new_of_p) += (int)new_p->length;
 			continue;
 		} else if (i >= new_h->n_props) {
-			// This is a naive way of doing this because properties could not be ordered in the same
-			// way as in the last tree, leading to a the wrong property being removed.
-			if (ctx->tweak(ctx, new_h, old_p, RIM_PROP_ADDED)) {
-				rim_abort("Failed to add property");
+			if (ctx->tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
+				rim_abort("Failed to remove property");
 			}
 			(*old_of_p) += (int)old_p->length;
 			continue;
-		}
-
-		if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
-			// Property has the same state
 		} else {
-			if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
-				rim_abort("Failed to change property\n");
+			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
+				// Property has the same state
+			} else {
+				if (old_p->type == new_p->type) {
+					if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
+						rim_abort("Failed to change property\n");
+					}
+				} else {
+					if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+						rim_abort("Failed to add property\n");
+					}
+				}
 			}
 		}
 
@@ -153,7 +150,6 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 	}
 
 	uint32_t max_n_child = max(old_h->n_children, new_h->n_children);
-
 	for (size_t i = 0; i < max_n_child; i++) {
 		if (i >= old_h->n_children) {
 			// Child added to tree
@@ -174,20 +170,12 @@ int rim_diff_tree(struct RimContext *ctx) {
 	int new_of = 0;
 	return rim_patch_tree(ctx, &old_of, &new_of, NULL);
 }
-rim_ctx_t *rim_get_global_ctx(void) {
-	if (global_context == NULL) {
-		rim_abort("global_context is NULL\n");
-	}
-	return global_context;
-}
-struct RimTree *rim_get_current_tree(void) {
-	return rim_get_global_ctx()->tree_new;
-}
+
 int rim_last_widget_event(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (ctx->last_event.is_valid) {
-		// Checking the last created widget for the unique ID is a very naive way of doing this
+		// Checking the last created widget for the unique ID is probably not the best way to check
 		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth];
 		if (match->unique_id == ctx->last_event.unique_id) {
 			ctx->last_event.is_valid = 0;
@@ -201,6 +189,8 @@ int rim_last_widget_event(void) {
 }
 
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
+	// Wait for the previous event to be consumed
+	// TODO: This does not work for multiple events
 	if (ctx->last_event.is_valid) {
 		sem_wait(&ctx->event_consumed_sig);
 	}
@@ -213,10 +203,22 @@ void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int 
 	sem_post(&ctx->event_sig);
 }
 
+void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id, const void *buffer, unsigned int length) {
+	pthread_mutex_lock(&ctx->event_mutex);
+	if (length > ctx->last_event.data_buf_size) {
+		ctx->last_event.data = realloc(ctx->last_event.data, length + 100);
+		ctx->last_event.data_buf_size = length + 100;
+	}
+	ctx->last_event.data_length = length;
+	memcpy(ctx->last_event.data, buffer, length);
+	rim_on_widget_event(ctx, RIM_EVENT_VALUE_CHANGED, unique_id);
+	pthread_mutex_unlock(&ctx->event_mutex);
+}
+
 void rim_trigger_event(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	if (ctx->last_event.is_valid) {
-		sem_wait(&ctx->event_consumed_sig);
+		return; // No need to create a new event
 	}
 	pthread_mutex_lock(&ctx->event_mutex);
 	ctx->last_event.is_valid = 1;
@@ -227,41 +229,15 @@ void rim_trigger_event(void) {
 	sem_post(&ctx->event_sig);
 }
 
-struct RimContext *rim_init(void) {
-	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
-	ctx->header = 0;
-	ctx->event_counter = 1; // 1 event for rim_poll to be called twice at beginning
-
-	ctx->tree_new = rim_create_tree();
-	ctx->tree_old = rim_create_tree();
-
-	sem_init(&ctx->event_sig, 0, 0);
-	sem_init(&ctx->run_done_signal, 0, 0);
-	sem_init(&ctx->event_consumed_sig, 0, 0);
-
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&ctx->event_mutex, &attr);
-
-	global_context = ctx;
-
-	return ctx;
-}
-
 static void work_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-//	pthread_mutex_lock(&ctx->event_mutex);
 	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
-//	pthread_mutex_unlock(&ctx->event_mutex);
 	sem_post(&ctx->run_done_signal);
 }
 
 static void diff_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-//	pthread_mutex_lock(&ctx->event_mutex);
 	rim_diff_tree(ctx);
-//	pthread_mutex_unlock(&ctx->event_mutex);
 	sem_post(&ctx->run_done_signal);
 }
 

@@ -41,38 +41,58 @@ struct __attribute__((packed)) WidgetProp {
 };
 _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 
+/// 1-0xfff is reserved for Rim
+/// >=0x1000 is reserved for custom widgets
 enum RimPropType {
 	RIM_PROP_WIN_TITLE = 1,
 	RIM_PROP_WIN_WIDTH,
 	RIM_PROP_WIN_HEIGHT,
+	// Primary text for a widget
 	RIM_PROP_TEXT,
+	// Secondary text usually placed to the left of the widget
 	RIM_PROP_LABEL,
 	RIM_PROP_META,
 };
 
+/// @brief Tree ID for all Rim widgets
+/// 1-0xfff is reserved for Rim
+/// >=0x1000 is reserved for custom widgets
 enum RimWidgetType {
-	// 1-0xfff is reserved for Rim
-	// >=0x1000 is reserved for custom widgets
+	// Full-size window
 	RIM_WINDOW = 1,
+	// Smaller popup - might have an 'ok' or 'cancel' button
+	RIM_POPUP,
+	// A label with plain text
 	RIM_LABEL,
+	// A button with plain text
 	RIM_BUTTON,
+	// Horizontal progress bar
 	RIM_PROGRESS_BAR,
+	// Static image widget
 	RIM_IMAGE,
+	// Single-line text box that can be modified by user
 	RIM_ENTRY,
+	// Box with buttons to decrement/increment, usually for a number
 	RIM_SPINBOX,
+	// Horizontal slider
 	RIM_SLIDER,
+	// Also known as a dropdown box
 	RIM_COMBOBOX,
+	// Multiple choice single answer element
 	RIM_RADIO,
+	// Date picker, may open a window if clicked
 	RIM_DATE_PICKER,
-	RIM_TABLE,
+	// A container where tabs can be added
 	RIM_TAB_BAR,
+	// A button in a tab bar which when clicked will show its contents
 	RIM_TAB,
+	RIM_TABLE,
 	RIM_LAYOUT_STATIC,
 	RIM_LAYOUT_DYNAMIC,
 	RIM_LAYOUT_FLEX,
+
 	RIM_CUSTOM,
-	RIM_NATIVE,
-	RIM_EOF,
+	RIM_EOF, // To allow more more than 1 child at root
 };
 
 enum RimWidgetEvent {
@@ -90,6 +110,7 @@ enum RimPropTrigger {
 
 #define TREE_MAX_DEPTH 5
 struct RimTree {
+	/// @brief Used to assign IDs to widgets in the tree
 	int counter;
 	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
@@ -102,11 +123,14 @@ struct RimEvent {
 	int is_valid;
 	int unique_id;
 	enum RimWidgetEvent type;
+
 	void *data;
+	unsigned int data_buf_size;
 	unsigned int data_length;
 };
 
 /// @brief Generic data structure holding information on a property
+// TODO: Delete this
 struct RimProp {
 	int type;
 	const char *value;
@@ -116,10 +140,31 @@ typedef void rim_on_run_callback(void *priv);
 
 struct RimContext;
 
+// Handlers for a retained mode
+struct RimBackend {
+	void *priv;
+
+	/// @brief Create a backend widget given the widget header
+	int (*create)(void *priv, struct WidgetHeader *w);
+	/// @brief Change a property of a backend widget
+	int (*tweak)(void *priv, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
+	/// @brief Append a backend widget to a parent backend widget.
+	int (*append)(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
+	/// @brief Remove a widget from a parent
+	int (*remove)(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
+	/// @brief Free the widget from memory
+	int (*destroy)(void *priv, struct WidgetHeader *w);
+	/// @brief Queue a function to run in the UI backend thread
+	int (*run)(void *priv, rim_on_run_callback *callback);
+};
+
 struct RimContext {
 	struct WidgetHeader *header;
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
+
+	struct RimBackend backends[5];
+	int n_backends;
 
 	// Backend context pointer
 	void *priv;
@@ -172,6 +217,9 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 /// @brief Find property in widget from PropType
 int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
 
+/// @brief Get a u32 property by type for a widget
+int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val);
+
 /// @brief Find the length of a node (so it can be skipped through)
 unsigned int rim_get_node_length(struct WidgetHeader *w);
 
@@ -186,15 +234,16 @@ int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id)
 /// @depth Optional, for debugging
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent);
 
-int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val);
-
 // Get event code for last created event
 int rim_last_widget_event(void);
 
 /// @brief backend calls this when a widget has an event
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id);
 
-// Run the differ using old and new tree
+/// @brief Variant of rim_on_widget_event that writes data to the event buffer
+void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id, const void *buffer, unsigned int length);
+
+/// @brief Run the differ using old and new tree and fixup the widget tree
 int rim_diff_tree(struct RimContext *ctx);
 
 // debugging only
@@ -209,9 +258,5 @@ struct RimTree *rim_get_current_tree(void);
 
 /// @brief To be used sparingly, hopefully not permanently
 struct RimContext *rim_get_global_ctx(void);
-
-// Demo UIs
-int rim_demo_window1(int state);
-int rim_demo_window2(int state);
 
 #endif

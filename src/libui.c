@@ -216,7 +216,7 @@ static void *ui_thread(void *arg) {
 static void handle_int(int code) {
 	printf("Handling sig int");
 	struct Priv *p = (struct Priv *)rim_get_global_ctx()->priv;
-	pthread_kill(p->thread, SIGKILL);
+	pthread_kill(p->thread, 9);
 	exit(0);
 }
 

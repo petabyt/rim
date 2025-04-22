@@ -1,5 +1,5 @@
 test: all
-	build/rim_demo
+	build/demo
 
 test_differ:
 	cmake --build build -t test_differ && build/test_differ

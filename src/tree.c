@@ -64,18 +64,8 @@ const char *rim_eval_widget_type(int type) {
 	case RIM_LAYOUT_DYNAMIC: return "layout_dynamic";
 	case RIM_LAYOUT_FLEX: return "layout_flex";
 	case RIM_CUSTOM: return "custom";
-	case RIM_NATIVE: return "native";
 	case RIM_EOF: return "eof";
 	}
-	abort();
-}
-
-void rim_abort(char *fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-	vprintf(fmt, args);
-	va_end(args);
-	fflush(stdout);
 	abort();
 }
 

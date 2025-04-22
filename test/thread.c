@@ -4,9 +4,12 @@
 #include <pthread.h>
 #include <unistd.h>
 
+int counter = 0;
+
 void *ext(void *arg) {
 	while (1) {
 		usleep(1000000);
+		counter++;
 		rim_trigger_event();
 	}
 	return NULL;
@@ -16,7 +19,7 @@ int main(void) {
 	struct RimContext *ctx = rim_init();
 	rim_libui_init(ctx);
 	int show_more = 1;
-	int counter = 0;
+	//int counter = 0;
 
 	pthread_t thread;
 	pthread_create(&thread, 0, ext, NULL);
@@ -32,7 +35,6 @@ int main(void) {
 			if (im_button("Show More")) {
 				show_more = !show_more;
 			}
-			counter++;
 		}
 	}
 

@@ -6,27 +6,47 @@ set(CMAKE_C_FLAGS_DEBUG "-g")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
 
-set(CORE src/tree.c src/im.c)
+set(CORE src/tree.c src/im.c src/main.c)
 
-add_library(rim_libui_gtk3 SHARED
-	${CORE}
-	src/vdom.c
-	src/libui.c
-)
-target_link_libraries(rim_libui_gtk3 LibUI::LibUI)
-target_include_directories(rim_libui_gtk3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if(UNIX)
+	add_library(rim_libui_gtk3 STATIC
+		${CORE}
+		src/vdom.c
+		src/libui.c
+	)
+	target_link_libraries(rim_libui_gtk3 LibUI::LibUI)
+	target_include_directories(rim_libui_gtk3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+	add_library(Rim:RimLibUIGTK3 ALIAS rim_libui_gtk3)
+	add_library(Rim:Rim ALIAS rim_libui_gtk3)
+endif()
+if(WIN32)
+	add_library(rim_libui_win STATIC
+		${CORE}
+		src/vdom.c
+		src/libui.c
+	)
+	target_link_libraries(rim_libui_win LibUI::LibUI)
+	target_include_directories(rim_libui_win PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+	add_library(Rim:RimLibUIWin ALIAS rim_libui_win)
+	add_library(Rim:Rim ALIAS rim_libui_win)
+endif()
 
-add_executable(rim_demo test/demo.c)
-target_link_libraries(rim_demo rim_libui_gtk3)
+function(demo NAME FILE)
+add_executable(${NAME} ${FILE} $<$<BOOL:${WIN32}>:etc/win.rc>)
+target_link_libraries(${NAME} Rim:Rim)
+endfunction()
+
+add_executable(demo test/demo.c)
+target_link_libraries(demo Rim:Rim)
 
 add_executable(ui test/ui.c)
-target_link_libraries(ui rim_libui_gtk3)
+target_link_libraries(ui Rim:Rim)
 
 add_executable(test_tree test/test_tree.c)
-target_link_libraries(test_tree rim_libui_gtk3)
+target_link_libraries(test_tree Rim:Rim)
 
 add_executable(test_differ test/test_differ.c)
-target_link_libraries(test_differ rim_libui_gtk3)
+target_link_libraries(test_differ Rim:Rim)
 
 add_executable(thread test/thread.c)
-target_link_libraries(thread rim_libui_gtk3)
+target_link_libraries(thread Rim:Rim)
