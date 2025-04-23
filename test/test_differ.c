@@ -30,7 +30,8 @@ static int on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struc
 static int on_remove_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	assert(w->os_handle != 0);
 	w->os_handle = 2; // indicates no parent
-	printf("Removing widget '%s' from '%s'\n", rim_eval_widget_type(w->type), rim_eval_widget_type(parent->type));
+	int index = rim_get_child_index(w, parent);
+	printf("Removing widget '%s' (index %d) from '%s'\n", rim_eval_widget_type(w->type), index, rim_eval_widget_type(parent->type));
 	return 0;
 }
 static int on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
@@ -41,35 +42,18 @@ static int on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, stru
 	return 0;
 }
 
-static int build_ui(struct RimTree *tree, int state) {
-	rim_add_widget(tree, RIM_WINDOW, -1);
-	rim_add_prop_text(tree, RIM_PROP_WIN_TITLE, "Title");
-		if (state) {
-			rim_add_widget(tree, RIM_LAYOUT_DYNAMIC, 0);
-				rim_add_widget(tree, RIM_BUTTON, 0);
-				rim_add_prop_text(tree, RIM_PROP_TEXT, "widget will be removed");
-				rim_end_widget(tree);
-			rim_end_widget(tree);
-		} else {
-			rim_add_widget(tree, RIM_BUTTON, 0);
-			rim_add_prop_text(tree, RIM_PROP_TEXT, "Hello World");
-			rim_end_widget(tree);
-		}
-	rim_end_widget(tree);
-	return 0;
-}
-
-static void build_ui2(int state) {
-	if (im_window("My Window", 400, 400)) {
+static void build_ui2(int counter) {
+	if (im_window("My Window", 500, 500)) {
 		char buffer[64];
-		sprintf(buffer, "State: %04d\n", state);
+		sprintf(buffer, "Events: %04d\n", counter);
 		im_label(buffer);
-		if (state & 1) {
+		if (counter & 1) {
 			im_label("Hello, World");
 		}
-		if (im_button("Show More")) {
-			
-		}
+		if (im_button("Show More")) {}
+
+		im_label("Two labels with the same text!");
+		im_label("Two labels with the same text!");
 	}
 }
 
@@ -87,12 +71,14 @@ int main(void) {
 	ctx->tweak = on_tweak_widget;
 	ctx->append = on_append_widget;
 	ctx->remove = on_remove_widget;
-	build_ui2(0);
+	int state = 0;
+	build_ui2(state);
 	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
 
-	for (int i = 0; i < 10; i++) {
+	for (int i = 1; i < 3; i++) {
+		state++;
 		swap_trees(ctx);
-		build_ui2(i);
+		build_ui2(state);
 		printf("--- diff %d ---\n", i);
 		rim_diff_tree(ctx);
 	}

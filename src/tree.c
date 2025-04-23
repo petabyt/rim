@@ -96,6 +96,7 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	h->n_props = 0;
 	h->os_handle = 0;
 	h->is_detached = 0;
+	h->invalidate = 0;
 	h->unique_id = tree->counter;
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);

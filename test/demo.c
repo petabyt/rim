@@ -18,6 +18,10 @@ int main(void) {
 			if (im_button("Show More")) {
 				show_more = !show_more;
 			}
+
+			im_label("Two labels with the same text!");
+			im_label("Two labels with the same text!");
+
 			counter++;
 		}
 	}

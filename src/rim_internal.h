@@ -18,10 +18,12 @@ struct __attribute__((packed)) WidgetHeader {
 	uint32_t n_props;
 	// Unique ID (only modified by UI backend and tree patcher)
 	uint32_t unique_id;
-	// 1 if this node is dead
-	// This is set when the node has been removed from it's parent, and it must be skipped
-	// when counting the order of other nodes
-	uint32_t is_detached;
+	// Set to 1 by the tree differ if this node is dead
+	// This is set when the node has been removed from its parent, and it must be skipped
+	// when counting the order of other nodes.
+	uint16_t is_detached;
+	// Set to 1 for the tree differ to throw away this widget even if the types match
+	uint16_t invalidate;
 
 	// Pointer handle for UI backend
 	// Note: may not be aligned by 8 bytes. May need to do two 32 bit loads.

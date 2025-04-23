@@ -5,6 +5,8 @@
 #include "rim.h"
 #include "rim_internal.h"
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 // Initializes a tree with no previous tree
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
 	int of = 0;
@@ -59,9 +61,13 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 		of += rim_destroy_tree_widgets(ctx, tree, base + of, parent);
 	}
 
+	if (h->is_detached) {
+		rim_abort("BUG: Widget already detached from parent\n");
+	}
+
 	int rc = ctx->remove(ctx, h, parent);
 	if (rc) {
-		rim_abort("Couldn't destroy widget\n");
+		rim_abort("Couldn't remove widget\n");
 	}
 
 	h->is_detached = 1;
@@ -75,8 +81,6 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 
 	return of;
 }
-
-#define max(a, b) ((a) > (b) ? (a) : (b))
 
 static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, struct WidgetHeader *parent) {
 	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
@@ -93,7 +97,7 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		rim_abort("Should this function init the tree?\n");
 	}
 
-	if (old_h->type != new_h->type) {
+	if (old_h->type != new_h->type || new_h->invalidate) {
 		// Type has changed in this widget so we'll assume the rest of the tree is unusable.
 		// So: Destroy widgets in old tree, init widgets in new tree.
 		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
@@ -101,7 +105,7 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		return 0;
 	} else {
 		// Same type, copy over handles
-		new_h->unique_id = old_h->unique_id;
+		//new_h->unique_id = old_h->unique_id;
 		new_h->os_handle = old_h->os_handle;
 	}
 
@@ -150,6 +154,7 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 	}
 
 	uint32_t max_n_child = max(old_h->n_children, new_h->n_children);
+	int invalidate_following_siblings = 0;
 	for (size_t i = 0; i < max_n_child; i++) {
 		if (i >= old_h->n_children) {
 			// Child added to tree
@@ -158,7 +163,20 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 			// Child removed from tree
 			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), old_h);
 		} else {
-			rim_patch_tree(ctx, old_of_p, new_of_p, new_h);
+			// Hack: Since the backend API currently isn't capable of inserting widgets into a parent at a specific index,
+			// (it can only append) the rest of the tree has to be thrown away if a single widget differs.
+			struct WidgetHeader *old_child_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
+			struct WidgetHeader *new_child_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
+			if (old_child_h->type != new_child_h->type) {
+				invalidate_following_siblings = 1;
+			}
+
+			if (invalidate_following_siblings) {
+				new_child_h->invalidate = 1;
+			}
+
+			// When a widget is detached, should it be detached in both new and old trees?
+			rim_patch_tree(ctx, old_of_p, new_of_p, old_h); // passing the new parent won't let old widgets detach themselves!
 		}
 	}
 
@@ -243,7 +261,7 @@ static void diff_tree(void *priv) {
 
 int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->last_event.is_valid) {
-		rim_abort("Event ignored\n");
+		rim_abort("Event not consumed by user\n");
 	}
 
 	//pthread_mutex_unlock(&ctx->event_mutex);
