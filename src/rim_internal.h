@@ -132,13 +132,6 @@ struct RimEvent {
 	unsigned int data_length;
 };
 
-/// @brief Generic data structure holding information on a property
-// TODO: Delete this
-struct RimProp {
-	int type;
-	const char *value;
-};
-
 typedef void rim_on_run_callback(void *priv);
 
 /// @brief Structure holding handlers for an extension widget(s) on top of the backend
@@ -156,9 +149,6 @@ struct RimExtension {
 	/// @brief Free the widget from memory
 	int (*destroy)(void *priv, struct WidgetHeader *w);
 };
-
-/// @brief Add an extension to the current context
-void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
 
 struct RimContext {
 	struct RimTree *tree_old;
@@ -183,6 +173,9 @@ struct RimContext {
 	sem_t event_sig;
 	sem_t event_consumed_sig;
 };
+
+/// @brief Add an extension to the current context
+void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
 
 /// @defgroup Backend implementation functions
 /// @addtogroup backend
@@ -226,12 +219,11 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 /// @brief End adding properties or children to the current widget and switch to it's parent
 void rim_end_widget(struct RimTree *tree);
 /// @brief Add a property with a string being the only payload
-void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *value);
+void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value);
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
 
-/// @brief Find property in widget from PropType
-int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type);
+int rim_get_prop_string(struct WidgetHeader *h, int type, char **val);
 
 /// @brief Get a u32 property by type for a widget
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val);

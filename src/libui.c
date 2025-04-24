@@ -84,10 +84,10 @@ static void on_changed(uiEntry *entry, void *arg) {
 
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
-	struct RimProp prop;
+	char *string = NULL;
 	switch (w->type) {
 	case RIM_WINDOW: {
-		assert(rim_get_prop(w, &prop, RIM_PROP_WIN_TITLE) == 0);
+		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string) == 0);
 
 		uint32_t win_width, win_height;
 		assert(rim_get_prop_u32(w, RIM_PROP_WIN_WIDTH, &win_width) == 0);
@@ -96,7 +96,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		win_width = rim_dp_to_px(win_width);
 		win_height = rim_dp_to_px(win_height);
 
-		uiWindow *handle = uiNewWindow(prop.value, (int)win_width, (int)win_height, 0);
+		uiWindow *handle = uiNewWindow(string, (int)win_width, (int)win_height, 0);
 		uiWindowOnClosing(handle, window_closed, (void *)(uintptr_t)w->unique_id);
 		if (p->make_window_a_layout) {
 			uiBox *container = uiNewVerticalBox();
@@ -108,20 +108,20 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		}
 		} return 0;
 	case RIM_BUTTON: {
-		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
-		uiButton *handle = uiNewButton(prop.value);
+		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		uiButton *handle = uiNewButton(string);
 		uiButtonOnClicked(handle, button_clicked, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_LABEL: {
-		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
-		uiLabel *handle = uiNewLabel(prop.value);
+		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		uiLabel *handle = uiNewLabel(string);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_ENTRY: {
-		assert(rim_get_prop(w, &prop, RIM_PROP_TEXT) == 0);
+		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
 		uiEntry *handle = uiNewEntry();
-		uiEntrySetText(handle, prop.value);
+		uiEntrySetText(handle, string);
 		uiEntryOnChanged(handle, on_changed, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
@@ -144,7 +144,7 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		return 0;
 	}
 
-	struct RimProp prop;
+	char *title = NULL;
 
 	switch (parent->type) {
 	case RIM_WINDOW:
@@ -159,8 +159,8 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
 		return 0;
 	case RIM_TAB_BAR:
-		assert(rim_get_prop(w, &prop, RIM_PROP_WIN_TITLE) == 0);
-		uiTabAppend((uiTab *)parent->os_handle, (const char *)prop.value, (uiControl *)w->os_handle);
+		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title) == 0);
+		uiTabAppend((uiTab *)parent->os_handle, title, (uiControl *)w->os_handle);
 		return 0;
 	}
 	return 1;

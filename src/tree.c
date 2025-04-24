@@ -131,7 +131,7 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	}
 }
 
-void rim_add_prop_text(struct RimTree *tree, enum RimPropType type, const char *value) {
+void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
 	if (tree->widget_stack_depth == 0) {
 		rim_abort("No widget to add property to\n");
 	}
@@ -159,13 +159,12 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	parent->n_props++;
 }
 
-int rim_get_prop(struct WidgetHeader *h, struct RimProp *np, int type) {
+int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
 	int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
 		if ((int)p->type == type) {
-			np->type = (int)p->type;
-			np->value = (const char *)p->data;
+			(*val) = (char *)p->data;
 			return 0;
 		}
 		of += (int)p->length;
