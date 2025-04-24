@@ -20,10 +20,4 @@ int rim_poll(rim_ctx_t *ctx);
 /// Caller will have to ensure thread safety between any data shared between threads.
 void rim_trigger_event(void);
 
-/// @brief Initializes the libui virtual dom
-int rim_libui_init(rim_ctx_t *ctx);
-
-/// @brief Creates a new instance
-rim_ctx_t *rim_imgui_init(void);
-
 #endif

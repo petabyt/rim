@@ -17,7 +17,7 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 	struct WidgetHeader *h = (struct WidgetHeader *)(buffer + of);
 	of += sizeof(struct WidgetHeader);
 
-	int rc = ctx->create(ctx, h);
+	int rc = rim_widget_create(ctx, h);
 	if (rc) {
 		rim_abort("Couldn't create widget %s\n", rim_eval_widget_type(h->type));
 	}
@@ -26,7 +26,7 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 		rim_abort("BUG: h->os_handle is null %x\n");
 	}
 
-	rc = ctx->append(ctx, h, parent);
+	rc = rim_widget_append(ctx, h, parent);
 	if (rc) {
 		rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
 	}
@@ -43,6 +43,7 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 	return of;
 }
 
+// Destroys a node and its children and removes them all from their parents
 int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
 	int of = 0;
 	uint8_t *buffer = tree->buffer + base;
@@ -65,14 +66,14 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 		rim_abort("BUG: Widget already detached from parent\n");
 	}
 
-	int rc = ctx->remove(ctx, h, parent);
+	int rc = rim_widget_remove(ctx, h, parent);
 	if (rc) {
 		rim_abort("Couldn't remove widget\n");
 	}
 
 	h->is_detached = 1;
 
-	rc = ctx->destroy(ctx, h);
+	rc = rim_widget_destroy(ctx, h);
 	if (rc) {
 		rim_abort("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
 	}
@@ -122,13 +123,13 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 		struct WidgetProp *new_p = (struct WidgetProp *)(ctx->tree_new->buffer + (*new_of_p));
 
 		if (i >= old_h->n_props) {
-			if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+			if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
 				rim_abort("Failed to add property\n");
 			}
 			(*new_of_p) += (int)new_p->length;
 			continue;
 		} else if (i >= new_h->n_props) {
-			if (ctx->tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
+			if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
 				rim_abort("Failed to remove property");
 			}
 			(*old_of_p) += (int)old_p->length;
@@ -138,11 +139,11 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 				// Property has the same state
 			} else {
 				if (old_p->type == new_p->type) {
-					if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
+					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
 						rim_abort("Failed to change property\n");
 					}
 				} else {
-					if (ctx->tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
 						rim_abort("Failed to add property\n");
 					}
 				}
@@ -163,8 +164,8 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 			// Child removed from tree
 			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), old_h);
 		} else {
-			// Hack: Since the backend API currently isn't capable of inserting widgets into a parent at a specific index,
-			// (it can only append) the rest of the tree has to be thrown away if a single widget differs.
+			// Sad: Since the backend API currently isn't capable of inserting widgets into a parent at a specific index
+			// (it can only append), the rest of the tree has to be thrown away if a single widget differs.
 			struct WidgetHeader *old_child_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 			struct WidgetHeader *new_child_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
 			if (old_child_h->type != new_child_h->type) {
@@ -261,7 +262,7 @@ static void diff_tree(void *priv) {
 
 int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->last_event.is_valid) {
-		rim_abort("Event not consumed by user\n");
+		rim_abort("Event not consumed by application\n");
 	}
 
 	//pthread_mutex_unlock(&ctx->event_mutex);
@@ -269,11 +270,11 @@ int rim_poll(rim_ctx_t *ctx) {
 	void usleep(unsigned int us);
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
-		ctx->run(ctx, work_tree);
+		rim_backend_run(ctx, work_tree);
 		sem_wait(&ctx->run_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents
-		ctx->run(ctx, diff_tree);
+		rim_backend_run(ctx, diff_tree);
 		sem_wait(&ctx->run_done_signal);
 	} else {
 		printf("Empty frame\n");

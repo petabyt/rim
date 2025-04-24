@@ -6,12 +6,14 @@ set(CMAKE_C_FLAGS_DEBUG "-g")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
 
-set(CORE src/tree.c src/im.c src/main.c)
+set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
+
+add_library(rim_base STATIC ${RIM_CORE})
+target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(UNIX)
 	add_library(rim_libui_gtk3 STATIC
-		${CORE}
-		src/vdom.c
+		${RIM_CORE}
 		src/libui.c
 	)
 	target_link_libraries(rim_libui_gtk3 LibUI::LibUI)
@@ -21,8 +23,7 @@ if(UNIX)
 endif()
 if(WIN32)
 	add_library(rim_libui_win STATIC
-		${CORE}
-		src/vdom.c
+		${RIM_CORE}
 		src/libui.c
 	)
 	target_link_libraries(rim_libui_win LibUI::LibUI)
@@ -46,7 +47,7 @@ add_executable(test_tree test/test_tree.c)
 target_link_libraries(test_tree Rim:Rim)
 
 add_executable(test_differ test/test_differ.c)
-target_link_libraries(test_differ Rim:Rim)
+target_link_libraries(test_differ rim_base)
 
 add_executable(thread test/thread.c)
 target_link_libraries(thread Rim:Rim)

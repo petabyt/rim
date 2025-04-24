@@ -47,6 +47,7 @@ _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 /// >=0x1000 is reserved for custom widgets
 enum RimPropType {
 	RIM_PROP_WIN_TITLE = 1,
+	RIM_PROP_WIN_ICON,
 	RIM_PROP_WIN_WIDTH,
 	RIM_PROP_WIN_HEIGHT,
 	// Primary text for a widget
@@ -140,10 +141,8 @@ struct RimProp {
 
 typedef void rim_on_run_callback(void *priv);
 
-struct RimContext;
-
-// Handlers for a retained mode
-struct RimBackend {
+/// @brief Structure holding handlers for an extension widget(s) on top of the backend
+struct RimExtension {
 	void *priv;
 
 	/// @brief Create a backend widget given the widget header
@@ -156,37 +155,24 @@ struct RimBackend {
 	int (*remove)(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
 	/// @brief Free the widget from memory
 	int (*destroy)(void *priv, struct WidgetHeader *w);
-	/// @brief Queue a function to run in the UI backend thread
-	int (*run)(void *priv, rim_on_run_callback *callback);
 };
 
+/// @brief Add an extension to the current context
+void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
+
 struct RimContext {
-	struct WidgetHeader *header;
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
 
-	struct RimBackend backends[5];
-	int n_backends;
+	struct RimExtension exts[5];
+	int n_exts;
 
 	// Backend context pointer
 	void *priv;
 
-	/// @brief Create a backend widget given the widget header
-	int (*create)(struct RimContext *ctx, struct WidgetHeader *w);
-	/// @brief Change a property of a backend widget
-	int (*tweak)(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
-	/// @brief Append a backend widget to a parent backend widget.
-	/// @todo What should happen if a widget can't be appended to something?
-	int (*append)(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-	/// @brief Remove a widget from a parent
-	int (*remove)(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-	/// @brief Free the widget from memory
-	int (*destroy)(struct RimContext *ctx, struct WidgetHeader *w);
-	/// @brief Queue a function to run in the UI backend thread
-	int (*run)(struct RimContext *ctx, rim_on_run_callback *callback);
-
+	// Used to signal when rim_backend_run is finished
 	sem_t run_done_signal;
-
+	// Mutex protecting all of the event members of this struct
 	pthread_mutex_t event_mutex;
 	// Only one event is processed at a time
 	struct RimEvent last_event;
@@ -197,6 +183,34 @@ struct RimContext {
 	sem_t event_sig;
 	sem_t event_consumed_sig;
 };
+
+/// @defgroup Backend implementation functions
+/// @addtogroup backend
+/// @{
+int rim_backend_init(struct RimContext *ctx);
+/// @brief Create a backend widget given the widget header
+int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w);
+/// @brief Free the widget from memory
+int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w);
+/// @brief Remove a widget from a parent
+int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+/// @brief Append a backend widget to a parent backend widget.
+int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+/// @brief Change a property of a backend widget
+int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
+/// @brief Queue a function to run in the UI backend thread
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback);
+/// @}
+
+/// @defgroup Extension/backend wrapper interface for
+/// @addtogroup backend
+/// @{
+int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w);
+int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
+int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
+int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w);
+/// @}
 
 /// @brief Create a widget tree
 struct RimTree *rim_create_tree(void);
@@ -249,7 +263,7 @@ void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event,
 int rim_diff_tree(struct RimContext *ctx);
 
 // debugging only
-const char *rim_eval_widget_type(int type);
+const char *rim_eval_widget_type(uint32_t type);
 
 // debugging only
 void rim_abort(char *fmt, ...);

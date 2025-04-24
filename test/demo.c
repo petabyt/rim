@@ -4,7 +4,6 @@
 
 int main(void) {
 	struct RimContext *ctx = rim_init();
-	rim_libui_init(ctx);
 	int show_more = 1;
 	int counter = 0;
 	while (rim_poll(ctx)) {
@@ -12,11 +11,11 @@ int main(void) {
 			char buffer[64];
 			sprintf(buffer, "Events: %04d\n", counter);
 			im_label(buffer);
-			if (show_more) {
-				im_label("Hello, World");
-			}
 			if (im_button("Show More")) {
 				show_more = !show_more;
+			}
+			if (show_more) {
+				im_label("Hello, World");
 			}
 
 			im_label("Two labels with the same text!");

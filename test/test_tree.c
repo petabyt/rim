@@ -14,7 +14,6 @@ int dump_widget_location(void) {
 
 int main() {
 	struct RimContext *ctx = rim_init();
-	rim_libui_init(ctx);
 	int show_more = 0;
 
 	if (im_window("My Window", 640, 480)) {

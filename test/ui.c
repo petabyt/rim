@@ -4,7 +4,6 @@
 
 int main(void) {
 	struct RimContext *ctx = rim_init();
-	rim_libui_init(ctx);
 	int show_more = 1;
 	int counter = 0;
 	int selected = 0;

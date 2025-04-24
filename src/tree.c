@@ -44,7 +44,7 @@ inline static uint32_t read_u32(const uint8_t *from, uint32_t *temp) {
 	return 4;
 }
 
-const char *rim_eval_widget_type(int type) {
+const char *rim_eval_widget_type(uint32_t type) {
 	switch (type) {
 	case RIM_WINDOW: return "window";
 	case RIM_LABEL: return "label";

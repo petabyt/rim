@@ -20,7 +20,7 @@ struct Priv {
 	sem_t wait_until_ready;
 };
 
-int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
 		// Is this even needed?
 		uiControlHide((uiControl *)w->os_handle);
@@ -43,7 +43,7 @@ int on_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 	return 1;
 }
 
-int on_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
+int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
 	case RIM_TAB:
 	case RIM_WINDOW:
@@ -82,7 +82,7 @@ static void on_changed(uiEntry *entry, void *arg) {
 	pthread_mutex_unlock(&ctx->event_mutex);
 }
 
-int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
+int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 	struct RimProp prop;
 	switch (w->type) {
@@ -137,7 +137,7 @@ int on_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	}
 	return 1;
 }
-int on_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	struct Priv *p = ctx->priv;
 	if (parent == NULL) {
 		// Handle root element, being appended to nothing?
@@ -165,11 +165,8 @@ int on_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeade
 	}
 	return 1;
 }
-int on_unappend(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	return 0;
-}
 
-int on_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
 	switch (w->type) {
 	case RIM_LABEL:
 		if (prop->type == RIM_PROP_TEXT) {
@@ -185,7 +182,7 @@ int on_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *
 	return 1;
 }
 
-int on_run(struct RimContext *ctx, rim_on_run_callback *callback) {
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
 	uiQueueMain(callback, ctx);
 	return 0;
 }
@@ -220,15 +217,7 @@ static void handle_int(int code) {
 	exit(0);
 }
 
-int rim_libui_init(rim_ctx_t *ctx) {
-	ctx->create = on_create;
-	ctx->append = on_append;
-	ctx->tweak = on_tweak;
-	ctx->append = on_append;
-	ctx->destroy = on_destroy;
-	ctx->remove = on_remove;
-	ctx->run = on_run;
-
+int rim_backend_init(struct RimContext *ctx) {
 	ctx->priv = malloc(sizeof(struct Priv));
 	struct Priv *p = ctx->priv;
 	p->make_window_a_layout = 1;

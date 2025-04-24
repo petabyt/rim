@@ -20,7 +20,6 @@ void rim_abort(char *fmt, ...) {
 
 struct RimContext *rim_init(void) {
 	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
-	ctx->header = 0;
 	ctx->event_counter = 1; // 1 event for rim_poll to be called twice at beginning
 
 	ctx->tree_new = rim_create_tree();
@@ -41,18 +40,82 @@ struct RimContext *rim_init(void) {
 
 	global_context = ctx;
 
+	if (rim_backend_init(ctx)) {
+		rim_abort("Failed to init backend\n");
+	}	
+
 	return ctx;
 }
 
-int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
-	void *priv = ctx->priv;
-	for (int i = 0; i < ctx->n_backends; i++) {
-		int rc = ctx->backends[i].create(priv, w);
+void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext) {
+	if (ctx->n_exts >= 5) rim_abort("more than 5 exts\n");
+	memcpy(&ctx->exts[ctx->n_exts], ext, sizeof(struct RimExtension));
+	ctx->n_exts++;
+}
+
+int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
+	int rc = rim_backend_create(ctx, w);
+	if (rc == 0) return 0;
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].create) continue;
+		rc = ctx->exts[i].create(ctx->exts[i].priv, w);
 		if (rc == 0) {
 			return 0;
 		}
 	}
 
+	return -1;
+}
+
+int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+	int rc = rim_backend_tweak(ctx, w, prop, type);
+	if (rc == 0) return 0;
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].tweak) continue;
+		rc = ctx->exts[i].tweak(ctx->exts[i].priv, w, prop, type);
+		if (rc == 0) {
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	int rc = rim_backend_append(ctx, w, parent);
+	if (rc == 0) return 0;
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].append) continue;
+		rc = ctx->exts[i].append(ctx->exts[i].priv, w, parent);
+		if (rc == 0) {
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	int rc = rim_backend_remove(ctx, w, parent);
+	if (rc == 0) return 0;
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].remove) continue;
+		rc = ctx->exts[i].remove(ctx->exts[i].priv, w, parent);
+		if (rc == 0) {
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
+	int rc = rim_backend_destroy(ctx, w);
+	if (rc == 0) return 0;
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].destroy) continue;
+		rc = ctx->exts[i].destroy(ctx->exts[i].priv, w);
+		if (rc == 0) {
+			return 0;
+		}
+	}
 	return -1;
 }
 

@@ -5,18 +5,18 @@
 #include <im.h>
 #include <rim_internal.h>
 
-static int on_create_widget(struct RimContext *ctx, struct WidgetHeader *w) {
+int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	printf("Creating a new widget '%s'\n", rim_eval_widget_type(w->type));
 	w->os_handle = 1;
 	return 0;
 }
-static int on_free_widget(struct RimContext *ctx, struct WidgetHeader *w) {
+int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	printf("Freeing a widget '%s'\n", rim_eval_widget_type(w->type));
 	assert(w->os_handle == 2);
 	w->os_handle = 0;
 	return 0;
 }
-static int on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
 	assert(w->os_handle != 0);
 	if (type == RIM_PROP_ADDED) {
 		printf("Adding prop to widget '%s'\n", rim_eval_widget_type(w->type));
@@ -27,18 +27,26 @@ static int on_tweak_widget(struct RimContext *ctx, struct WidgetHeader *w, struc
 	}
 	return 0;
 }
-static int on_remove_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	assert(w->os_handle != 0);
 	w->os_handle = 2; // indicates no parent
 	int index = rim_get_child_index(w, parent);
 	printf("Removing widget '%s' (index %d) from '%s'\n", rim_eval_widget_type(w->type), index, rim_eval_widget_type(parent->type));
 	return 0;
 }
-static int on_append_widget(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	assert(w->os_handle != 0);
 	const char *parent_type = "(root)";
 	if (parent != NULL) parent_type = rim_eval_widget_type(parent->type);
 	printf("Appending widget '%s' to '%s'\n", rim_eval_widget_type(w->type), parent_type);
+	return 0;
+}
+
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
+	return 0;
+}
+
+int rim_backend_init(struct RimContext *ctx) {
 	return 0;
 }
 
@@ -66,11 +74,6 @@ static void swap_trees(struct RimContext *ctx) {
 
 int main(void) {
 	struct RimContext *ctx = rim_init();
-	ctx->create = on_create_widget;
-	ctx->destroy = on_free_widget;
-	ctx->tweak = on_tweak_widget;
-	ctx->append = on_append_widget;
-	ctx->remove = on_remove_widget;
 	int state = 0;
 	build_ui2(state);
 	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
