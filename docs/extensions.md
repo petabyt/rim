@@ -3,12 +3,11 @@
 void im_my_widget(const char *text) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, 0x8008135, 0);
-	rim_add_prop_text(tree, RIM_PROP_TEXT, label);
+	rim_add_prop_string(tree, RIM_PROP_TEXT, label);
 	rim_end_widget(tree);
 }
 ```
 
-Like `rim_libui_init`, there is also this:
 ```
 int rim_my_widget_init(rim_ctx_t *ctx);
 ```

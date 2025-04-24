@@ -16,7 +16,7 @@ That's what Rim is.
 **Modular backend**
 
 - Rim is capable of supporting multiple different UI toolkits (backends).
-- currently [LibUI](https://github.com/libui-ng/libui-ng) is the only backend. Adding a Qt or wxWidgets backend would be trivial.
+- currently [LibUI](https://github.com/libui-ng/libui-ng) is the only backend, but adding a Qt or wxWidgets backend would be trivial.
 - LibUI backend Supports Win32 (Windows Common Controls), MacOS (Cocoa), and Linux (GTK3)
 
 **Powerful API**
@@ -33,16 +33,15 @@ The tree builder and differ is fast enough that there should be virtually zero o
 **Easy to use**
 ```
 int main(void) {
-	struct RimContext *ctx = rim_init();
-	rim_libui_init(ctx);
-	int show_more = 0;
-	while (rim_poll(ctx)) {
-		if (im_window("My Window", 500, 500)) {
-			if (im_button("Hello")) show_more != show_more;
-			if (show_more) im_label("Two labels with the same text!");
-		}
-	}
-	return 0;
+    struct RimContext *ctx = rim_init();
+    int show_more = 0;
+    while (rim_poll(ctx)) {
+        if (im_window("My Window", 500, 500)) {
+            if (im_button("Hello")) show_more != show_more;
+            if (show_more) im_label("Two labels with the same text!");
+        }
+    }
+    return 0;
 }
 ```
 
