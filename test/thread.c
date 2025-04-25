@@ -34,6 +34,7 @@ int main(void) {
 			if (im_button("Show More")) {
 				show_more = !show_more;
 			}
+			im_end_window();
 		}
 	}
 

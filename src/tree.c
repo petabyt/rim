@@ -73,6 +73,7 @@ void rim_reset_tree(struct RimTree *tree) {
 	tree->widget_stack_depth = 0;
 	tree->of = 0;
 	tree->counter = 0;
+	tree->n_root_children = 0;
 }
 
 struct RimTree *rim_create_tree(void) {
@@ -100,6 +101,10 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	h->unique_id = tree->counter;
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
+
+	if (tree->widget_stack_depth == 0) {
+		tree->n_root_children++;
+	}
 
 	tree->counter++;
 

@@ -32,11 +32,6 @@ if(WIN32)
 	add_library(Rim:Rim ALIAS rim_libui_win)
 endif()
 
-function(demo NAME FILE)
-add_executable(${NAME} ${FILE} $<$<BOOL:${WIN32}>:etc/win.rc>)
-target_link_libraries(${NAME} Rim:Rim)
-endfunction()
-
 add_executable(demo test/demo.c)
 target_link_libraries(demo Rim:Rim)
 
@@ -51,3 +46,6 @@ target_link_libraries(test_differ rim_base)
 
 add_executable(thread test/thread.c)
 target_link_libraries(thread Rim:Rim)
+
+add_executable(windows test/windows.c)
+target_link_libraries(windows Rim:Rim)

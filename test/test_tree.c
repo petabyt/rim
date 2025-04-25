@@ -24,6 +24,7 @@ int main() {
 		if (show_more) {
 			im_label("Hello, World");
 		}
+		im_end_window();
 	}
 
 	return 0;

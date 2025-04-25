@@ -248,14 +248,35 @@ void rim_trigger_event(void) {
 	sem_post(&ctx->event_sig);
 }
 
-static void work_tree(void *priv) {
+static void init_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
+	unsigned int base = 0;
+	for (int i = 0; i < ctx->tree_new->n_root_children; i++) {
+		base += rim_init_tree_widgets(ctx, ctx->tree_new, base, NULL);
+	}
 	sem_post(&ctx->run_done_signal);
 }
 
 static void diff_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
+
+	int max_root_children = max(ctx->tree_new->n_root_children, ctx->tree_old->n_root_children);
+
+	int old_of = 0;
+	int new_of = 0;
+	for (int i = 0; i < max_root_children; i++) {
+		if (i > ctx->tree_new->n_root_children) {
+			// Window removed
+			old_of += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, NULL);
+		} else if (i > ctx->tree_old->n_root_children) {
+			// Window added
+			old_of += rim_init_tree_widgets(ctx, ctx->tree_new, old_of, NULL);
+		} else {
+			int rc = rim_patch_tree(ctx, &old_of, &new_of, NULL);
+			if (rc) rim_abort("differ failed\n");
+		}
+	}
+
 	rim_diff_tree(ctx);
 	sem_post(&ctx->run_done_signal);
 }
@@ -270,7 +291,7 @@ int rim_poll(rim_ctx_t *ctx) {
 	void usleep(unsigned int us);
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
-		rim_backend_run(ctx, work_tree);
+		rim_backend_run(ctx, init_tree);
 		sem_wait(&ctx->run_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents

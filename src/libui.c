@@ -71,15 +71,18 @@ static void button_clicked(uiButton *button, void *arg) {
 
 static void on_changed(uiEntry *entry, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
-
-	pthread_mutex_lock(&ctx->event_mutex);
-
 	char *text = uiEntryText(entry);
-	ctx->last_event.data_length = strlen(text) + 1;
-	ctx->last_event.data = malloc(ctx->last_event.data_length);
-	strcpy(ctx->last_event.data, text);
-	rim_on_widget_event(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg);
-	pthread_mutex_unlock(&ctx->event_mutex);
+	unsigned int len = strlen(text) + 1;
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, text, len);
+	uiFreeText(text);
+}
+
+static void on_multiline_changed(uiMultilineEntry *entry, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	char *text = uiMultilineEntryText(entry);
+	unsigned int len = strlen(text) + 1;
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, text, len);
+	uiFreeText(text);
 }
 
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
@@ -90,8 +93,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string) == 0);
 
 		uint32_t win_width, win_height;
-		assert(rim_get_prop_u32(w, RIM_PROP_WIN_WIDTH, &win_width) == 0);
-		assert(rim_get_prop_u32(w, RIM_PROP_WIN_HEIGHT, &win_height) == 0);
+		assert(rim_get_prop_u32(w, RIM_PROP_WIDTH_DP, &win_width) == 0);
+		assert(rim_get_prop_u32(w, RIM_PROP_HEIGHT_DP, &win_height) == 0);
 
 		win_width = rim_dp_to_px(win_width);
 		win_height = rim_dp_to_px(win_height);
@@ -125,6 +128,13 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiEntryOnChanged(handle, on_changed, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
+	case RIM_MULTILINE_ENTRY: {
+		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		uiMultilineEntry *handle = uiNewMultilineEntry();
+		uiMultilineEntrySetText(handle, string);
+		uiMultilineEntryOnChanged(handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
+		w->os_handle = (uintptr_t)handle;
+		} return 0;
 	case RIM_LAYOUT_STATIC: {
 		w->os_handle = (uintptr_t)uiNewHorizontalBox();
 		} return 0;
@@ -140,7 +150,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	struct Priv *p = ctx->priv;
 	if (parent == NULL) {
-		// Handle root element, being appended to nothing?
+		// Handle being appended to root?
 		return 0;
 	}
 
@@ -176,6 +186,11 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	case RIM_ENTRY:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiEntrySetText((uiEntry *)w->os_handle, (const char *)prop->data);
+			return 0;
+		}
+	case RIM_MULTILINE_ENTRY:
+		if (prop->type == RIM_PROP_TEXT) {
+			uiMultilineEntrySetText((uiMultilineEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
 	}

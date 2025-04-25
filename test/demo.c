@@ -22,6 +22,7 @@ int main(void) {
 			im_label("Two labels with the same text!");
 
 			counter++;
+			im_end_window();
 		}
 	}
 

@@ -23,8 +23,8 @@ int im_window(const char *name, int width, int height) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_WINDOW, -1);
 	rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, name);
-	rim_add_prop_u32(tree, RIM_PROP_WIN_WIDTH, (uint32_t)width);
-	rim_add_prop_u32(tree, RIM_PROP_WIN_HEIGHT, (uint32_t)height);
+	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width);
+	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height);
 	return 1;
 }
 

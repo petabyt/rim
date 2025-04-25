@@ -27,6 +27,7 @@ int main(void) {
 				}
 				im_end_tab_bar();
 			}
+			im_end_window();
 		}
 	}
 

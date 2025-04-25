@@ -62,6 +62,7 @@ static void build_ui2(int counter) {
 
 		im_label("Two labels with the same text!");
 		im_label("Two labels with the same text!");
+		im_end_window();
 	}
 }
 

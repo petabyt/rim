@@ -48,8 +48,10 @@ _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 enum RimPropType {
 	RIM_PROP_WIN_TITLE = 1,
 	RIM_PROP_WIN_ICON,
-	RIM_PROP_WIN_WIDTH,
-	RIM_PROP_WIN_HEIGHT,
+	// Generic 'dp' width
+	RIM_PROP_WIDTH_DP,
+	// Generic 'dp' height
+	RIM_PROP_HEIGHT_DP,
 	// Primary text for a widget
 	RIM_PROP_TEXT,
 	// Secondary text usually placed to the left of the widget
@@ -75,6 +77,8 @@ enum RimWidgetType {
 	RIM_IMAGE,
 	// Single-line text box that can be modified by user
 	RIM_ENTRY,
+	// Multiline text box entry
+	RIM_MULTILINE_ENTRY,
 	// Box with buttons to decrement/increment, usually for a number
 	RIM_SPINBOX,
 	// Horizontal slider
@@ -95,7 +99,7 @@ enum RimWidgetType {
 	RIM_LAYOUT_FLEX,
 
 	RIM_CUSTOM,
-	RIM_EOF, // To allow more more than 1 child at root
+	RIM_EOF, // To allow more than 1 child at root
 };
 
 enum RimWidgetEvent {
@@ -115,6 +119,8 @@ enum RimPropTrigger {
 struct RimTree {
 	/// @brief Used to assign IDs to widgets in the tree
 	int counter;
+	/// @brief Number of children at root in tree
+	int n_root_children;
 	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
@@ -223,6 +229,8 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
 
+/// @brief Get string property
+/// @param val Set to the pointer of a standard null terminated string
 int rim_get_prop_string(struct WidgetHeader *h, int type, char **val);
 
 /// @brief Get a u32 property by type for a widget
@@ -231,10 +239,12 @@ int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val);
 /// @brief Find the length of a node (so it can be skipped through)
 unsigned int rim_get_node_length(struct WidgetHeader *w);
 
-// Get the index of a child using it's parent
+/// @brief Get the index of a child using its parent
+/// This will skip dead nodes to get the accurate index in the backend widget
 int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent);
 
-/// @brief Find a node in a tree via it's ID
+/// @brief Find a node in a tree via it's unique id
+/// @param of Set to the offset of where the widget is
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id);
 
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.

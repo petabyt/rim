@@ -1,12 +1,12 @@
 #ifndef NAITVE_IMGUI_H
 #define NAITVE_IMGUI_H
 
+typedef struct RimContext rim_ctx_t;
+
+/// @brief Try and get the correct DPI value for the system, ideally what has been set by the user
 int rim_get_dpi(void);
 
 #define rim_dp_to_px(dp) ((rim_get_dpi() * (dp)) / 160)
-
-/// @brief Internal structure that maintains the state of the UI
-typedef struct RimContext rim_ctx_t;
 
 /// @brief Initialize the context structure
 /// After this, the UI backend must be initialized.

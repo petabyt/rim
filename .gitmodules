@@ -1,0 +1,3 @@
+[submodule "libs/libui-dev"]
+	path = libs/libui-dev
+	url = git@github.com:petabyt/libui-dev.git
