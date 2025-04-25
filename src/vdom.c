@@ -277,7 +277,6 @@ static void diff_tree(void *priv) {
 		}
 	}
 
-	rim_diff_tree(ctx);
 	sem_post(&ctx->run_done_signal);
 }
 

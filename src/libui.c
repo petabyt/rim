@@ -177,22 +177,34 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 }
 
 int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+	struct Priv *p = ctx->priv;
 	switch (w->type) {
+	case RIM_WINDOW:
+		if (prop->type == RIM_PROP_WIN_TITLE) {
+			if (p->make_window_a_layout) {
+				uiWindowSetTitle((uiWindow *)uiControlParent((uiControl *)w->os_handle), (const char *)prop->data);
+				return 0;
+			}
+		}
+		break;
 	case RIM_LABEL:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiLabelSetText((uiLabel *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
+		break;
 	case RIM_ENTRY:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiEntrySetText((uiEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
+		break;
 	case RIM_MULTILINE_ENTRY:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiMultilineEntrySetText((uiMultilineEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
+		break;
 	}
 	return 1;
 }
