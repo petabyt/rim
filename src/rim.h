@@ -20,4 +20,7 @@ int rim_poll(rim_ctx_t *ctx);
 /// Caller will have to ensure thread safety between any data shared between threads.
 void rim_trigger_event(void);
 
+// Extension
+int rim_scintilla_init(struct RimContext *ctx);
+
 #endif

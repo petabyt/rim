@@ -28,11 +28,16 @@ struct __attribute__((packed)) WidgetHeader {
 	// Pointer handle for UI backend
 	// Note: may not be aligned by 8 bytes. May need to do two 32 bit loads.
 	uintptr_t os_handle;
-	uint8_t data[];
 	// properties start here
 	// children start here
+	uint8_t data[];
 };
-_Static_assert(sizeof(struct WidgetHeader) == 28 + 4, "fail size");
+_Static_assert(sizeof(struct WidgetHeader) == 32, "fail size");
+
+// To avoid misaligned by 8 accesses, this may be needed
+static inline uintptr_t get_os_handle(struct WidgetHeader *w) {
+	return w->os_handle;
+}
 
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
@@ -56,6 +61,7 @@ enum RimPropType {
 	RIM_PROP_TEXT,
 	// Secondary text usually placed to the left of the widget
 	RIM_PROP_LABEL,
+	RIM_PROP_EXPAND,
 	RIM_PROP_META,
 };
 

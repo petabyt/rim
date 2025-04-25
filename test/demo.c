@@ -7,7 +7,7 @@ int main(void) {
 	int show_more = 1;
 	int counter = 0;
 	while (rim_poll(ctx)) {
-		if (im_window("My Window", 500, 500)) {
+		if (im_begin_window("My Window", 500, 500)) {
 			char buffer[64];
 			sprintf(buffer, "Events: %04d\n", counter);
 			im_label(buffer);

@@ -46,19 +46,20 @@ struct ImModifier {
 	unsigned int padding[4];
 };
 
-int im_push_disabled(void);
-int im_pop_disabled(void);
+int im_begin_disabled(void);
+int im_end_disabled(void);
 
-void im_set_last_tooltip(const char *label);
-void im_set_last_disabled(int opt);
+void im_set_next_tooltip(const char *label);
+void im_set_next_disabled(int opt);
+void im_set_next_expand();
 
 /// @returns IM_CHILDREN_VISIBLE
-int im_tab_bar(int *selected);
-int im_tab(const char *title);
+int im_begin_tab_bar(int *selected);
+int im_begin_tab(const char *title);
 void im_end_tab(void);
 void im_end_tab_bar(void);
 
-int im_combo_box(const char *label, const char *preview);
+int im_begin_combo_box(const char *label, const char *preview);
 int im_add_combo_box_item(const char *label, int *selected);
 void im_end_combo_box(void);
 
@@ -68,8 +69,8 @@ int im_button(const char *label);
 int im_button_ex(const char *label, struct ImModifier *mod);
 int im_label(const char *label);
 
-int im_window(const char *name, int width_dp, int height_dp);
-int im_window_ex(const char *name, int width_dp, int height_dp, int flags);
+int im_begin_window(const char *name, int width_dp, int height_dp);
+int im_begin_window_ex(const char *name, int width_dp, int height_dp, int flags);
 void im_end_window(void);
 
 /// @param buffer Buffer that the text will be read from, and where characters will be written to
@@ -80,15 +81,8 @@ void im_multiline_entry(char *buffer, unsigned int size);
 /// @param size Size of buffer
 void im_entry(const char *label, char *buffer, unsigned int size);
 
-#if 0
-if (im_begin_tab_bar(&selected)) {
-	if (im_begin_tab("Hello")) {
-		im_label("Hello");
-		im_end_tab();
-	}
-	im_end_tab_bar();
-}
-#endif
+int im_scintilla();
+
 #ifdef __cplusplus
 }
 #endif

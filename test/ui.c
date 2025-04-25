@@ -9,9 +9,9 @@ int main(void) {
 	int selected = 0;
 	char buffer[64] = "asd";
 	while (rim_poll(ctx)) {
-		if (im_window("My Window", 500, 500)) {
-			if (im_tab_bar(&selected)) {
-				if (im_tab("Tab thing")) {
+		if (im_begin_window("My Window", 500, 500)) {
+			if (im_begin_tab_bar(&selected)) {
+				if (im_begin_tab("Tab thing")) {
 					im_entry("lbl", buffer, sizeof(buffer));
 					im_label(buffer);
 					if (im_button("Hello")) {
@@ -19,7 +19,7 @@ int main(void) {
 					}
 					im_end_tab();
 				}
-				if (im_tab("Tab #2")) {
+				if (im_begin_tab("Tab #2")) {
 					if (im_button("Hello 2")) {
 						printf("Thing 2\n");
 					}

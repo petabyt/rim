@@ -154,22 +154,28 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		return 0;
 	}
 
+	int expand = 0;
+	uint32_t expand_val = 0;
+	if (rim_get_prop_u32(w, RIM_PROP_EXPAND, &expand_val) == 0) {
+		expand = 1;
+	}
+
 	char *title = NULL;
 
 	switch (parent->type) {
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
-			uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
+			uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, expand);
 		} else {
 			uiWindowSetChild((uiWindow *)parent->os_handle, (uiControl *)w->os_handle);
 		}
 		return 0;
 	case RIM_LAYOUT_STATIC:
 	case RIM_TAB:
-		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, 0);
+		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, expand);
 		return 0;
 	case RIM_TAB_BAR:
-		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title) == 0);
+		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title) == expand);
 		uiTabAppend((uiTab *)parent->os_handle, title, (uiControl *)w->os_handle);
 		return 0;
 	}

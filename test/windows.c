@@ -8,11 +8,11 @@ int main(void) {
 	int counter = 0;
 	const char *title = "Small window";
 	while (rim_poll(ctx)) {
-		if (im_window(title, 600, 600)) {
+		if (im_begin_window(title, 600, 600)) {
 			im_label("Hello 123");
 			im_end_window();
 		}
-		if (im_window("Small window", 400, 300)) {
+		if (im_begin_window("Small window", 400, 300)) {
 			if (im_button("Change window text")) {
 				title = "cool";
 			}

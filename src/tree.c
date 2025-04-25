@@ -65,8 +65,8 @@ const char *rim_eval_widget_type(uint32_t type) {
 	case RIM_LAYOUT_FLEX: return "layout_flex";
 	case RIM_CUSTOM: return "custom";
 	case RIM_EOF: return "eof";
+	default: return "???";
 	}
-	abort();
 }
 
 void rim_reset_tree(struct RimTree *tree) {

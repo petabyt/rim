@@ -30,7 +30,7 @@ In order for this to work, we need two threads:
 ### Building the tree
 Consider the following:
 ```c++
-if (im_window("My Window", 640, 480, 0)) {
+if (im_begin_window("My Window", 640, 480, 0)) {
 	if (im_button("Hello")) {
 		puts("Hello");
 	}

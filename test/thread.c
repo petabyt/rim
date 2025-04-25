@@ -24,7 +24,7 @@ int main(void) {
 	pthread_create(&thread, 0, ext, NULL);
 	
 	while (rim_poll(ctx)) {
-		if (im_window("My Window", 500, 500)) {
+		if (im_begin_window("My Window", 500, 500)) {
 			char buffer[64];
 			sprintf(buffer, "Events: %04d\n", counter);
 			im_label(buffer);

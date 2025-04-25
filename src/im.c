@@ -3,6 +3,16 @@
 #include "rim_internal.h"
 #include "im.h"
 
+static int expand = 0;
+
+void im_set_next_expand(void) {
+	expand = 1;
+}
+
+void im_apply_prop(struct RimTree *tree) {
+	rim_add_prop_u32(tree, RIM_PROP_EXPAND, 100);
+}
+
 int im_button(const char *label) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_BUTTON, 0);
@@ -19,22 +29,22 @@ int im_label(const char *label) {
 	return rim_last_widget_event();
 }
 
-int im_window(const char *name, int width, int height) {
+int im_begin_window(const char *name, int width_dp, int height_dp) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_WINDOW, -1);
 	rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, name);
-	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width);
-	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height);
+	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
+	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
 	return 1;
 }
 
-int im_tab_bar(int *selected) {
+int im_begin_tab_bar(int *selected) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_TAB_BAR, -1);
 	return IM_CHILDREN_VISIBLE;
 }
 
-int im_tab(const char *title) {
+int im_begin_tab(const char *title) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_TAB, -1);
 	rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, title);

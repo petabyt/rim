@@ -57,7 +57,7 @@ int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	int rc = rim_backend_create(ctx, w);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
-		if (ctx->exts[i].create) continue;
+		if (ctx->exts[i].create == NULL) continue;
 		rc = ctx->exts[i].create(ctx->exts[i].priv, w);
 		if (rc == 0) {
 			return 0;
@@ -71,7 +71,7 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Widg
 	int rc = rim_backend_tweak(ctx, w, prop, type);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
-		if (ctx->exts[i].tweak) continue;
+		if (ctx->exts[i].tweak == NULL) continue;
 		rc = ctx->exts[i].tweak(ctx->exts[i].priv, w, prop, type);
 		if (rc == 0) {
 			return 0;
@@ -84,7 +84,7 @@ int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	int rc = rim_backend_append(ctx, w, parent);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
-		if (ctx->exts[i].append) continue;
+		if (ctx->exts[i].append == NULL) continue;
 		rc = ctx->exts[i].append(ctx->exts[i].priv, w, parent);
 		if (rc == 0) {
 			return 0;
@@ -97,7 +97,7 @@ int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	int rc = rim_backend_remove(ctx, w, parent);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
-		if (ctx->exts[i].remove) continue;
+		if (ctx->exts[i].remove == NULL) continue;
 		rc = ctx->exts[i].remove(ctx->exts[i].priv, w, parent);
 		if (rc == 0) {
 			return 0;
@@ -110,7 +110,7 @@ int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	int rc = rim_backend_destroy(ctx, w);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
-		if (ctx->exts[i].destroy) continue;
+		if (ctx->exts[i].destroy == NULL) continue;
 		rc = ctx->exts[i].destroy(ctx->exts[i].priv, w);
 		if (rc == 0) {
 			return 0;

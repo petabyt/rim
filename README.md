@@ -36,9 +36,10 @@ int main(void) {
     struct RimContext *ctx = rim_init();
     int show_more = 0;
     while (rim_poll(ctx)) {
-        if (im_window("My Window", 500, 500)) {
+        if (im_begin_window("My Window", 500, 500)) {
             if (im_button("Hello")) show_more != show_more;
             if (show_more) im_label("Two labels with the same text!");
+            im_end_window();
         }
     }
     return 0;
@@ -51,10 +52,8 @@ Rim is compiled as a static library with the backend included.
 cmake -G Ninja -B build && cmake --build build
 ```
 
-
-
-# Roadmap
-
-- A way to handle RecyclerViews/tables
-- wxWidgets backend
-- Jetpack Compose or Views backend
+# TODO
+- [ ] Support unicode
+- [ ] A way to handle RecyclerViews/tables
+- [ ] wxWidgets backend
+- [ ] Jetpack Compose or Views backend

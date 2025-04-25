@@ -16,7 +16,7 @@ int main() {
 	struct RimContext *ctx = rim_init();
 	int show_more = 0;
 
-	if (im_window("My Window", 640, 480)) {
+	if (im_begin_window("My Window", 640, 480)) {
 		if (im_button("Show More")) {
 			show_more = 1;
 		}
