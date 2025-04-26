@@ -19,13 +19,6 @@ That's what Rim is.
 - currently [LibUI](https://github.com/libui-ng/libui-ng) is the only backend, but adding a Qt or wxWidgets backend would be trivial.
 - LibUI backend Supports Win32 (Windows Common Controls), MacOS (Cocoa), and Linux (GTK3)
 
-**Powerful API**
-
-- Based on Dear ImGui but greatly simplified
-- 
-- `dp` is used as a unit of measurement rather than `px`. (It's not 2009 anymore, HiDPI screens exist)
-- The API is also modular. If you don't like it, you can just rewrite it.
-
 **Fast**
 
 The tree builder and differ is fast enough that there should be virtually zero overhead for basic changes. (eg: text in a label changes)
