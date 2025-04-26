@@ -52,6 +52,9 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
 
 	struct WidgetHeader *h = (struct WidgetHeader *)(buffer + of);
+	if (h->is_detached) {
+		return rim_get_node_length(h);
+	}
 	of += sizeof(struct WidgetHeader);
 
 	for (size_t i = 0; i < h->n_props; i++) {
@@ -288,14 +291,23 @@ static void diff_tree(void *priv) {
 
 	int old_of = 0;
 	int new_of = 0;
+	int invalidate_following_siblings = 0;
 	for (int i = 0; i < max_root_children; i++) {
-		if (i > ctx->tree_new->n_root_children) {
+		struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + old_of);
+		struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + new_of);
+		if (i >= ctx->tree_new->n_root_children) {
 			// Window removed
 			old_of += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, NULL);
-		} else if (i > ctx->tree_old->n_root_children) {
+		} else if (i >= ctx->tree_old->n_root_children) {
 			// Window added
-			old_of += rim_init_tree_widgets(ctx, ctx->tree_new, old_of, NULL);
+			new_of += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, NULL);
 		} else {
+			if (old_h->unique_id != new_h->unique_id) {
+				printf("TODO: Support for removing windows at root is not working yet\n");
+				ctx->quit_immediately = 1;
+				break;
+			}
+		
 			int rc = rim_patch_tree(ctx, &old_of, &new_of, NULL);
 			if (rc) rim_abort("differ failed\n");
 		}
