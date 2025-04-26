@@ -48,7 +48,7 @@ struct RimContext *rim_init(void) {
 }
 
 void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext) {
-	if (ctx->n_exts >= 5) rim_abort("more than 5 exts\n");
+	if (ctx->n_exts >= RIM_MAX_EXTS) rim_abort("more than 5 exts\n");
 	memcpy(&ctx->exts[ctx->n_exts], ext, sizeof(struct RimExtension));
 	ctx->n_exts++;
 }

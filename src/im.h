@@ -81,6 +81,9 @@ void im_multiline_entry(char *buffer, unsigned int size);
 /// @param size Size of buffer
 void im_entry(const char *label, char *buffer, unsigned int size);
 
+void im_slider(int min, int max, int *value);
+
+// extension
 int im_scintilla();
 
 #ifdef __cplusplus

@@ -48,23 +48,6 @@ struct __attribute__((packed)) WidgetProp {
 };
 _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 
-/// 1-0xfff is reserved for Rim
-/// >=0x1000 is reserved for custom widgets
-enum RimPropType {
-	RIM_PROP_WIN_TITLE = 1,
-	RIM_PROP_WIN_ICON,
-	// Generic 'dp' width
-	RIM_PROP_WIDTH_DP,
-	// Generic 'dp' height
-	RIM_PROP_HEIGHT_DP,
-	// Primary text for a widget
-	RIM_PROP_TEXT,
-	// Secondary text usually placed to the left of the widget
-	RIM_PROP_LABEL,
-	RIM_PROP_EXPAND,
-	RIM_PROP_META,
-};
-
 /// @brief Tree ID for all Rim widgets
 /// 1-0xfff is reserved for Rim
 /// >=0x1000 is reserved for custom widgets
@@ -108,6 +91,30 @@ enum RimWidgetType {
 	RIM_EOF, // To allow more than 1 child at root
 };
 
+/// 1-0xfff is reserved for Rim
+/// >=0x1000 is reserved for custom widgets
+enum RimPropType {
+	RIM_PROP_WIN_TITLE = 1,
+	RIM_PROP_WIN_ICON,
+	// Generic 'dp' width
+	RIM_PROP_WIDTH_DP,
+	// Generic 'dp' height
+	RIM_PROP_HEIGHT_DP,
+	// Primary text for a widget
+	RIM_PROP_TEXT,
+	// Secondary text usually placed to the left of the widget
+	RIM_PROP_LABEL,
+	// Whether to expand horizontally/vertically
+	RIM_PROP_EXPAND,
+
+	RIM_PROP_SLIDER_VALUE,
+	RIM_PROP_SLIDER_MIN,
+	RIM_PROP_SLIDER_MAX,
+
+	RIM_PROP_META,
+};
+
+/// @brief im_ API will return widget events rather than 1/0 or bool.
 enum RimWidgetEvent {
 	RIM_EVENT_NONE = 0,
 	RIM_EVENT_CLICK = 1,
@@ -115,18 +122,20 @@ enum RimWidgetEvent {
 	RIM_EVENT_VALUE_CHANGED = 3,
 };
 
+/// @brief Backend needs to know whether a property has been added, changed, or removed.
 enum RimPropTrigger {
 	RIM_PROP_CHANGED,
 	RIM_PROP_ADDED,
 	RIM_PROP_REMOVED,
 };
 
-#define TREE_MAX_DEPTH 5
+/// @brief State of a tree for the tree builder
 struct RimTree {
 	/// @brief Used to assign IDs to widgets in the tree
 	int counter;
 	/// @brief Number of children at root in tree
 	int n_root_children;
+#define TREE_MAX_DEPTH 5
 	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
@@ -150,6 +159,12 @@ typedef void rim_on_run_callback(void *priv);
 struct RimExtension {
 	void *priv;
 
+	/// @brief Unique extension ID for functions that need to get the priv pointer
+	/// that aren't the callbacks
+	int ext_id;
+
+	// TODO: it's not clear which of these callbacks will be needed for an extension...
+
 	/// @brief Create a backend widget given the widget header
 	int (*create)(void *priv, struct WidgetHeader *w);
 	/// @brief Change a property of a backend widget
@@ -166,7 +181,8 @@ struct RimContext {
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
 
-	struct RimExtension exts[5];
+#define RIM_MAX_EXTS 10
+	struct RimExtension exts[RIM_MAX_EXTS];
 	int n_exts;
 
 	// Backend context pointer

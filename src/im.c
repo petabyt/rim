@@ -1,5 +1,6 @@
 // Immediate-mode 'im_' API implementation for Rim
 #include <stdio.h>
+#include <string.h>
 #include "rim_internal.h"
 #include "im.h"
 
@@ -60,6 +61,19 @@ void im_entry(const char *label, char *buffer, unsigned int size) {
 	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
+	}
+}
+
+void im_slider(int min, int max, int *value) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_SLIDER, 0);
+	rim_add_prop_u32(tree, RIM_PROP_SLIDER_VALUE, (uint32_t)(*value));
+	rim_add_prop_u32(tree, RIM_PROP_SLIDER_MAX, (uint32_t)max);
+	rim_add_prop_u32(tree, RIM_PROP_SLIDER_MIN, (uint32_t)min);
+	rim_end_widget(tree);
+	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
+		struct RimContext *ctx = rim_get_global_ctx();
+		memcpy(value, ctx->last_event.data, 4);
 	}
 }
 

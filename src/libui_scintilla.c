@@ -13,14 +13,16 @@
 #include <ui.h>
 #include <ui_scintilla.h>
 
+#define EXTENSION_ID 0x5C1
+
 #define RIM_SCINTILLA 0x1000
 
 struct Priv {
-
+	int cache;
 };
 
 int im_scintilla(void) {
-struct RimTree *tree = rim_get_current_tree();
+	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_SCINTILLA, 0);
 	rim_add_prop_u32(tree, RIM_PROP_EXPAND, 100);
 //	rim_add_prop_string(tree, RIM_PROP_TEXT, label);

@@ -85,6 +85,13 @@ static void on_multiline_changed(uiMultilineEntry *entry, void *arg) {
 	uiFreeText(text);
 }
 
+static void on_slider(uiSlider *slider, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	int val = uiSliderValue(slider);
+	uint32_t b = (uint32_t)val;
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, &b, 4);
+}
+
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 	char *string = NULL;
@@ -143,6 +150,14 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		} return 0;
 	case RIM_TAB: {
 		w->os_handle = (uintptr_t)uiNewVerticalBox();
+		} return 0;
+	case RIM_SLIDER: {
+		uint32_t min, max;
+		assert(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min) == 0);
+		assert(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max) == 0);
+		uiSlider *handle = uiNewSlider((int)min, (int)max);
+		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
+		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	}
 	return 1;
@@ -208,6 +223,14 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	case RIM_MULTILINE_ENTRY:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiMultilineEntrySetText((uiMultilineEntry *)w->os_handle, (const char *)prop->data);
+			return 0;
+		}
+		break;
+	case RIM_SLIDER:
+		if (prop->type == RIM_PROP_SLIDER_VALUE) {
+			uint32_t val;
+			memcpy(&val, prop->data, 4);
+			uiSliderSetValue((uiSlider *)w->os_handle, (int)val);
 			return 0;
 		}
 		break;
