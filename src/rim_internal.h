@@ -193,6 +193,8 @@ struct RimContext {
 	// Backend context pointer
 	void *priv;
 
+	// If 1, polling will shut down
+	int quit_immediately;
 	// Used to signal when rim_backend_run is finished
 	sem_t run_done_signal;
 	// Mutex protecting all of the event members of this struct
@@ -214,6 +216,7 @@ void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
 /// @addtogroup backend
 /// @{
 int rim_backend_init(struct RimContext *ctx);
+void rim_backend_close(struct RimContext *ctx);
 /// @brief Create a backend widget given the widget header
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w);
 /// @brief Free the widget from memory
@@ -280,7 +283,9 @@ int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id)
 int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent);
 
 // Get event code for last created event
-int rim_last_widget_event(void);
+int rim_last_widget_event(int lookback);
+
+int rim_last_widget_detach(int lookback);
 
 /// @brief backend calls this when a widget has an event
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id);

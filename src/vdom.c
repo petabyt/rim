@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "rim.h"
 #include "rim_internal.h"
 
@@ -87,17 +88,32 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
 
-	// Special handling for when the new tree has nothing, and the old tree didn't
-	if (ctx->tree_new->of == 0) {
-		if (ctx->tree_old->of != 0) {
-			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
-		}
+	// TODO: Fix diff_tree instead of using this overflow hack
+	if ((*old_of_p) >= ctx->tree_old->of) {
 		return 0;
 	}
+	if ((*new_of_p) >= ctx->tree_new->of) {
+		return 0;
+	}
+
 	if (ctx->tree_old->of == 0) {
 		rim_abort("Should this function init the tree?\n");
 	}
 
+	if (ctx->tree_new->of == 0) {
+		// Special handling for when the new tree has nothing, and the old tree didn't
+		// TODO: This code isn't doing anything right now
+		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
+		return 0;
+	}
+
+	if (new_h->is_detached || old_h->is_detached) {
+		// Check if this node has been detached by rim_last_widget_detach.
+		// If so then this node is dead.
+		(*new_of_p) += rim_get_node_length(new_h);
+		(*old_of_p) += rim_get_node_length(old_h);
+		return 0;
+	}
 	if (old_h->type != new_h->type || new_h->invalidate) {
 		// Type has changed in this widget so we'll assume the rest of the tree is unusable.
 		// So: Destroy widgets in old tree, init widgets in new tree.
@@ -190,12 +206,13 @@ int rim_diff_tree(struct RimContext *ctx) {
 	return rim_patch_tree(ctx, &old_of, &new_of, NULL);
 }
 
-int rim_last_widget_event(void) {
+int rim_last_widget_event(int lookback) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (ctx->last_event.is_valid) {
 		// Checking the last created widget for the unique ID is probably not the best way to check
-		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth];
+		assert(ctx->tree_new->widget_stack_depth - lookback >= 0);
+		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback];
 		if (match->unique_id == ctx->last_event.unique_id) {
 			ctx->last_event.is_valid = 0;
 			sem_post(&ctx->event_consumed_sig);
@@ -207,17 +224,24 @@ int rim_last_widget_event(void) {
 	return 0;
 }
 
+int rim_last_widget_detach(int lookback) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback];
+	match->is_detached = 1;
+	return 0;
+}
+
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
 	// Wait for the previous event to be consumed
-	// TODO: This does not work for multiple events
 	if (ctx->last_event.is_valid) {
+		// TODO: This does not work for more than two events
 		sem_wait(&ctx->event_consumed_sig);
 	}
 	pthread_mutex_lock(&ctx->event_mutex);
 	ctx->last_event.is_valid = 1;
 	ctx->last_event.type = event;
 	ctx->last_event.unique_id = unique_id;
-	ctx->event_counter = 1;
+	ctx->event_counter = 2;
 	pthread_mutex_unlock(&ctx->event_mutex);
 	sem_post(&ctx->event_sig);
 }
@@ -284,10 +308,11 @@ int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->last_event.is_valid) {
 		rim_abort("Event not consumed by application\n");
 	}
+	if (ctx->quit_immediately) {
+		rim_backend_close(ctx);
+		return 0;
+	}
 
-	//pthread_mutex_unlock(&ctx->event_mutex);
-
-	void usleep(unsigned int us);
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
 		rim_backend_run(ctx, init_tree);
@@ -296,6 +321,10 @@ int rim_poll(rim_ctx_t *ctx) {
 		// Only run differ if both trees have contents
 		rim_backend_run(ctx, diff_tree);
 		sem_wait(&ctx->run_done_signal);
+	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of == 0) {
+		// If new tree suddenly has no contents, close everything down
+		rim_backend_close(ctx);
+		return 0;
 	} else {
 		printf("Empty frame\n");
 	}
@@ -305,10 +334,6 @@ int rim_poll(rim_ctx_t *ctx) {
 	} else {
 		// Wait on external event
 		sem_wait(&ctx->event_sig);
-		// For now just close on any window event
-		if (ctx->last_event.type == RIM_EVENT_WINDOW_CLOSE) {
-			return 0;
-		}
 	}
 
 	// Clear out external events
@@ -317,7 +342,6 @@ int rim_poll(rim_ctx_t *ctx) {
 	}
 
 	// Switch trees, reuse old tree as new tree
-	//pthread_mutex_lock(&ctx->event_mutex);
 	struct RimTree *temp = ctx->tree_old;
 	ctx->tree_old = ctx->tree_new;
 	ctx->tree_new = temp;

@@ -39,7 +39,7 @@ int im_button(const char *label) {
 	rim_add_prop_string(tree, RIM_PROP_TEXT, label);
 	im_apply_prop(tree);
 	rim_end_widget(tree);
-	return rim_last_widget_event();
+	return rim_last_widget_event(0);
 }
 
 int im_label(const char *label) {
@@ -48,7 +48,7 @@ int im_label(const char *label) {
 	rim_add_prop_string(tree, RIM_PROP_TEXT, label);
 	im_apply_prop(tree);
 	rim_end_widget(tree);
-	return rim_last_widget_event();
+	return 0;
 }
 
 int im_begin_window(const char *name, int width_dp, int height_dp) {
@@ -58,7 +58,36 @@ int im_begin_window(const char *name, int width_dp, int height_dp) {
 	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
 	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
 	im_apply_prop(tree);
+
+	if (rim_last_widget_event(1) == RIM_EVENT_WINDOW_CLOSE) {
+		struct RimContext *ctx = rim_get_global_ctx();
+		ctx->quit_immediately = 1;
+		rim_end_widget(tree);
+		return 0;
+	}
+
 	return 1;
+}
+
+int im_begin_window_ex(const char *name, int width_dp, int height_dp, int *is_open) {
+	struct RimTree *tree = rim_get_current_tree();
+	if (*is_open) {
+		rim_add_widget(tree, RIM_WINDOW, -1);
+		rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, name);
+		rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
+		rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
+		im_apply_prop(tree);
+
+		if (rim_last_widget_event(1) == RIM_EVENT_WINDOW_CLOSE) {
+			struct RimContext *ctx = rim_get_global_ctx();
+			rim_last_widget_detach(1);
+			rim_end_widget(tree);
+			(*is_open) = 0;
+			return 0;
+		}
+		return 1;
+	}
+	return 0;
 }
 
 int im_begin_tab_bar(int *selected) {
@@ -83,7 +112,7 @@ void im_entry(const char *label, char *buffer, unsigned int size) {
 	rim_add_prop_string(tree, RIM_PROP_LABEL, label);
 	im_apply_prop(tree);
 	rim_end_widget(tree);
-	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
+	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
 	}
@@ -95,7 +124,7 @@ void im_multiline_entry(char *buffer, unsigned int size) {
 	rim_add_prop_string(tree, RIM_PROP_TEXT, buffer);
 	im_apply_prop(tree);
 	rim_end_widget(tree);
-	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
+	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
 	}
@@ -109,7 +138,7 @@ void im_slider(int min, int max, int *value) {
 	rim_add_prop_u32(tree, RIM_PROP_SLIDER_MIN, (uint32_t)min);
 	im_apply_prop(tree);
 	rim_end_widget(tree);
-	if (rim_last_widget_event() == RIM_EVENT_VALUE_CHANGED) {
+	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		memcpy(value, ctx->last_event.data, 4);
 	}

@@ -22,6 +22,8 @@ struct Priv {
 
 int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
+		printf("Not appending %s to NULL\n", rim_eval_widget_type(w->type));
+		fflush(stdout);
 		// Is this even needed?
 		uiControlHide((uiControl *)w->os_handle);
 		return 0;
@@ -58,7 +60,7 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 }
 
 static int window_closed(uiWindow *w, void *arg) {
-	uiQuit();
+//	uiQuit();
 	struct RimContext *ctx = rim_get_global_ctx();
 	rim_on_widget_event(ctx, RIM_EVENT_WINDOW_CLOSE, (int)(uintptr_t)arg);
 	return 1;
@@ -271,6 +273,10 @@ static void handle_int(int code) {
 	struct Priv *p = (struct Priv *)rim_get_global_ctx()->priv;
 	pthread_kill(p->thread, 9);
 	exit(0);
+}
+
+void rim_backend_close(struct RimContext *ctx) {
+	uiQuit();
 }
 
 int rim_backend_init(struct RimContext *ctx) {
