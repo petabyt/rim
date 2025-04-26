@@ -52,6 +52,7 @@ _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
 /// 1-0xfff is reserved for Rim
 /// >=0x1000 is reserved for custom widgets
 enum RimWidgetType {
+	RIM_NONE = 0,
 	// Full-size window
 	RIM_WINDOW = 1,
 	// Smaller popup - might have an 'ok' or 'cancel' button
@@ -106,6 +107,10 @@ enum RimPropType {
 	RIM_PROP_LABEL,
 	// Whether to expand horizontally/vertically
 	RIM_PROP_EXPAND,
+	// Padding in dp
+	RIM_PROP_PADDING,
+	// Set to 1 if disable widget
+	RIM_PROP_DISABLED,
 
 	RIM_PROP_SLIDER_VALUE,
 	RIM_PROP_SLIDER_MIN,

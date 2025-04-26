@@ -46,8 +46,8 @@ struct ImModifier {
 	unsigned int padding[4];
 };
 
-int im_begin_disabled(void);
-int im_end_disabled(void);
+void im_begin_disabled(void);
+void im_end_disabled(void);
 
 void im_set_next_tooltip(const char *label);
 void im_set_next_disabled(int opt);
@@ -70,7 +70,7 @@ int im_button_ex(const char *label, struct ImModifier *mod);
 int im_label(const char *label);
 
 int im_begin_window(const char *name, int width_dp, int height_dp);
-int im_begin_window_ex(const char *name, int width_dp, int height_dp, int flags);
+int im_begin_window_ex(const char *name, int width_dp, int height_dp, int *is_open);
 void im_end_window(void);
 
 /// @param buffer Buffer that the text will be read from, and where characters will be written to
@@ -85,6 +85,9 @@ void im_slider(int min, int max, int *value);
 
 // extension
 int im_scintilla();
+
+// For internal/extension use only
+//void im_apply_prop(struct RimTree *tree);
 
 #ifdef __cplusplus
 }

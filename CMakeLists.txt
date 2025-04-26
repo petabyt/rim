@@ -4,7 +4,7 @@ project(rim)
 
 option(RIM_COMPILE_DEMOS "Compile demos" ON)
 option(RIM_COMPILE_LIBUI "" ON)
-option(RIM_COMPILE_LIBUI_SCINTILLA "" ON)
+option(RIM_COMPILE_LIBUI_SCINTILLA "" OFF)
 
 set(CMAKE_C_FLAGS_DEBUG "-g")
 
@@ -15,10 +15,6 @@ target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(RIM_COMPILE_LIBUI)
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
-	if(RIM_COMPILE_LIBUI_SCINTILLA)
-		add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
-	endif()
-
 	if(UNIX)
 		add_library(rim_libui_gtk3 STATIC
 			${RIM_CORE}
@@ -30,6 +26,7 @@ if(RIM_COMPILE_LIBUI)
 		add_library(Rim:Rim ALIAS rim_libui_gtk3)
 
 		if(RIM_COMPILE_LIBUI_SCINTILLA)
+			add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
 			add_library(rim_libui_scintilla_gtk3 STATIC
 				src/libui_scintilla.c
 			)
@@ -49,22 +46,29 @@ if(RIM_COMPILE_LIBUI)
 	endif()
 endif()
 
+if(WIN32)
+	set(LIBS -luser32 -lkernel32 -lgdi32 -lcomctl32 -luxtheme -lmsimg32 -lcomdlg32 -ld2d1 -ldwrite -lole32 -loleaut32 -loleacc -lssp -lurlmon -luuid -lws2_32 -static-libgcc -static-libstdc++ -lpthread)
+endif()
+
 if(RIM_COMPILE_DEMOS)
 	add_executable(demo test/demo.c)
-	target_link_libraries(demo Rim:Rim)
+	target_link_libraries(demo Rim:Rim ${LIBS})
 
 	add_executable(ui test/ui.c)
-	target_link_libraries(ui Rim:Rim)
+	target_link_libraries(ui Rim:Rim ${LIBS})
 
 	add_executable(test_tree test/test_tree.c)
-	target_link_libraries(test_tree Rim:Rim)
+	target_link_libraries(test_tree Rim:Rim ${LIBS})
 
 	add_executable(test_differ test/test_differ.c)
-	target_link_libraries(test_differ rim_base)
+	target_link_libraries(test_differ rim_base ${LIBS})
 
 	add_executable(thread test/thread.c)
-	target_link_libraries(thread Rim:Rim)
+	target_link_libraries(thread Rim:Rim ${LIBS})
 
 	add_executable(windows test/windows.c)
-	target_link_libraries(windows Rim:Rim)
+	target_link_libraries(windows Rim:Rim ${LIBS})
+
+	add_executable(log test/log.c)
+	target_link_libraries(log Rim:Rim ${LIBS})
 endif()

@@ -12,6 +12,9 @@ int rim_get_dpi(void);
 /// After this, the UI backend must be initialized.
 rim_ctx_t *rim_init(void);
 
+// TODO
+void rim_close(rim_ctx_t *ctx);
+
 /// @brief Poll the UI for events such as button clicks and inputs,
 /// as well as external events triggered from another thread.
 int rim_poll(rim_ctx_t *ctx);
