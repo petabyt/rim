@@ -63,7 +63,7 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 	}
 
 	for (size_t i = 0; i < h->n_children; i++) {
-		of += rim_destroy_tree_widgets(ctx, tree, base + of, parent);
+		of += rim_destroy_tree_widgets(ctx, tree, base + of, h);
 	}
 
 	if (h->is_detached) {

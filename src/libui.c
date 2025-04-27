@@ -22,8 +22,9 @@ struct Priv {
 
 int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
-		printf("Not appending %s to NULL\n", rim_eval_widget_type(w->type));
-		fflush(stdout);
+		if (w->type != RIM_WINDOW) {
+			rim_abort("Only windows should be removed from root...\n");
+		}
 		// Is this even needed?
 		uiControlHide((uiControl *)w->os_handle);
 		return 0;
@@ -46,9 +47,14 @@ int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 }
 
 int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
+	struct Priv *p = ctx->priv;
 	switch (w->type) {
 	case RIM_TAB:
 	case RIM_WINDOW:
+		if (p->make_window_a_layout) {
+			uiControlDestroy(uiControlParent((uiControl *)w->os_handle));
+			return 0;
+		}
 	case RIM_BUTTON:
 	case RIM_LABEL:
 	case RIM_LAYOUT_STATIC:

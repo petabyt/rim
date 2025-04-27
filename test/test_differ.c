@@ -50,6 +50,10 @@ int rim_backend_init(struct RimContext *ctx) {
 	return 0;
 }
 
+void rim_backend_close(struct RimContext *ctx) {
+	
+}
+
 static void build_ui2(int counter) {
 	if (im_begin_window("My Window", 500, 500)) {
 		char buffer[64];
