@@ -166,7 +166,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 }
 
 int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
-	int of = 0;
+	unsigned int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
 		if ((int)p->type == type) {
@@ -179,7 +179,7 @@ int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
 }
 
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
-	int of = 0;
+	unsigned int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
 		if ((int)p->type == type) {

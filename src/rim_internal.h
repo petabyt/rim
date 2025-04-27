@@ -197,13 +197,12 @@ struct RimContext {
 	int quit_immediately;
 	// Used to signal when rim_backend_run is finished
 	sem_t run_done_signal;
-	// Mutex protecting all of the event members of this struct
+	// Mutex protecting all the event members of this struct
 	pthread_mutex_t event_mutex;
 	// Only one event is processed at a time
 	struct RimEvent last_event;
-	// Used by rim_poll for how many times to return
-	// TODO: confusing, rename to to_nop_counter or something that would indicate it doesn't effect events
-	int event_counter;
+	// Used by rim_poll for how many times to cycle without waiting for events
+	int nop_event_counter;
 	// main event signal
 	sem_t event_sig;
 	sem_t event_consumed_sig;
@@ -247,9 +246,6 @@ struct RimTree *rim_create_tree(void);
 /// @brief Reset a tree to empty
 void rim_reset_tree(struct RimTree *tree);
 
-/// @brief Setup fields of RimBackend
-void rim_init_backend(struct RimContext *backend);
-
 /// @brief Add widget to tree and make it the current widget
 void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children);
 /// @brief End adding properties or children to the current widget and switch to it's parent
@@ -280,7 +276,7 @@ int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id)
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.
 /// @brief The start widget and all of it's sublings will be appended to `parent`.
 /// @depth Optional, for debugging
-int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent);
+unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, unsigned int base, struct WidgetHeader *parent);
 
 // Get event code for last created event
 int rim_last_widget_event(int lookback);

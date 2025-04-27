@@ -9,8 +9,8 @@
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
 // Initializes a tree with no previous tree
-int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
-	int of = 0;
+unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, unsigned int base, struct WidgetHeader *parent) {
+	unsigned int of = 0;
 	uint8_t *buffer = tree->buffer + base;
 
 	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
@@ -45,8 +45,8 @@ int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base
 }
 
 // Destroys a node and its children and removes them all from their parents
-int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int base, struct WidgetHeader *parent) {
-	int of = 0;
+unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, unsigned int base, struct WidgetHeader *parent) {
+	unsigned int of = 0;
 	uint8_t *buffer = tree->buffer + base;
 
 	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
@@ -87,7 +87,7 @@ int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tree, int b
 	return of;
 }
 
-static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, struct WidgetHeader *parent) {
+static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int *new_of_p, struct WidgetHeader *parent) {
 	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
 
@@ -204,8 +204,8 @@ static int rim_patch_tree(struct RimContext *ctx, int *old_of_p, int *new_of_p, 
 }
 
 int rim_diff_tree(struct RimContext *ctx) {
-	int old_of = 0;
-	int new_of = 0;
+	unsigned int old_of = 0;
+	unsigned int new_of = 0;
 	return rim_patch_tree(ctx, &old_of, &new_of, NULL);
 }
 
@@ -244,7 +244,7 @@ void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int 
 	ctx->last_event.is_valid = 1;
 	ctx->last_event.type = event;
 	ctx->last_event.unique_id = unique_id;
-	ctx->event_counter = 2;
+	ctx->nop_event_counter = 2;
 	pthread_mutex_unlock(&ctx->event_mutex);
 	sem_post(&ctx->event_sig);
 }
@@ -253,6 +253,7 @@ void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event,
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (length > ctx->last_event.data_buf_size) {
 		ctx->last_event.data = realloc(ctx->last_event.data, length + 100);
+		assert(ctx->last_event.data != NULL);
 		ctx->last_event.data_buf_size = length + 100;
 	}
 	ctx->last_event.data_length = length;
@@ -270,7 +271,7 @@ void rim_trigger_event(void) {
 	ctx->last_event.is_valid = 1;
 	ctx->last_event.type = RIM_EVENT_NONE;
 	ctx->last_event.unique_id = 0;
-	ctx->event_counter = 0;
+	ctx->nop_event_counter = 0;
 	pthread_mutex_unlock(&ctx->event_mutex);
 	sem_post(&ctx->event_sig);
 }
@@ -289,8 +290,8 @@ static void diff_tree(void *priv) {
 
 	int max_root_children = max(ctx->tree_new->n_root_children, ctx->tree_old->n_root_children);
 
-	int old_of = 0;
-	int new_of = 0;
+	unsigned int old_of = 0;
+	unsigned int new_of = 0;
 	int invalidate_following_siblings = 0;
 	for (int i = 0; i < max_root_children; i++) {
 		struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + old_of);
@@ -341,8 +342,8 @@ int rim_poll(rim_ctx_t *ctx) {
 		printf("Empty frame\n");
 	}
 
-	if (ctx->event_counter) {
-		ctx->event_counter--;
+	if (ctx->nop_event_counter) {
+		ctx->nop_event_counter--;
 	} else {
 		// Wait on external event
 		sem_wait(&ctx->event_sig);

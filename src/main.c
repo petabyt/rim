@@ -20,7 +20,7 @@ void rim_abort(char *fmt, ...) {
 
 struct RimContext *rim_init(void) {
 	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
-	ctx->event_counter = 1; // 1 event for rim_poll to be called twice at beginning
+	ctx->nop_event_counter = 1; // 1 event for rim_poll to be called twice at beginning
 
 	ctx->tree_new = rim_create_tree();
 	ctx->tree_old = rim_create_tree();
