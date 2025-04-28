@@ -303,6 +303,8 @@ static void diff_tree(void *priv) {
 			// Window added
 			new_of += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, NULL);
 		} else {
+			// Handling windows being removed doesn't work well with the fact that they've already been closed down.
+			// TODO: Remove this hack
 			if (old_h->unique_id != new_h->unique_id) {
 				printf("TODO: Support for removing windows at root is not working yet\n");
 				ctx->quit_immediately = 1;

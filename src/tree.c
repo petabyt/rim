@@ -165,6 +165,20 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	parent->n_props++;
 }
 
+void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
+	if (tree->widget_stack_depth == 0) {
+		rim_abort("No widget to add property to\n");
+	}
+	ensure_buffer_size(tree, sizeof(struct WidgetProp) + length);
+	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
+	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
+	prop->length = 8 + length;
+	prop->type = type;
+	memcpy(prop->data, val, length);
+	tree->of += (int)prop->length;
+	parent->n_props++;
+}
+
 int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
 	unsigned int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
@@ -176,6 +190,18 @@ int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
 		of += (int)p->length;
 	}
 	return -1;
+}
+
+struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
+	unsigned int of = 0;
+	for (size_t i = 0; i < h->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
+		if ((int)p->type == type) {
+			return p;
+		}
+		of += (int)p->length;
+	}
+	return NULL;
 }
 
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {

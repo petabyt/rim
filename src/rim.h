@@ -17,13 +17,12 @@ void rim_close(rim_ctx_t *ctx);
 
 /// @brief Poll the UI for events such as button clicks and inputs,
 /// as well as external events triggered from another thread.
+/// @returns Returns 1 when there is an event.
+/// @note When 0 is returned, the backend and context will already be closed down.
 int rim_poll(rim_ctx_t *ctx);
 
 /// @brief Can be called from any other thread to trigger an update to the UI.
 /// Caller will have to ensure thread safety between any data shared between threads.
 void rim_trigger_event(void);
-
-// Extension
-int rim_scintilla_init(struct RimContext *ctx);
 
 #endif

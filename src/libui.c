@@ -66,7 +66,7 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 }
 
 static int window_closed(uiWindow *w, void *arg) {
-//	uiQuit();
+	// let event handler run uiQuit()
 	struct RimContext *ctx = rim_get_global_ctx();
 	rim_on_widget_event(ctx, RIM_EVENT_WINDOW_CLOSE, (int)(uintptr_t)arg);
 	return 1;
@@ -207,8 +207,28 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 
 int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
 	struct Priv *p = ctx->priv;
+	uint32_t val32 = 0;
+	memcpy(&val32, prop->data, 4); // assumes len>=4
+
+	if (prop->type == RIM_PROP_DISABLED) {
+		uint32_t val;
+		memcpy(&val, prop->data, 4);
+		if (val == 1) {
+			uiControlDisable((uiControl *)w->os_handle);
+		} else {
+			uiControlEnable((uiControl *)w->os_handle);
+		}
+		return 0;
+	}
 	switch (w->type) {
 	case RIM_WINDOW:
+		if (prop->type == RIM_PROP_INNER_PADDING) {
+			if (p->make_window_a_layout) {
+				uiBoxSetPadded((uiBox *)w->os_handle, (int)val32);
+				return 0;
+			}
+			return 0;
+		}
 		if (prop->type == RIM_PROP_WIN_TITLE) {
 			if (p->make_window_a_layout) {
 				uiWindowSetTitle((uiWindow *)uiControlParent((uiControl *)w->os_handle), (const char *)prop->data);
@@ -236,9 +256,7 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 		break;
 	case RIM_SLIDER:
 		if (prop->type == RIM_PROP_SLIDER_VALUE) {
-			uint32_t val;
-			memcpy(&val, prop->data, 4);
-			uiSliderSetValue((uiSlider *)w->os_handle, (int)val);
+			uiSliderSetValue((uiSlider *)w->os_handle, (int)val32);
 			return 0;
 		}
 		break;

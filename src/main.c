@@ -47,10 +47,28 @@ struct RimContext *rim_init(void) {
 	return ctx;
 }
 
+int rim_get_prop_default_value(struct RimContext *ctx, enum RimPropType type, uint8_t *buffer, unsigned int length) {
+	if (type == RIM_PROP_DISABLED) {
+		uint32_t v = 0;
+		memcpy(buffer, &v, 4);
+		return 0;
+	}
+	return 1;
+}
+
 void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext) {
 	if (ctx->n_exts >= RIM_MAX_EXTS) rim_abort("more than 5 exts\n");
 	memcpy(&ctx->exts[ctx->n_exts], ext, sizeof(struct RimExtension));
 	ctx->n_exts++;
+}
+
+void *rim_get_ext_priv(struct RimContext *ctx, int id) {
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].ext_id == id) {
+			return ctx->exts[i].priv;
+		}
+	}
+	return NULL;
 }
 
 int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
@@ -68,6 +86,16 @@ int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
 }
 
 int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+	char temp[sizeof(struct WidgetProp) + 100];
+	if (type == RIM_PROP_REMOVED) {
+		memcpy(temp, prop, sizeof(struct WidgetProp));
+		prop = (struct WidgetProp *)temp;
+		prop->length = sizeof(struct WidgetProp) + 100;
+		if (rim_get_prop_default_value(ctx, prop->type, prop->data, 100)) {
+			rim_abort("Failed getting default property value\n");
+		}
+	}
+
 	int rc = rim_backend_tweak(ctx, w, prop, type);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {

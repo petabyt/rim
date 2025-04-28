@@ -83,6 +83,10 @@ enum RimWidgetType {
 	RIM_TAB_BAR,
 	// A button in a tab bar which when clicked will show its contents
 	RIM_TAB,
+
+	RIM_WINDOW_MENU,
+	RIM_WINDOW_MENU_ITEM,
+	
 	RIM_TABLE,
 	RIM_LAYOUT_STATIC,
 	RIM_LAYOUT_DYNAMIC,
@@ -107,8 +111,8 @@ enum RimPropType {
 	RIM_PROP_LABEL,
 	// Whether to expand horizontally/vertically
 	RIM_PROP_EXPAND,
-	// Padding in dp
-	RIM_PROP_PADDING,
+	// Padding inside a container in dp
+	RIM_PROP_INNER_PADDING,
 	// Set to 1 if disable widget
 	RIM_PROP_DISABLED,
 
@@ -116,6 +120,7 @@ enum RimPropType {
 	RIM_PROP_SLIDER_MIN,
 	RIM_PROP_SLIDER_MAX,
 
+	RIM_PROP_SECONDARY_ID,
 	RIM_PROP_META,
 };
 
@@ -211,6 +216,8 @@ struct RimContext {
 /// @brief Add an extension to the current context
 void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
 
+void *rim_get_ext_priv(struct RimContext *ctx, int id);
+
 /// @defgroup Backend implementation functions
 /// @addtogroup backend
 /// @{
@@ -254,6 +261,10 @@ void rim_end_widget(struct RimTree *tree);
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value);
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
+
+void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length);
+
+struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type);
 
 /// @brief Get string property
 /// @param val Set to the pointer of a standard null terminated string

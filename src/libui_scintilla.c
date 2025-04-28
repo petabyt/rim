@@ -1,33 +1,55 @@
 // LibUI scintilla extension for rim
 // April 2025
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
 #include <rim_internal.h>
-#include <signal.h>
+//#include <signal.h>
 #include <string.h>
 #include <rim_internal.h>
 #include <rim.h>
 #include <im.h>
 #include <ui.h>
 #include <ui_scintilla.h>
+#include <Scintilla.h>
 
 #define EXTENSION_ID 0x5C1
-
 #define RIM_SCINTILLA 0x1000
+#define RIM_PROP_SC_INIT 0x1000
 
 struct Priv {
-	int cache;
+	unsigned int list_len;
+	struct RetainedList {
+		int id;
+		uiScintilla *handle;
+	}list[5];
 };
 
-int im_scintilla(void) {
+typedef void sc_init(uiScintilla *handle);
+
+int im_scintilla(int id, void (*init)(uiScintilla *handle)) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_SCINTILLA, 0);
 	rim_add_prop_u32(tree, RIM_PROP_EXPAND, 100);
-//	rim_add_prop_string(tree, RIM_PROP_TEXT, label);
+	rim_add_prop_u32(tree, RIM_PROP_SECONDARY_ID, id);
+	uintptr_t ptr = (uintptr_t)init;
+	rim_add_prop_data(tree, RIM_PROP_SC_INIT, &ptr, sizeof(uintptr_t));
 	rim_end_widget(tree);
-	return IM_CHILDREN_VISIBLE;
+	return RIM_EVENT_VALUE_CHANGED;
+}
+
+char *rim_scintilla_get_text(rim_ctx_t *ctx, int id) {
+	struct Priv *p = (struct Priv *)rim_get_ext_priv(ctx, EXTENSION_ID);
+	if (p == NULL) rim_abort("");
+	uiScintilla *sc = NULL;
+	for (unsigned int i = 0; i < p->list_len; i++) {
+		if (p->list[i].id == id) {
+			sc = p->list[i].handle;
+		}
+	}
+	if (sc == NULL) rim_abort("");
+	return uiScintillaText(sc);
 }
 
 static int rim_sc_remove(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
@@ -45,7 +67,21 @@ static int rim_sc_destroy(void *priv, struct WidgetHeader *w) {
 static int rim_sc_create(void *priv, struct WidgetHeader *w) {
 	struct Priv *p = priv;
 	if (w->type == RIM_SCINTILLA) {
-		w->os_handle = (uintptr_t)uiNewScintilla();
+		uint32_t id;
+		assert(rim_get_prop_u32(w, RIM_PROP_SECONDARY_ID, &id) == 0);
+		uiScintilla *sc = uiNewScintilla();
+		p->list[p->list_len].id = id;
+		p->list[p->list_len].handle = sc;
+		p->list_len++;
+		w->os_handle = (uintptr_t)sc;
+		{
+			struct WidgetProp *prop = rim_get_prop(w, RIM_PROP_SC_INIT);
+			uintptr_t ptr;
+			if (prop == NULL) rim_abort("");
+			memcpy(&ptr, prop->data, sizeof(uintptr_t));
+			sc_init *init = (sc_init *)(void *)ptr;
+			init(sc);
+		}
 		return 0;
 	}
 	return 1;
@@ -66,6 +102,8 @@ int rim_scintilla_init(struct RimContext *ctx) {
 		.tweak = rim_sc_tweak,
 		.remove = rim_sc_remove,
 		.destroy = rim_sc_destroy,
+		.ext_id = EXTENSION_ID,
+		.priv = calloc(1, sizeof(struct Priv)),
 	};
 
 	rim_add_extension(ctx, &ext);

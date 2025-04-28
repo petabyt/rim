@@ -53,11 +53,16 @@ void im_set_next_tooltip(const char *label);
 void im_set_next_disabled(int opt);
 void im_set_next_expand();
 
-/// @returns IM_CHILDREN_VISIBLE
 int im_begin_tab_bar(int *selected);
 int im_begin_tab(const char *title);
 void im_end_tab(void);
 void im_end_tab_bar(void);
+
+int im_begin_menu_bar(void);
+int im_begin_menu(const char *name);
+int im_menu_item(const char *name);
+int im_end_menu(void);
+int im_end_menu_bar(void);
 
 int im_begin_combo_box(const char *label, const char *preview);
 int im_add_combo_box_item(const char *label, int *selected);
@@ -82,9 +87,6 @@ void im_multiline_entry(char *buffer, unsigned int size);
 void im_entry(const char *label, char *buffer, unsigned int size);
 
 void im_slider(int min, int max, int *value);
-
-// extension
-int im_scintilla();
 
 // For internal/extension use only
 //void im_apply_prop(struct RimTree *tree);

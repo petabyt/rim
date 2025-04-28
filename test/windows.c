@@ -4,8 +4,6 @@
 
 int main(void) {
 	struct RimContext *ctx = rim_init();
-	int show_more = 1;
-	int counter = 0;
 	const char *title1 = "Big window";
 	const char *title2 = "Small window";
 	int open1 = 1;
