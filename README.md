@@ -27,8 +27,7 @@ int main(void) {
     return 0;
 }
 ```
-<img src="etc/windows.png" width="500"><img src="etc/gtk3.png" width="400">
-
+<img src="etc/windows.png" width="400"><img src="etc/gtk3.png" width="300">
 
 ## Modular backend
 
