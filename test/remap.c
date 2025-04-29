@@ -10,14 +10,14 @@ int main(void) {
 			if (im_button("asd")) {
 				x++;
 			}
-			if (im_begin_static_layout()) {
+			if (im_begin_vertical_box()) {
 				if (x & 1) {
 					im_label("Hello");
 				}
-				im_end_static_layout();
+				im_end_vertical_box();
 			}
 			if (x & 3) {
-				// TODO: Need to remap onclick events
+				// Test remapping button events
 				if (im_button("dsa")) {
 					printf("Hello\n");
 				}

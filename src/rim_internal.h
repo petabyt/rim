@@ -83,17 +83,21 @@ enum RimWidgetType {
 	RIM_TAB_BAR,
 	// A button in a tab bar which when clicked will show its contents
 	RIM_TAB,
-
+	// Linear horizontal box
+	RIM_HORIZONTAL_BOX,
+	// Linear vertical box
+	RIM_VERTICAL_BOX,
+	// TODO:
+	RIM_FLEX_BOX,
+	// A menu bar at the top of a window
 	RIM_WINDOW_MENU,
+	// A menu bar item
 	RIM_WINDOW_MENU_ITEM,
-	
+	// A fast scrollable table
 	RIM_TABLE,
-	RIM_LAYOUT_STATIC,
-	RIM_LAYOUT_DYNAMIC,
-	RIM_LAYOUT_FLEX,
 
 	RIM_CUSTOM,
-	RIM_EOF, // To allow more than 1 child at root
+	RIM_EOF,
 };
 
 /// 1-0xfff is reserved for Rim

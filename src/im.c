@@ -33,6 +33,12 @@ void im_apply_prop(struct RimTree *tree) {
 	}
 }
 
+static int im_end(int expected_type) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_end_widget(tree);
+	return 0;
+}
+
 int im_button(const char *label) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_BUTTON, 0);
@@ -51,10 +57,24 @@ int im_label(const char *label) {
 	return 0;
 }
 
-int im_begin_static_layout(void) {
+int im_begin_vertical_box(void) {
 	struct RimTree *tree = rim_get_current_tree();
-	rim_add_widget(tree, RIM_LAYOUT_STATIC, -1);
+	rim_add_widget(tree, RIM_VERTICAL_BOX, -1);
 	return 1;
+}
+
+void im_end_vertical_box(void) {
+	im_end(RIM_VERTICAL_BOX);
+}
+
+int im_begin_horizontal_box(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_HORIZONTAL_BOX, -1);
+	return 1;
+}
+
+void im_end_horizontal_box(void) {
+	im_end(RIM_HORIZONTAL_BOX);
 }
 
 int im_begin_window(const char *name, int width_dp, int height_dp) {
@@ -150,14 +170,6 @@ void im_slider(int min, int max, int *value) {
 	}
 }
 
-static int im_end(void) {
-	struct RimTree *tree = rim_get_current_tree();
-	rim_end_widget(tree);
-	return 0;
-}
-void im_end_window(void) { im_end(); }
-void im_end_tab(void) { im_end(); }
-void im_end_tab_bar(void) { im_end(); }
-void im_end_static_layout(void) {
-	im_end();
-}
+void im_end_window(void) { im_end(RIM_WINDOW); }
+void im_end_tab(void) { im_end(RIM_TAB); }
+void im_end_tab_bar(void) { im_end(RIM_TAB_BAR); }

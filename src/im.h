@@ -37,8 +37,11 @@ struct ImModifier {
 	unsigned int padding[4];
 };
 
-int im_begin_static_layout(void);
-void im_end_static_layout(void);
+int im_begin_vertical_box(void);
+void im_end_vertical_box(void);
+
+int im_begin_horizontal_box(void);
+void im_end_horizontal_box(void);
 
 void im_begin_disabled(void);
 void im_end_disabled(void);

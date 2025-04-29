@@ -37,7 +37,8 @@ int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		uiTabDelete((uiTab *)parent->os_handle, index);
 		} return 0;
 	case RIM_WINDOW:
-	case RIM_LAYOUT_STATIC: {
+	case RIM_VERTICAL_BOX:
+	case RIM_HORIZONTAL_BOX: {
 		int index = rim_get_child_index(w, parent);
 		if (index == -1) rim_abort("child index failed\n");
 		uiBoxDelete((uiBox *)parent->os_handle, index);
@@ -57,7 +58,8 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 		}
 	case RIM_BUTTON:
 	case RIM_LABEL:
-	case RIM_LAYOUT_STATIC:
+	case RIM_HORIZONTAL_BOX:
+	case RIM_VERTICAL_BOX:
 	case RIM_ENTRY:
 		uiControlDestroy((uiControl *)w->os_handle);
 		return 0;
@@ -150,8 +152,11 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiMultilineEntryOnChanged(handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
-	case RIM_LAYOUT_STATIC: {
+	case RIM_HORIZONTAL_BOX: {
 		w->os_handle = (uintptr_t)uiNewHorizontalBox();
+		} return 0;
+	case RIM_VERTICAL_BOX: {
+		w->os_handle = (uintptr_t)uiNewVerticalBox();
 		} return 0;
 	case RIM_TAB_BAR: {
 		w->os_handle = (uintptr_t)uiNewTab();
@@ -217,7 +222,8 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 			uiWindowSetChild((uiWindow *)parent->os_handle, (uiControl *)w->os_handle);
 		}
 		return 0;
-	case RIM_LAYOUT_STATIC:
+	case RIM_HORIZONTAL_BOX:
+	case RIM_VERTICAL_BOX:
 	case RIM_TAB:
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, expand);
 		return 0;

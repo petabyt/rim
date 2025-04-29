@@ -60,11 +60,9 @@ const char *rim_eval_widget_type(uint32_t type) {
 	case RIM_TABLE: return "table";
 	case RIM_TAB: return "tab";
 	case RIM_TAB_BAR: return "tab_bar";
-	case RIM_LAYOUT_STATIC: return "layout_static";
-	case RIM_LAYOUT_DYNAMIC: return "layout_dynamic";
-	case RIM_LAYOUT_FLEX: return "layout_flex";
-	case RIM_CUSTOM: return "custom";
-	case RIM_EOF: return "eof";
+	case RIM_HORIZONTAL_BOX: return "layout_static";
+	case RIM_VERTICAL_BOX: return "layout_dynamic";
+	case RIM_FLEX_BOX: return "layout_flex";
 	default: return "???";
 	}
 }
