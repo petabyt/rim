@@ -159,5 +159,6 @@ struct RimTree *rim_get_current_tree(void) {
 }
 
 int rim_get_dpi(void) {
+	// TODO: Actually get display dp
 	return 96;
 }

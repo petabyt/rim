@@ -37,7 +37,7 @@ int main(void) {
 
 ## Fast?
 
-The tree builder and differ is fast enough that there should be virtually zero overhead for basic changes. (eg: text in a label changes)  
+The tree builder and differ is fast enough that there should be virtually zero overhead for basic changes. (eg: text in a label changes)
 For more info see [perf](docs/perf)
 
 ## Compiling
@@ -48,6 +48,10 @@ git clone https://github.com/petabyt/rim.git --depth 1 --recurse-submodules
 cd rim
 cmake -G Ninja -B build && cmake --build build
 ```
+
+# Why?
+
+See [why][docs/why]
 
 ## Roadmap
 - [ ] Support window menus

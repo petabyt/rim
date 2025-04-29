@@ -1,6 +1,6 @@
 ### Why
 
-There's plenty of reasons why immediate-mode libraries are better then retained-mode:
+There's plenty of reasons why immediate-mode libraries are better then retained-mode ones:
 - State only has to be maintained in one place
 - Faster and more responsive
 - Reduces potential for bugs
@@ -19,7 +19,7 @@ But given the nature of immediate-mode UI libriares, they have many limitations:
 This means that for many C/C++ desktop applications, immediate-mode libraries are not an option even though they could make development
 drastically easier.
 
-Rim is an attempt to get the most of both world. It's capable of solving all of the problems with traditional ImGui but with some drawbacks:
+Rim is an attempt to get the best of both worlds. It's capable of solving all of the problems with traditional ImGui but with some drawbacks:
 - It's not finished yet (duh)
 - Higher RAM usage and bigger binary if statically linked
   - Static binaries will be 10mb for Linux and 1mb for Windows. ImGui binaries tend to be around 1mb.
