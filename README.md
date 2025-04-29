@@ -51,7 +51,7 @@ cmake -G Ninja -B build && cmake --build build
 
 # Why?
 
-See [why][docs/why]
+See [why](docs/why)
 
 ## Roadmap
 - [ ] Support window menus
