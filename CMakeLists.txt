@@ -14,8 +14,19 @@ add_library(rim_base STATIC ${RIM_CORE})
 target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(RIM_COMPILE_LIBUI)
+	option(LIBUI_COMPILE_EXAMPLES "" OFF)
+	option(LIBUI_INCLUDE_INSTALL "" OFF)
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
-	if(UNIX)
+	if(APPLE)
+		add_library(rim_libui_osx STATIC
+			${RIM_CORE}
+			src/libui.c
+		)
+		target_link_libraries(rim_libui_osx LibUI::LibUI)
+		target_include_directories(rim_libui_osx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+		add_library(Rim:RimLibUIOSX ALIAS rim_libui_gtk3)
+		add_library(Rim:Rim ALIAS rim_libui_osx)
+	elseif(UNIX)
 		add_library(rim_libui_gtk3 STATIC
 			${RIM_CORE}
 			src/libui.c
@@ -24,17 +35,7 @@ if(RIM_COMPILE_LIBUI)
 		target_include_directories(rim_libui_gtk3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 		add_library(Rim:RimLibUIGTK3 ALIAS rim_libui_gtk3)
 		add_library(Rim:Rim ALIAS rim_libui_gtk3)
-
-		if(RIM_COMPILE_LIBUI_SCINTILLA)
-			add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
-			add_library(rim_libui_scintilla_gtk3 STATIC
-				src/libui_scintilla.c
-			)
-			target_link_libraries(rim_libui_scintilla_gtk3 libui_scintilla rim_libui_gtk3)
-			add_library(Rim:Scintilla ALIAS rim_libui_scintilla_gtk3)
-		endif()
-	endif()
-	if(WIN32)
+	elseif(WIN32)
 		add_library(rim_libui_win STATIC
 			${RIM_CORE}
 			src/libui.c
@@ -43,6 +44,15 @@ if(RIM_COMPILE_LIBUI)
 		target_include_directories(rim_libui_win PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 		add_library(Rim:RimLibUIWin ALIAS rim_libui_win)
 		add_library(Rim:Rim ALIAS rim_libui_win)
+	endif()
+
+	if(RIM_COMPILE_LIBUI_SCINTILLA)
+		add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
+		add_library(rim_libui_scintilla STATIC
+			src/libui_scintilla.c
+		)
+		target_link_libraries(rim_libui_scintilla libui_scintilla Rim:Rim)
+		add_library(Rim:Scintilla ALIAS rim_libui_scintilla)
 	endif()
 endif()
 
@@ -74,4 +84,8 @@ if(RIM_COMPILE_DEMOS)
 
 	add_executable(remap test/remap.c)
 	target_link_libraries(remap Rim:Rim ${LIBS})
+
+	add_executable(minimal test/minimal.c etc/win.rc)
+	target_link_libraries(minimal Rim:Rim ${LIBS})
+
 endif()
