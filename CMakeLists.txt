@@ -3,10 +3,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 project(rim)
 
 option(RIM_COMPILE_DEMOS "Compile demos" ON)
-option(RIM_COMPILE_LIBUI "" ON)
-option(RIM_COMPILE_LIBUI_SCINTILLA "" OFF)
+option(RIM_COMPILE_LIBUI "Compile LibUI backend" ON)
+option(RIM_COMPILE_LIBUI_SCINTILLA "Compile LibUI Scintilla extension" OFF)
 
-set(CMAKE_C_FLAGS_DEBUG "-g")
+#set(CMAKE_C_FLAGS_DEBUG "-g")
 
 set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
 
@@ -14,7 +14,7 @@ add_library(rim_base STATIC ${RIM_CORE})
 target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(RIM_COMPILE_LIBUI)
-	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
+	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
 	if(UNIX)
 		add_library(rim_libui_gtk3 STATIC
 			${RIM_CORE}
@@ -26,7 +26,7 @@ if(RIM_COMPILE_LIBUI)
 		add_library(Rim:Rim ALIAS rim_libui_gtk3)
 
 		if(RIM_COMPILE_LIBUI_SCINTILLA)
-			add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
+			add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
 			add_library(rim_libui_scintilla_gtk3 STATIC
 				src/libui_scintilla.c
 			)
@@ -71,4 +71,7 @@ if(RIM_COMPILE_DEMOS)
 
 	add_executable(log test/log.c)
 	target_link_libraries(log Rim:Rim ${LIBS})
+
+	add_executable(remap test/remap.c)
+	target_link_libraries(remap Rim:Rim ${LIBS})
 endif()

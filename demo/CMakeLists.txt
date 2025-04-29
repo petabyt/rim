@@ -5,5 +5,8 @@ project(rim_demo)
 option(RIM_COMPILE_LIBUI_SCINTILLA "" ON)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR}/rim)
 
-add_executable(rim_demo main.c)
-target_link_libraries(rim_demo Rim:Scintilla Rim:Rim)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LUA IMPORTED_TARGET GLOBAL lua5.3)
+
+add_executable(rim_demo main.c lua.c)
+target_link_libraries(rim_demo Rim:Scintilla Rim:Rim PkgConfig::LUA)
