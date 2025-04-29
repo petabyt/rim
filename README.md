@@ -38,7 +38,7 @@ int main(void) {
 ## Fast?
 
 The tree builder and differ is fast enough that there should be virtually zero overhead for basic changes. (eg: text in a label changes)
-For more info see [perf](docs/perf)
+For more info see [perf](docs/perf.md).
 
 ## Compiling
 Rim is compiled as a static library with the backend included.
@@ -51,7 +51,7 @@ cmake -G Ninja -B build && cmake --build build
 
 # Why?
 
-See [why](docs/why)
+See [why](docs/why.md).
 
 ## Roadmap
 - [ ] Support window menus
