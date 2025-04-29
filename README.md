@@ -1,13 +1,13 @@
 # Rim
-*Retained &larr; Immediate Mode UI*
+*Retained &larr; Immediate Mode*
 
-Rim is an immediate-mode UI library for C that renders down to native retained-mode widgets.
+Rim is an immediate-mode UI library that renders down to native retained-mode widgets.
 It's able to do this using a [virtual DOM](https://en.wikipedia.org/wiki/Virtual_DOM) to diff UI trees and apply
 changes to a native toolkit window in real time.
 
 If that doesn't make sense to you, imagine [React.js](https://react.dev/) but:
 - Replace Javascript with C
-- Replace JSX with a C immediate-mode API
+- Replace JSX with a C immediate-mode interface
 - Replace HTML/CSS with GTK, Cocoa, or any other UI toolkit
 
 That's what Rim is.
@@ -27,8 +27,7 @@ int main(void) {
     return 0;
 }
 ```
-![Rim running on Windows 11](etc/windows.png)
-![Rim running on Plasma](etc/gtk3.png)
+<img src="etc/windows.png" width="500"><img src="etc/gtk3.png" width="400">
 
 
 ## Modular backend
