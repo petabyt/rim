@@ -83,7 +83,6 @@ struct RimTree *rim_create_tree(void) {
 }
 
 void rim_end_widget(struct RimTree *tree) {
-	// TODO: variant of rim_end_widget that makes errors if widget type doesn't match
 	assert(tree->widget_stack_depth != 0);
 	tree->widget_stack_depth--;
 }

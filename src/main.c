@@ -9,6 +9,7 @@
 // TODO: Move to thread local storage in backend thread?
 static struct RimContext *global_context = NULL;
 
+__attribute__((noreturn))
 void rim_abort(char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);

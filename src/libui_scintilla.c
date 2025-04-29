@@ -2,13 +2,13 @@
 // This is an extension that provides both retained and immediate mode APIs.
 //#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <pthread.h>
 #include <rim_internal.h>
 //#include <signal.h>
 #include <string.h>
 #include <rim_internal.h>
 #include <rim.h>
+#include <rim_internal.h>
 #include <im.h>
 #include <ui.h>
 #include <ui_scintilla.h>
@@ -41,14 +41,14 @@ int im_scintilla(int id, void (*init)(uiScintilla *handle)) {
 
 char *rim_scintilla_get_text(rim_ctx_t *ctx, int id) {
 	struct Priv *p = (struct Priv *)rim_get_ext_priv(ctx, EXTENSION_ID);
-	if (p == NULL) rim_abort("");
+	if (p == NULL) rim_abort("Couldn't find extension\n");
 	uiScintilla *sc = NULL;
 	for (unsigned int i = 0; i < p->list_len; i++) {
 		if (p->list[i].id == id) {
 			sc = p->list[i].handle;
 		}
 	}
-	if (sc == NULL) rim_abort("");
+	if (sc == NULL) rim_abort("Couldn't find sc from handle\n");
 	return uiScintillaText(sc);
 }
 
@@ -67,10 +67,10 @@ static int rim_sc_destroy(void *priv, struct WidgetHeader *w) {
 static int rim_sc_create(void *priv, struct WidgetHeader *w) {
 	struct Priv *p = priv;
 	if (w->type == RIM_SCINTILLA) {
-		uint32_t id;
-		assert(rim_get_prop_u32(w, RIM_PROP_SECONDARY_ID, &id) == 0);
+		uint32_t id = 0;
+		check_prop(rim_get_prop_u32(w, RIM_PROP_SECONDARY_ID, &id));
 		uiScintilla *sc = uiNewScintilla();
-		p->list[p->list_len].id = id;
+		p->list[p->list_len].id = (int)id;
 		p->list[p->list_len].handle = sc;
 		p->list_len++;
 		w->os_handle = (uintptr_t)sc;
@@ -105,7 +105,6 @@ int rim_scintilla_init(struct RimContext *ctx) {
 		.ext_id = EXTENSION_ID,
 		.priv = calloc(1, sizeof(struct Priv)),
 	};
-
 	rim_add_extension(ctx, &ext);
 	return 0;
 }

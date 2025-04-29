@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ui.h>
-#include <assert.h>
 #include <pthread.h>
 #include <rim.h>
 #include <rim_internal.h>
@@ -107,11 +106,11 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	char *string = NULL;
 	switch (w->type) {
 	case RIM_WINDOW: {
-		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string) == 0);
+		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string));
 
 		uint32_t win_width, win_height;
-		assert(rim_get_prop_u32(w, RIM_PROP_WIDTH_DP, &win_width) == 0);
-		assert(rim_get_prop_u32(w, RIM_PROP_HEIGHT_DP, &win_height) == 0);
+		check_prop(rim_get_prop_u32(w, RIM_PROP_WIDTH_DP, &win_width));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_HEIGHT_DP, &win_height));
 
 		win_width = rim_dp_to_px(win_width);
 		win_height = rim_dp_to_px(win_height);
@@ -128,25 +127,25 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		}
 		} return 0;
 	case RIM_BUTTON: {
-		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiButton *handle = uiNewButton(string);
 		uiButtonOnClicked(handle, button_clicked, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_LABEL: {
-		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiLabel *handle = uiNewLabel(string);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_ENTRY: {
-		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiEntry *handle = uiNewEntry();
 		uiEntrySetText(handle, string);
 		uiEntryOnChanged(handle, on_changed, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_MULTILINE_ENTRY: {
-		assert(rim_get_prop_string(w, RIM_PROP_TEXT, &string) == 0);
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiMultilineEntry *handle = uiNewMultilineEntry();
 		uiMultilineEntrySetText(handle, string);
 		uiMultilineEntryOnChanged(handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
@@ -166,8 +165,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		} return 0;
 	case RIM_SLIDER: {
 		uint32_t min, max;
-		assert(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min) == 0);
-		assert(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max) == 0);
+		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max));
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
@@ -228,7 +227,7 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, expand);
 		return 0;
 	case RIM_TAB_BAR:
-		assert(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title) == expand);
+		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title));
 		uiTabAppend((uiTab *)parent->os_handle, title, (uiControl *)w->os_handle);
 		return 0;
 	}

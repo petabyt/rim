@@ -4,3 +4,7 @@
 [submodule "libs/libui-scintilla"]
 	path = libs/libui-scintilla
 	url = https://github.com/petabyt/libui-scintilla.git
+[submodule "libs/lua"]
+	path = libs/lua
+	url = https://github.com/lua/lua
+	branch = v5.3

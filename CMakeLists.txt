@@ -6,8 +6,6 @@ option(RIM_COMPILE_DEMOS "Compile demos" ON)
 option(RIM_COMPILE_LIBUI "Compile LibUI backend" ON)
 option(RIM_COMPILE_LIBUI_SCINTILLA "Compile LibUI Scintilla extension" OFF)
 
-#set(CMAKE_C_FLAGS_DEBUG "-g")
-
 set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
 
 add_library(rim_base STATIC ${RIM_CORE})
@@ -56,36 +54,39 @@ if(RIM_COMPILE_LIBUI)
 	endif()
 endif()
 
-if(WIN32)
-	set(LIBS -luser32 -lkernel32 -lgdi32 -lcomctl32 -luxtheme -lmsimg32 -lcomdlg32 -ld2d1 -ldwrite -lole32 -loleaut32 -loleacc -lssp -lurlmon -luuid -lws2_32 -static-libgcc -static-libstdc++ -lpthread)
-endif()
-
 if(RIM_COMPILE_DEMOS)
-	add_executable(demo test/demo.c)
-	target_link_libraries(demo Rim:Rim ${LIBS})
+	function(add_demo name src)
+		if(WIN32)
+			add_executable(${name} ${src} etc/win.rc)
+			target_link_libraries(${name} Rim:Rim -s -luser32 -lkernel32 -lgdi32 -lcomctl32 -luxtheme -lmsimg32 -lcomdlg32 -ld2d1 -ldwrite -lole32 -loleaut32 -loleacc -lssp -lurlmon -luuid -lws2_32 -static-libgcc -static-libstdc++ -lpthread)
+		else()
+			add_executable(${name} ${src})
+			target_link_libraries(${name} Rim:Rim)
+		endif()
+	endfunction()
 
-	add_executable(ui test/ui.c)
-	target_link_libraries(ui Rim:Rim ${LIBS})
-
-	add_executable(test_tree test/test_tree.c)
-	target_link_libraries(test_tree Rim:Rim ${LIBS})
+	add_demo(demo test/demo.c)
+	add_demo(ui test/ui.c)
+	add_demo(test_tree test/test_tree.c)
+	add_demo(thread test/thread.c)
+	add_demo(windows test/windows.c)
+	add_demo(log test/log.c)
+	add_demo(remap test/remap.c)
+	add_demo(minimal test/minimal.c)
 
 	add_executable(test_differ test/test_differ.c)
 	target_link_libraries(test_differ rim_base ${LIBS})
+endif()
 
-	add_executable(thread test/thread.c)
-	target_link_libraries(thread Rim:Rim ${LIBS})
+if(RIM_COMPILE_LUA_EDITOR)
+	if (CMAKE_BUILD_TYPE STREQUAL "Release")
+		set(CMAKE_C_FLAGS_DEBUG "-O2")
+	else()
+		set(CMAKE_C_FLAGS_DEBUG "-g")
+	endif()
 
-	add_executable(windows test/windows.c)
-	target_link_libraries(windows Rim:Rim ${LIBS})
+	include(libs/lua.cmake)
 
-	add_executable(log test/log.c)
-	target_link_libraries(log Rim:Rim ${LIBS})
-
-	add_executable(remap test/remap.c)
-	target_link_libraries(remap Rim:Rim ${LIBS})
-
-	add_executable(minimal test/minimal.c etc/win.rc)
-	target_link_libraries(minimal Rim:Rim ${LIBS})
-
+	add_executable(rim_editor demo/main.c demo/lua.c)
+	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua)
 endif()

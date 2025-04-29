@@ -315,6 +315,7 @@ int rim_diff_tree(struct RimContext *ctx);
 const char *rim_eval_widget_type(uint32_t type);
 
 // debugging only
+__attribute__((noreturn))
 void rim_abort(char *fmt, ...);
 
 /// @brief Returns a pointer to the tree to currently append to.
@@ -323,5 +324,11 @@ struct RimTree *rim_get_current_tree(void);
 
 /// @brief To be used sparingly, hopefully not permanently
 struct RimContext *rim_get_global_ctx(void);
+
+static void check_prop(int c) {
+	if (c) {
+		rim_abort("Getting prop failed\n");
+	}
+}
 
 #endif
