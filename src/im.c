@@ -51,6 +51,12 @@ int im_label(const char *label) {
 	return 0;
 }
 
+int im_begin_static_layout(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_LAYOUT_STATIC, -1);
+	return 1;
+}
+
 int im_begin_window(const char *name, int width_dp, int height_dp) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_WINDOW, -1);
@@ -152,3 +158,6 @@ static int im_end(void) {
 void im_end_window(void) { im_end(); }
 void im_end_tab(void) { im_end(); }
 void im_end_tab_bar(void) { im_end(); }
+void im_end_static_layout(void) {
+	im_end();
+}

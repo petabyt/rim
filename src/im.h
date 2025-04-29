@@ -18,15 +18,6 @@ Widget function naming:
 
  - Must only accept units of length/width/size in dp, not pixels.
 
-Property functions:
-- Handle widget-specific properties
-- Handle pushing/popping the same properties
-
-im_disable();
-im_push_last_prop();
-...
-im_pop_prop();
-
 */
 
 enum ImReturnCode {
@@ -45,6 +36,9 @@ struct ImModifier {
 	unsigned int margin[4];
 	unsigned int padding[4];
 };
+
+int im_begin_static_layout(void);
+void im_end_static_layout(void);
 
 void im_begin_disabled(void);
 void im_end_disabled(void);

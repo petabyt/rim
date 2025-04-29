@@ -124,9 +124,12 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, (*new_of_p), parent);
 		return 0;
 	} else {
-		// Same type, copy over handles
-		//new_h->unique_id = old_h->unique_id;
+		// Same type, copy over handle
 		new_h->os_handle = old_h->os_handle;
+		// Need to update the unique ID since it's used in onclick handler
+		if (new_h->unique_id != old_h->unique_id) {
+			rim_backend_update_id(ctx, new_h);
+		}
 	}
 
 	if (new_h->os_handle == 0x0) {

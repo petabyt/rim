@@ -1,3 +1,6 @@
 [submodule "libs/libui-dev"]
 	path = libs/libui-dev
 	url = git@github.com:petabyt/libui-dev.git
+[submodule "libs/libui-scintilla"]
+	path = libs/libui-scintilla
+	url = https://github.com/petabyt/libui-scintilla.git

@@ -1,5 +1,5 @@
 // LibUI scintilla extension for rim
-// April 2025
+// This is an extension that provides both retained and immediate mode APIs.
 //#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

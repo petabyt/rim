@@ -170,6 +170,30 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	}
 	return 1;
 }
+
+int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
+	struct Priv *p = ctx->priv;
+	char *string = NULL;
+	switch (w->type) {
+	case RIM_WINDOW: {
+		uiWindowOnClosing((uiWindow *)w->os_handle, window_closed, (void *)(uintptr_t)w->unique_id);
+		} return 0;
+	case RIM_BUTTON: {
+		uiButtonOnClicked((uiButton *)w->os_handle, button_clicked, (void *)(uintptr_t)w->unique_id);
+		} return 0;
+	case RIM_ENTRY: {
+		uiEntryOnChanged((uiEntry *)w->os_handle, on_changed, (void *)(uintptr_t)w->unique_id);
+		} return 0;
+	case RIM_MULTILINE_ENTRY: {
+		uiMultilineEntryOnChanged((uiMultilineEntry *)w->os_handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
+		} return 0;
+	case RIM_SLIDER: {
+		uiSliderOnChanged((uiSlider *)w->os_handle, on_slider, (void *)(uintptr_t)w->unique_id);
+		} return 0;
+	}
+	return 1;
+}
+
 int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	struct Priv *p = ctx->priv;
 	if (parent == NULL) {
@@ -239,6 +263,12 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	case RIM_LABEL:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiLabelSetText((uiLabel *)w->os_handle, (const char *)prop->data);
+			return 0;
+		}
+		break;
+	case RIM_BUTTON:
+		if (prop->type == RIM_PROP_TEXT) {
+			uiButtonSetText((uiButton *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
 		break;

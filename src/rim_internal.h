@@ -26,7 +26,7 @@ struct __attribute__((packed)) WidgetHeader {
 	uint16_t invalidate;
 
 	// Pointer handle for UI backend
-	// Note: may not be aligned by 8 bytes. May need to do two 32 bit loads.
+	// Note: This is not aligned by 8 bytes. May need to do two 32 bit loads.
 	uintptr_t os_handle;
 	// properties start here
 	// children start here
@@ -221,10 +221,14 @@ void *rim_get_ext_priv(struct RimContext *ctx, int id);
 /// @defgroup Backend implementation functions
 /// @addtogroup backend
 /// @{
+// Setup backend and priv context
 int rim_backend_init(struct RimContext *ctx);
+// Free everything and close down thread
 void rim_backend_close(struct RimContext *ctx);
 /// @brief Create a backend widget given the widget header
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w);
+/// @brief Update unique ID in backend widget so events can be correctly traced from it when it sends an event
+int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w);
 /// @brief Free the widget from memory
 int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w);
 /// @brief Remove a widget from a parent

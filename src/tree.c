@@ -166,6 +166,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 }
 
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
+	// TODO: Make sure 'length' is aligned by 4
 	if (tree->widget_stack_depth == 0) {
 		rim_abort("No widget to add property to\n");
 	}
