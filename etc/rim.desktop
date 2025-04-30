@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=rim
+Exec=rim_editor
+Icon=logo
+Type=Application
+Categories=Utility
+StartupNotify=true

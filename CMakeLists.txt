@@ -8,6 +8,7 @@ set(CMAKE_CPP_FLAGS_DEBUG "-g")
 option(RIM_COMPILE_DEMOS "Compile demos" ON)
 option(RIM_COMPILE_LIBUI "Compile LibUI backend" ON)
 option(RIM_COMPILE_LIBUI_SCINTILLA "Compile LibUI Scintilla extension" OFF)
+option(RIM_PACKAGE_EDITOR "" OFF)
 
 set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
 
@@ -121,7 +122,7 @@ if(RIM_COMPILE_LUA_EDITOR)
 	add_executable(rim_editor demo/main.c demo/lua.c)
 	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua ${WIN_LINK_LIBS})
 
-	if(LINUX)
+	if(LINUX AND RIM_PACKAGE_EDITOR)
 		create_appimage(
 			TARGET rim_editor
 			ICON ${CMAKE_CURRENT_SOURCE_DIR}/etc/logo.png

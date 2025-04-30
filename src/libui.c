@@ -165,10 +165,12 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		w->os_handle = (uintptr_t)uiNewVerticalBox();
 		} return 0;
 	case RIM_SLIDER: {
-		uint32_t min, max;
+		uint32_t min, max, val;
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min));
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_VALUE, &val));
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
+		uiSliderSetValue(handle, (int)val);
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;

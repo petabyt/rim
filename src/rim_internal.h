@@ -34,11 +34,6 @@ struct __attribute__((packed)) WidgetHeader {
 };
 _Static_assert(sizeof(struct WidgetHeader) == 32, "fail size");
 
-// To avoid misaligned by 8 accesses, this may be needed
-static inline uintptr_t get_os_handle(struct WidgetHeader *w) {
-	return w->os_handle;
-}
-
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
 struct __attribute__((packed)) WidgetProp {
@@ -271,6 +266,7 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
 
+/// @note 'length' field will be adjusted to the correct alignment
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length);
 
 struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type);

@@ -28,31 +28,33 @@ static void ensure_buffer_size(struct RimTree *tree, unsigned int size) {
 	}
 }
 
-#define CONFIG_ALIGNMENT_CHECKS
-
-// All data written to/from the tree must be 32 bit aligned
+// All data written to/from the tree must be 8 byte aligned
 // to make sure misaligned reads/writes won't happen.
-inline static int copy_string(uint8_t *to, const char *str) {
-#ifdef CONFIG_ALIGNMENT_CHECKS
-	assert((((uintptr_t)to) & 0b11) == 0);
+#ifndef NDEBUG
+inline static void check_align(const void *ptr) {
+	if ((((uintptr_t)ptr) & 0b111) != 0) {
+		rim_abort("Misaligned access\n");
+	}
+}
+#else
+#define check_align(ptr) ;
 #endif
+
+inline static int copy_string(uint8_t *to, const char *str) {
+	check_align(to);
 	size_t len = strlen(str);
-	int aligned_len = (((int)len + 1) / 4 + 1) * 4;
+	int aligned_len = (((int)len + 1) / 8 + 1) * 8;
 	memset(to, 0, aligned_len);
 	strcpy((char *)to, str);
 	return aligned_len;
 }
 inline static int write_u32(uint8_t *from, uint32_t x) {
-#ifdef CONFIG_ALIGNMENT_CHECKS
-	assert((((uintptr_t)from) & 0b11) == 0);
-#endif
+	check_align(from);
 	((uint32_t *)from)[0] = x;
 	return 4;
 }
 inline static uint32_t read_u32(const uint8_t *from, uint32_t *temp) {
-#ifdef CONFIG_ALIGNMENT_CHECKS
-	assert((((uintptr_t)from) & 0b11) == 0);
-#endif
+	check_align(from);
 	*temp = ((uint32_t *)from)[0];
 	return 4;
 }
@@ -168,7 +170,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	ensure_buffer_size(tree, sizeof(struct WidgetProp) + 4);
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = 12;
+	prop->length = 16;
 	prop->type = type;
 	memcpy(prop->data, &val, 4);
 	tree->of += (int)prop->length;
@@ -176,7 +178,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 }
 
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
-	// TODO: Make sure 'length' is aligned by 4
+	length = ((length / 8) + 1) * 8; // ensure align by 8
 	if (tree->widget_stack_depth == 0) {
 		rim_abort("No widget to add property to\n");
 	}
@@ -230,11 +232,11 @@ int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
 
 unsigned int rim_get_node_length(struct WidgetHeader *w) {
 	unsigned int of = 0;
-	for (size_t i = 0; i < w->n_props; i++) {
+	for (unsigned int i = 0; i < w->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(w->data + of);
 		of += p->length;
 	}
-	for (size_t i = 0; i < w->n_children; i++) {
+	for (unsigned int i = 0; i < w->n_children; i++) {
 		struct WidgetHeader *c = (struct WidgetHeader *)(w->data + of);
 		of += rim_get_node_length(c);
 	}
@@ -261,6 +263,7 @@ int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
 
 	return -1;
 }
+
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id) {
 	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
 
