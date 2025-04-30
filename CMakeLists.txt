@@ -119,7 +119,7 @@ if(RIM_COMPILE_LUA_EDITOR)
 
 	include(libs/lua.cmake)
 
-	add_executable(rim_editor demo/main.c demo/lua.c)
+	add_executable(rim_editor demo/main.c demo/lua.c etc/win.rc)
 	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua ${WIN_LINK_LIBS})
 
 	if(LINUX AND RIM_PACKAGE_EDITOR)
