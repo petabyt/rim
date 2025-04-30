@@ -48,6 +48,7 @@ int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 
 int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
+
 	switch (w->type) {
 	case RIM_TAB:
 	case RIM_WINDOW:
@@ -251,6 +252,7 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	}
 	switch (w->type) {
 	case RIM_WINDOW:
+		if (prop->type == RIM_PROP_WIDTH_DP || prop->type == RIM_PROP_HEIGHT_DP) return 0;
 		if (prop->type == RIM_PROP_INNER_PADDING) {
 			if (p->make_window_a_layout) {
 				uiBoxSetPadded((uiBox *)w->os_handle, (int)val32);

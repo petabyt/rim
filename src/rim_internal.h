@@ -149,7 +149,7 @@ struct RimTree {
 	int counter;
 	/// @brief Number of children at root in tree
 	int n_root_children;
-#define TREE_MAX_DEPTH 5
+#define TREE_MAX_DEPTH 15
 	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
@@ -192,6 +192,7 @@ struct RimExtension {
 };
 
 struct RimContext {
+	struct RimTree tree_saved;
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
 

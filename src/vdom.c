@@ -70,6 +70,10 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 		rim_abort("BUG: Widget already detached from parent\n");
 	}
 
+	if (h->os_handle == 0x0) {
+		rim_abort("BUG: Widget handle is NULL\n");
+	}
+
 	int rc = rim_widget_remove(ctx, h, parent);
 	if (rc) {
 		rim_abort("Couldn't remove widget\n");
@@ -162,7 +166,7 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			} else {
 				if (old_p->type == new_p->type) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
-						rim_abort("Failed to change property\n");
+						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));
 					}
 				} else {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {

@@ -25,4 +25,10 @@ int rim_poll(rim_ctx_t *ctx);
 /// Caller will have to ensure thread safety between any data shared between threads.
 void rim_trigger_event(void);
 
+/// @brief Only for rare use cases, saves the state of the tree to a backup
+void rim_tree_save_state(void);
+
+/// @brief Restores the tree that was saved by rim_tree_save_state
+void rim_tree_restore_state(void);
+
 #endif

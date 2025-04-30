@@ -91,6 +91,7 @@ int main(void) {
 		}
 
 		if (is_running && lua_rc == 0) {
+			rim_tree_save_state();
 			lua_getglobal(L, "loop");
 			if (lua_isfunction(L, -1)) {
 				if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
@@ -102,6 +103,9 @@ int main(void) {
 				snprintf(error_buffer, sizeof(error_buffer), "loop is not a function: %s", lua_tostring(L, -1));
 				printf("%s\n", error_buffer);
 				lua_rc = 1;
+			}
+			if (lua_rc) {
+				rim_tree_restore_state();
 			}
 		}
 
