@@ -7,13 +7,13 @@
 #include <stdarg.h>
 #include "rim_internal.h"
 
+// This is probably not the ideal way to do this
 void rim_tree_save_state(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	memcpy(&ctx->tree_saved, ctx->tree_new, sizeof(struct RimTree));
 	ctx->tree_saved.buffer = malloc(ctx->tree_saved.buffer_length);
 	memcpy(ctx->tree_saved.buffer, ctx->tree_new->buffer, ctx->tree_saved.buffer_length);
 }
-
 void rim_tree_restore_state(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	free(ctx->tree_new->buffer);
