@@ -7,6 +7,7 @@ int main(void) {
 	int show_more = 0;
 	int counter = 0;
 	int value = 50;
+	int selected = 0;
 	while (rim_poll(ctx)) {
 		if (im_begin_window("My Window", 500, 500)) {
 			char buffer[64];
@@ -17,15 +18,20 @@ int main(void) {
 			sprintf(buffer, "Slider value: %d", value);
 			im_label(buffer);
 			
-			if (im_button("Show More")) {
-				show_more = !show_more;
-			}
-			if (show_more) {
-				im_label("Hello, World");
-			}
+			if (im_button("Show More")) show_more = !show_more;
+			if (show_more) im_label("Hello, World");
 
 			im_label("Two labels with the same text!");
 			im_label("Two labels with the same text!");
+
+			sprintf(buffer, "Currently selected item %d", selected);
+			im_label(buffer);
+			if (im_begin_combo_box("Label", &selected)) {
+				im_combo_box_item("Item 1");
+				im_combo_box_item("Item 2");
+				im_combo_box_item("Item 3");
+				im_end_combo_box();
+			}
 
 			counter++;
 			im_end_window();

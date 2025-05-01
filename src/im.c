@@ -170,6 +170,27 @@ void im_slider(int min, int max, int *value) {
 	}
 }
 
+int im_begin_combo_box(const char *label, int *selected) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_COMBOBOX, -1);
+	rim_add_prop_string(tree, RIM_PROP_LABEL, label);
+	rim_add_prop_u32(tree, RIM_PROP_COMBOBOX_SELECTED, (*selected));
+	if (rim_last_widget_event(1) == RIM_EVENT_VALUE_CHANGED) {
+		struct RimContext *ctx = rim_get_global_ctx();
+		memcpy(selected, ctx->last_event.data, 4);
+	}
+	return 1;
+}
+void im_combo_box_item(const char *label) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_COMBOBOX_ITEM, -1);
+	rim_add_prop_string(tree, RIM_PROP_TEXT, label);
+	rim_end_widget(tree);
+}
+void im_end_combo_box(void) {
+	im_end(RIM_COMBOBOX);
+}
+
 void im_end_window(void) { im_end(RIM_WINDOW); }
 void im_end_tab(void) { im_end(RIM_TAB); }
 void im_end_tab_bar(void) { im_end(RIM_TAB_BAR); }

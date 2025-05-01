@@ -91,6 +91,7 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 	return of;
 }
 
+// TODO: Rename 'parent' to old_parent to be more clear
 static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int *new_of_p, struct WidgetHeader *parent) {
 	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
@@ -202,8 +203,7 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 				new_child_h->invalidate = 1;
 			}
 
-			// When a widget is detached, should it be detached in both new and old trees?
-			rim_patch_tree(ctx, old_of_p, new_of_p, old_h); // passing the new parent won't let old widgets detach themselves!
+			rim_patch_tree(ctx, old_of_p, new_of_p, old_h); // Recurse
 		}
 	}
 

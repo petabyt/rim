@@ -1,5 +1,5 @@
 // Dear-ImGUI wrapper
-// Last edited 2025/4/19
+// Last edited 2025/4/30
 #ifndef IM_H
 #define IM_H
 
@@ -61,8 +61,8 @@ int im_menu_item(const char *name);
 int im_end_menu(void);
 int im_end_menu_bar(void);
 
-int im_begin_combo_box(const char *label, const char *preview);
-int im_add_combo_box_item(const char *label, int *selected);
+int im_begin_combo_box(const char *label, int *selected);
+void im_combo_box_item(const char *label);
 void im_end_combo_box(void);
 
 int im_checkbox_label(const char *label, int *checked);

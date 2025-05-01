@@ -70,6 +70,8 @@ enum RimWidgetType {
 	RIM_SLIDER,
 	// Also known as a dropdown box
 	RIM_COMBOBOX,
+	// Item in the combo box with a text value
+	RIM_COMBOBOX_ITEM,
 	// Multiple choice single answer element
 	RIM_RADIO,
 	// Date picker, may open a window if clicked
@@ -118,6 +120,8 @@ enum RimPropType {
 	RIM_PROP_SLIDER_VALUE,
 	RIM_PROP_SLIDER_MIN,
 	RIM_PROP_SLIDER_MAX,
+
+	RIM_PROP_COMBOBOX_SELECTED,
 
 	RIM_PROP_SECONDARY_ID,
 	RIM_PROP_META,

@@ -16,6 +16,8 @@ struct Priv {
 
 	pthread_t thread;
 
+	uintptr_t dummy;
+
 	sem_t wait_until_ready;
 };
 
@@ -102,6 +104,13 @@ static void on_slider(uiSlider *slider, void *arg) {
 	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, &b, 4);
 }
 
+static void on_selected(uiCombobox *combo, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	int val = uiComboboxSelected(combo);
+	uint32_t b = (uint32_t)val;
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, &b, 4);
+}
+
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 	char *string = NULL;
@@ -174,6 +183,17 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
+	case RIM_COMBOBOX: {
+		uint32_t val;
+		check_prop(rim_get_prop_u32(w, RIM_PROP_COMBOBOX_SELECTED, &val));
+		uiCombobox *handle = uiNewCombobox();
+		uiComboboxSetSelected(handle, (int)val); // TODO: It denies this because there are no widgets yet
+		uiComboboxOnSelected(handle, on_selected, (void *)(uintptr_t)w->unique_id);
+		w->os_handle = (uintptr_t)handle;
+		} return 0;
+	case RIM_COMBOBOX_ITEM: {
+		w->os_handle = p->dummy;
+		} return 0;
 	}
 	return 1;
 }
@@ -233,8 +253,22 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title));
 		uiTabAppend((uiTab *)parent->os_handle, title, (uiControl *)w->os_handle);
 		return 0;
+	case RIM_COMBOBOX: {
+		uint32_t sel;
+		check_prop(rim_get_prop_u32(parent, RIM_PROP_COMBOBOX_SELECTED, &sel));
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
+		uiComboboxAppend((uiCombobox *)parent->os_handle, title);
+		uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel); // A hack since the call in _create doesn't work with no children
+		} return 0;
 	}
 	return 1;
+}
+
+// TODO
+int is_base_class(int type) {
+	return type == RIM_WINDOW
+		|| type == RIM_BUTTON
+		|| type == RIM_LABEL;
 }
 
 int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
@@ -299,6 +333,11 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 			return 0;
 		}
 		break;
+	case RIM_COMBOBOX:
+		if (prop->type == RIM_PROP_COMBOBOX_SELECTED) {
+			uiComboboxSetSelected((uiCombobox *)w->os_handle, (int)val32);
+			return 0;
+		}
 	}
 	return 1;
 }
@@ -339,12 +378,14 @@ static void handle_int(int code) {
 }
 
 void rim_backend_close(struct RimContext *ctx) {
+	struct Priv *p = ctx->priv;
 	uiQuit();
 }
 
 int rim_backend_init(struct RimContext *ctx) {
 	ctx->priv = malloc(sizeof(struct Priv));
 	struct Priv *p = ctx->priv;
+	p->dummy = (uintptr_t)malloc(10);
 	p->make_window_a_layout = 1;
 	sem_init(&p->wait_until_ready, 0, 0);
 
