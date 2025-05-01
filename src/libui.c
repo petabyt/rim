@@ -32,6 +32,11 @@ int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 	}
 
 	switch (parent->type) {
+	case RIM_COMBOBOX: {
+		int index = rim_get_child_index(w, parent);
+		if (index == -1) rim_abort("child index failed\n");
+		uiComboboxDelete((uiCombobox *)parent->os_handle, index);
+		} return 0;
 	case RIM_TAB_BAR: {
 		int index = rim_get_child_index(w, parent);
 		if (index == -1) rim_abort("child index failed\n");
@@ -52,12 +57,16 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 
 	switch (w->type) {
-	case RIM_TAB:
+	// Dummy widgets
+	case RIM_COMBOBOX_ITEM:
+		return 0;
+	case RIM_TAB: // ????
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
 			uiControlDestroy(uiControlParent((uiControl *)w->os_handle));
 			return 0;
 		}
+	case RIM_COMBOBOX:
 	case RIM_BUTTON:
 	case RIM_LABEL:
 	case RIM_HORIZONTAL_BOX:
