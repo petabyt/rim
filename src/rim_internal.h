@@ -100,7 +100,10 @@ enum RimWidgetType {
 /// 1-0xfff is reserved for Rim
 /// >=0x1000 is reserved for custom widgets
 enum RimPropType {
-	RIM_PROP_WIN_TITLE = 1,
+	RIM_PROP_INVALID = 0,
+	// string window title
+	RIM_PROP_WIN_TITLE,
+	// string path to window icon
 	RIM_PROP_WIN_ICON,
 	// Generic 'dp' width
 	RIM_PROP_WIDTH_DP,
@@ -114,7 +117,7 @@ enum RimPropType {
 	RIM_PROP_EXPAND,
 	// Padding inside a container in dp
 	RIM_PROP_INNER_PADDING,
-	// Set to 1 if disable widget
+	// Set to 1 to disable widget
 	RIM_PROP_DISABLED,
 
 	RIM_PROP_SLIDER_VALUE,
@@ -124,9 +127,16 @@ enum RimPropType {
 	/// @brief Valid values are 0-100
 	RIM_PROP_PROGRESS_BAR_VALUE,
 
+	// Combo box current selected value/child index
 	RIM_PROP_COMBOBOX_SELECTED,
 
+	// Set to 1 to make entry read-only
+	RIM_PROP_ENTRY_READ_ONLY,
+
+	// Secondary internal ID for extensions to use
 	RIM_PROP_SECONDARY_ID,
+
+	// Etc property to ignore
 	RIM_PROP_META,
 };
 

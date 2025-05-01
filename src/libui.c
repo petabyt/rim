@@ -172,10 +172,14 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_MULTILINE_ENTRY: {
+		uint32_t readonly;
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiMultilineEntry *handle = uiNewMultilineEntry();
 		uiMultilineEntrySetText(handle, string);
 		uiMultilineEntryOnChanged(handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
+		if (rim_get_prop_u32(w, RIM_PROP_ENTRY_READ_ONLY, &readonly)) {
+			uiMultilineEntrySetReadOnly(handle, (int)readonly);
+		}
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_HORIZONTAL_BOX: {
@@ -339,11 +343,17 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 		if (prop->type == RIM_PROP_TEXT) {
 			uiEntrySetText((uiEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
+		} else if (prop->type == RIM_PROP_ENTRY_READ_ONLY) {
+			uiEntrySetReadOnly((uiEntry *)w->os_handle, (int)val32);
+			return 0;
 		}
 		break;
 	case RIM_MULTILINE_ENTRY:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiMultilineEntrySetText((uiMultilineEntry *)w->os_handle, (const char *)prop->data);
+			return 0;
+		} else if (prop->type == RIM_PROP_ENTRY_READ_ONLY) {
+			uiMultilineEntrySetReadOnly((uiMultilineEntry *)w->os_handle, (int)val32);
 			return 0;
 		}
 		break;
