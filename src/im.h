@@ -104,6 +104,9 @@ void im_entry(const char *label, char *buffer, unsigned int size);
 /// @brief Horizontal integer slider
 void im_slider(int min, int max, int *value);
 
+/// @brief Horizontal progress bar that goes from 0-100
+void im_progress_bar(int progress);
+
 // For internal/extension use only
 //void im_apply_prop(struct RimTree *tree);
 

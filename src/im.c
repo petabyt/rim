@@ -191,6 +191,14 @@ void im_end_combo_box(void) {
 	im_end(RIM_COMBOBOX);
 }
 
+void im_progress_bar(int progress) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_PROGRESS_BAR, -1);
+	rim_add_prop_u32(tree, RIM_PROP_PROGRESS_BAR_VALUE, (uint32_t)progress);
+	im_apply_prop(tree);
+	rim_end_widget(tree);
+}
+
 void im_end_window(void) { im_end(RIM_WINDOW); }
 void im_end_tab(void) { im_end(RIM_TAB); }
 void im_end_tab_bar(void) { im_end(RIM_TAB_BAR); }

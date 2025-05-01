@@ -133,7 +133,9 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 		new_h->os_handle = old_h->os_handle;
 		// Need to update the unique ID since it's used in onclick handler
 		if (new_h->unique_id != old_h->unique_id) {
-			rim_backend_update_id(ctx, new_h);
+			if (rim_backend_update_id(ctx, new_h)) {
+				rim_abort("Failed to update widget's unique ID\n");
+			}
 		}
 	}
 

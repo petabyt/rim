@@ -21,6 +21,13 @@ struct Priv {
 	sem_t wait_until_ready;
 };
 
+// TODO
+int is_base_control_class(int type) {
+	return type == RIM_WINDOW
+		|| type == RIM_BUTTON
+		|| type == RIM_LABEL;
+}
+
 int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
 		if (w->type != RIM_WINDOW) {
@@ -72,6 +79,7 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	case RIM_HORIZONTAL_BOX:
 	case RIM_VERTICAL_BOX:
 	case RIM_ENTRY:
+	case RIM_PROGRESS_BAR:
 		uiControlDestroy((uiControl *)w->os_handle);
 		return 0;
 	}
@@ -200,6 +208,13 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiComboboxOnSelected(handle, on_selected, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
+	case RIM_PROGRESS_BAR: {
+		uint32_t val;
+		check_prop(rim_get_prop_u32(w, RIM_PROP_PROGRESS_BAR_VALUE, &val));
+		uiProgressBar *handle = uiNewProgressBar();
+		uiProgressBarSetValue(handle, (int)val);
+		w->os_handle = (uintptr_t)handle;
+		} return 0;
 	case RIM_COMBOBOX_ITEM: {
 		w->os_handle = p->dummy;
 		} return 0;
@@ -211,21 +226,24 @@ int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 	char *string = NULL;
 	switch (w->type) {
-	case RIM_WINDOW: {
+	case RIM_WINDOW:
 		uiWindowOnClosing((uiWindow *)w->os_handle, window_closed, (void *)(uintptr_t)w->unique_id);
-		} return 0;
-	case RIM_BUTTON: {
+		return 0;
+	case RIM_BUTTON:
 		uiButtonOnClicked((uiButton *)w->os_handle, button_clicked, (void *)(uintptr_t)w->unique_id);
-		} return 0;
-	case RIM_ENTRY: {
+		return 0;
+	case RIM_ENTRY:
 		uiEntryOnChanged((uiEntry *)w->os_handle, on_changed, (void *)(uintptr_t)w->unique_id);
-		} return 0;
-	case RIM_MULTILINE_ENTRY: {
+		return 0;
+	case RIM_MULTILINE_ENTRY:
 		uiMultilineEntryOnChanged((uiMultilineEntry *)w->os_handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
-		} return 0;
-	case RIM_SLIDER: {
+		return 0;
+	case RIM_SLIDER:
 		uiSliderOnChanged((uiSlider *)w->os_handle, on_slider, (void *)(uintptr_t)w->unique_id);
-		} return 0;
+		return 0;
+	case RIM_COMBOBOX:
+		uiComboboxOnSelected((uiCombobox *)w->os_handle, on_selected, (void *)(uintptr_t)w->unique_id);
+		return 0;
 	}
 	return 1;
 }
@@ -271,13 +289,6 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		} return 0;
 	}
 	return 1;
-}
-
-// TODO
-int is_base_class(int type) {
-	return type == RIM_WINDOW
-		|| type == RIM_BUTTON
-		|| type == RIM_LABEL;
 }
 
 int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
@@ -345,6 +356,11 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	case RIM_COMBOBOX:
 		if (prop->type == RIM_PROP_COMBOBOX_SELECTED) {
 			uiComboboxSetSelected((uiCombobox *)w->os_handle, (int)val32);
+			return 0;
+		}
+	case RIM_PROGRESS_BAR:
+		if (prop->type == RIM_PROP_PROGRESS_BAR_VALUE) {
+			uiProgressBarSetValue((uiProgressBar *)w->os_handle, (int)val32);
 			return 0;
 		}
 	}
