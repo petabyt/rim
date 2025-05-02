@@ -190,14 +190,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_MULTILINE_ENTRY: {
-		uint32_t readonly;
-		//check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiMultilineEntry *handle = uiNewNonWrappingMultilineEntry(); // uiNewMultilineEntry
-		//uiMultilineEntrySetText(handle, string);
 		uiMultilineEntryOnChanged(handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
-		if (rim_get_prop_u32(w, RIM_PROP_ENTRY_READ_ONLY, &readonly)) {
-			uiMultilineEntrySetReadOnly(handle, (int)readonly);
-		}
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_HORIZONTAL_BOX: {
@@ -216,25 +210,17 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uint32_t min, max, val;
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min));
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max));
-		//check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_VALUE, &val));
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
-		//uiSliderSetValue(handle, (int)val);
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_COMBOBOX: {
-//		uint32_t val;
-//		check_prop(rim_get_prop_u32(w, RIM_PROP_COMBOBOX_SELECTED, &val));
 		uiCombobox *handle = uiNewCombobox();
-//		uiComboboxSetSelected(handle, (int)val); // TODO: It denies this because there are no widgets yet
 		uiComboboxOnSelected(handle, on_selected, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_PROGRESS_BAR: {
-//		uint32_t val;
-//		check_prop(rim_get_prop_u32(w, RIM_PROP_PROGRESS_BAR_VALUE, &val));
 		uiProgressBar *handle = uiNewProgressBar();
-//		uiProgressBarSetValue(handle, (int)val);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_COMBOBOX_ITEM: {
@@ -317,6 +303,11 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	struct Priv *p = ctx->priv;
 	uint32_t val32 = 0;
 	memcpy(&val32, prop->data, 4); // assumes len>=4
+
+	if (prop->type == RIM_PROP_EXPAND) {
+		// 'stretchy' can only be set in uiBoxAppend
+		return 0;
+	}
 
 	switch (w->type) {
 	case RIM_WINDOW:
