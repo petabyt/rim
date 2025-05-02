@@ -17,7 +17,8 @@ int main(void) {
 			im_slider(0, 100, &value);
 			sprintf(buffer, "Slider value: %d", value);
 			im_label(buffer);
-			
+
+			im_set_next_tooltip("Click it!");
 			if (im_button("Show More")) show_more = !show_more;
 			if (show_more) im_label("Hello, World");
 

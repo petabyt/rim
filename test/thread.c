@@ -8,8 +8,8 @@ int counter = 0;
 
 void *ext(void *arg) {
 	while (1) {
-		if (counter >= 100) break;
 		usleep(100000);
+		if (counter >= 100) continue;
 		counter++;
 		rim_trigger_event();
 	}
@@ -28,6 +28,9 @@ int main(void) {
 			im_progress_bar(counter);
 			if (counter == 100) {
 				im_label("Done!");
+				if (im_button("Do it again")) {
+					counter = 0;
+				}
 			} else if (counter > 90) {
 				im_label("Almost done..");
 			} else if (counter > 50) {

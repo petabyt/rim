@@ -36,12 +36,21 @@ _Static_assert(sizeof(struct WidgetHeader) == 32, "fail size");
 
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
+// TODO: Rename to PropHeader?
 struct __attribute__((packed)) WidgetProp {
 	uint32_t length;
 	uint32_t type;
 	uint8_t data[];
 };
+
 _Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
+
+struct __attribute__((packed)) RimPropData {
+	uint32_t length;
+	uint32_t res0;
+	uintptr_t ptr;
+};
+_Static_assert(sizeof(struct RimPropData) == 16, "fail size");
 
 /// @brief Tree ID for all Rim widgets
 /// 1-0xfff is reserved for Rim
@@ -102,9 +111,12 @@ enum RimWidgetType {
 enum RimPropType {
 	RIM_PROP_INVALID = 0,
 	// string window title
+	// TODO: Rename to RIM_PROP_TITLE
 	RIM_PROP_WIN_TITLE,
 	// string path to window icon
-	RIM_PROP_WIN_ICON,
+	RIM_PROP_WIN_ICON_PATH,
+	// ICO (Microsoft icon) data
+	RIM_PROP_WIN_ICON_DATA,
 	// Generic 'dp' width
 	RIM_PROP_WIDTH_DP,
 	// Generic 'dp' height
@@ -119,6 +131,8 @@ enum RimPropType {
 	RIM_PROP_INNER_PADDING,
 	// Set to 1 to disable widget
 	RIM_PROP_DISABLED,
+	// String tooltip on hover
+	RIM_PROP_TOOLTIP,
 
 	RIM_PROP_SLIDER_VALUE,
 	RIM_PROP_SLIDER_MIN,
@@ -243,6 +257,7 @@ int rim_backend_init(struct RimContext *ctx);
 // Free everything and close down thread
 void rim_backend_close(struct RimContext *ctx);
 /// @brief Create a backend widget given the widget header
+/// @note All of the widget's properties will be set with rim_backend_tweak after this is called
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w);
 /// @brief Update unique ID in backend widget so events can be correctly traced from it when it sends an event
 int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w);

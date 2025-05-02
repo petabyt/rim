@@ -21,11 +21,29 @@ struct Priv {
 	sem_t wait_until_ready;
 };
 
-// TODO
-int is_base_control_class(int type) {
-	return type == RIM_WINDOW
-		|| type == RIM_BUTTON
-		|| type == RIM_LABEL;
+int is_base_control_class(uint32_t type) {
+	uint32_t base[] = {
+		RIM_LABEL,
+		RIM_BUTTON,
+		RIM_PROGRESS_BAR,
+//		RIM_IMAGE,
+		RIM_ENTRY,
+		RIM_MULTILINE_ENTRY,
+		RIM_SPINBOX,
+		RIM_SLIDER,
+		RIM_COMBOBOX,
+		RIM_RADIO,
+		RIM_DATE_PICKER,
+		RIM_TAB_BAR,
+		RIM_HORIZONTAL_BOX,
+		RIM_VERTICAL_BOX,
+//		RIM_FLEX_BOX,
+		RIM_TABLE,
+	};
+	for (int i = 0; i < sizeof(base) / sizeof(base[0]); i++) {
+		if (base[i] == type) return 1;
+	}
+	return 0;
 }
 
 int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
@@ -64,10 +82,10 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 
 	switch (w->type) {
-	// Dummy widgets
+	// Dummy widget
 	case RIM_COMBOBOX_ITEM:
 		return 0;
-	case RIM_TAB: // ????
+	case RIM_TAB:
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
 			uiControlDestroy(uiControlParent((uiControl *)w->os_handle));
@@ -173,9 +191,9 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		} return 0;
 	case RIM_MULTILINE_ENTRY: {
 		uint32_t readonly;
-		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
-		uiMultilineEntry *handle = uiNewMultilineEntry();
-		uiMultilineEntrySetText(handle, string);
+		//check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
+		uiMultilineEntry *handle = uiNewNonWrappingMultilineEntry(); // uiNewMultilineEntry
+		//uiMultilineEntrySetText(handle, string);
 		uiMultilineEntryOnChanged(handle, on_multiline_changed, (void *)(uintptr_t)w->unique_id);
 		if (rim_get_prop_u32(w, RIM_PROP_ENTRY_READ_ONLY, &readonly)) {
 			uiMultilineEntrySetReadOnly(handle, (int)readonly);
@@ -198,25 +216,25 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uint32_t min, max, val;
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min));
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max));
-		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_VALUE, &val));
+		//check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_VALUE, &val));
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
-		uiSliderSetValue(handle, (int)val);
+		//uiSliderSetValue(handle, (int)val);
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_COMBOBOX: {
-		uint32_t val;
-		check_prop(rim_get_prop_u32(w, RIM_PROP_COMBOBOX_SELECTED, &val));
+//		uint32_t val;
+//		check_prop(rim_get_prop_u32(w, RIM_PROP_COMBOBOX_SELECTED, &val));
 		uiCombobox *handle = uiNewCombobox();
-		uiComboboxSetSelected(handle, (int)val); // TODO: It denies this because there are no widgets yet
+//		uiComboboxSetSelected(handle, (int)val); // TODO: It denies this because there are no widgets yet
 		uiComboboxOnSelected(handle, on_selected, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_PROGRESS_BAR: {
-		uint32_t val;
-		check_prop(rim_get_prop_u32(w, RIM_PROP_PROGRESS_BAR_VALUE, &val));
+//		uint32_t val;
+//		check_prop(rim_get_prop_u32(w, RIM_PROP_PROGRESS_BAR_VALUE, &val));
 		uiProgressBar *handle = uiNewProgressBar();
-		uiProgressBarSetValue(handle, (int)val);
+//		uiProgressBarSetValue(handle, (int)val);
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
 	case RIM_COMBOBOX_ITEM: {
@@ -300,31 +318,24 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	uint32_t val32 = 0;
 	memcpy(&val32, prop->data, 4); // assumes len>=4
 
-	if (prop->type == RIM_PROP_DISABLED) {
-		uint32_t val;
-		memcpy(&val, prop->data, 4);
-		if (val == 1) {
-			uiControlDisable((uiControl *)w->os_handle);
-		} else {
-			uiControlEnable((uiControl *)w->os_handle);
-		}
-		return 0;
-	}
 	switch (w->type) {
 	case RIM_WINDOW:
-		if (prop->type == RIM_PROP_WIDTH_DP || prop->type == RIM_PROP_HEIGHT_DP) return 0;
-		if (prop->type == RIM_PROP_INNER_PADDING) {
+		switch (prop->type) {
+		case RIM_PROP_WIDTH_DP:
+		case RIM_PROP_HEIGHT_DP:
+			return 0;
+		case RIM_PROP_INNER_PADDING:
 			if (p->make_window_a_layout) {
 				uiBoxSetPadded((uiBox *)w->os_handle, (int)val32);
 				return 0;
 			}
-			return 0;
-		}
-		if (prop->type == RIM_PROP_WIN_TITLE) {
+			return 1;
+		case RIM_PROP_WIN_TITLE:
 			if (p->make_window_a_layout) {
 				uiWindowSetTitle((uiWindow *)uiControlParent((uiControl *)w->os_handle), (const char *)prop->data);
 				return 0;
 			}
+			return 1;
 		}
 		break;
 	case RIM_LABEL:
@@ -340,10 +351,13 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 		}
 		break;
 	case RIM_ENTRY:
-		if (prop->type == RIM_PROP_TEXT) {
+		switch (prop->type) {
+		case RIM_PROP_LABEL:
+			return 0;
+		case RIM_PROP_TEXT:
 			uiEntrySetText((uiEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
-		} else if (prop->type == RIM_PROP_ENTRY_READ_ONLY) {
+		case RIM_PROP_ENTRY_READ_ONLY:
 			uiEntrySetReadOnly((uiEntry *)w->os_handle, (int)val32);
 			return 0;
 		}
@@ -358,19 +372,46 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 		}
 		break;
 	case RIM_SLIDER:
-		if (prop->type == RIM_PROP_SLIDER_VALUE) {
+		switch (prop->type) {
+		case RIM_PROP_SLIDER_MAX:
+		case RIM_PROP_SLIDER_MIN:
+			return 0;
+		case RIM_PROP_SLIDER_VALUE:
 			uiSliderSetValue((uiSlider *)w->os_handle, (int)val32);
 			return 0;
 		}
 		break;
 	case RIM_COMBOBOX:
-		if (prop->type == RIM_PROP_COMBOBOX_SELECTED) {
+		switch (prop->type) {
+		case RIM_PROP_LABEL:
+			return 0;
+		case RIM_PROP_COMBOBOX_SELECTED:
 			uiComboboxSetSelected((uiCombobox *)w->os_handle, (int)val32);
 			return 0;
 		}
+		break;
+	case RIM_COMBOBOX_ITEM:
+		return 0;
 	case RIM_PROGRESS_BAR:
 		if (prop->type == RIM_PROP_PROGRESS_BAR_VALUE) {
 			uiProgressBarSetValue((uiProgressBar *)w->os_handle, (int)val32);
+			return 0;
+		}
+	case RIM_TAB:
+		return 0;
+	case RIM_TAB_BAR:
+		return 0;
+	}
+	if (is_base_control_class(w->type)) {
+		if (prop->type == RIM_PROP_DISABLED) {
+			if (val32 == 1) {
+				uiControlDisable((uiControl *)w->os_handle);
+			} else {
+				uiControlEnable((uiControl *)w->os_handle);
+			}
+			return 0;
+		} else if (prop->type == RIM_PROP_TOOLTIP) {
+			uiControlSetTooltip((uiControl *)w->os_handle, (const char *)prop->data);
 			return 0;
 		}
 	}

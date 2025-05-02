@@ -7,8 +7,25 @@
 struct Props {
 	int expand;
 	int disabled;
+	int favicon;
 	int begin_disabled;
+	int tooltip;
+	const char *tooltip_text_ptr;
+
+	void *favicon_dest;
+	unsigned int favicon_len;
 }props = {0};
+
+void im_set_next_tooltip(const char *text) {
+	props.tooltip_text_ptr = text; // TODO: undefined behavior
+	props.tooltip = 1;
+}
+
+void im_set_next_window_favicon(void *data, unsigned int length) {
+	props.favicon_dest = data;
+	props.favicon_len = length;
+	props.favicon = 1;
+} 
 
 void im_set_next_expand(void) {
 	props.expand = 1;
@@ -30,6 +47,10 @@ void im_apply_prop(struct RimTree *tree) {
 	if (props.disabled || props.begin_disabled) {
 		rim_add_prop_u32(tree, RIM_PROP_DISABLED, 1);
 		props.disabled = 0;
+	}
+	if (props.tooltip) {
+		rim_add_prop_string(tree, RIM_PROP_TOOLTIP, props.tooltip_text_ptr);
+		props.tooltip = 0;
 	}
 }
 
@@ -77,13 +98,26 @@ void im_end_horizontal_box(void) {
 	im_end(RIM_HORIZONTAL_BOX);
 }
 
-int im_begin_window(const char *name, int width_dp, int height_dp) {
-	struct RimTree *tree = rim_get_current_tree();
+static void window(struct RimTree *tree, const char *name, int width_dp, int height_dp) {
 	rim_add_widget(tree, RIM_WINDOW, -1);
 	rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, name);
 	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
 	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
 	im_apply_prop(tree);
+	if (props.favicon) {
+		struct RimPropData dat = {
+			.res0 = 0,
+			.length = props.favicon_len,
+			.ptr = (uintptr_t)props.favicon_dest,
+		};
+		rim_add_prop_data(tree, RIM_PROP_WIN_ICON_DATA, &dat, sizeof(dat));
+		props.favicon = 0;
+	}
+}
+
+int im_begin_window(const char *name, int width_dp, int height_dp) {
+	struct RimTree *tree = rim_get_current_tree();
+	window(tree, name, width_dp, height_dp);
 
 	if (rim_last_widget_event(1) == RIM_EVENT_WINDOW_CLOSE) {
 		struct RimContext *ctx = rim_get_global_ctx();
@@ -98,11 +132,7 @@ int im_begin_window(const char *name, int width_dp, int height_dp) {
 int im_begin_window_ex(const char *name, int width_dp, int height_dp, int *is_open) {
 	struct RimTree *tree = rim_get_current_tree();
 	if (*is_open) {
-		rim_add_widget(tree, RIM_WINDOW, -1);
-		rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, name);
-		rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
-		rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
-		im_apply_prop(tree);
+		window(tree, name, width_dp, height_dp);
 
 		if (rim_last_widget_event(1) == RIM_EVENT_WINDOW_CLOSE) {
 			struct RimContext *ctx = rim_get_global_ctx();
