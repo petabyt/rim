@@ -34,6 +34,7 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
+		// For many widgets this results in a double property set
 		if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 			rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
 		}

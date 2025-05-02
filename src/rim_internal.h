@@ -219,6 +219,7 @@ struct RimExtension {
 
 struct RimContext {
 	struct RimTree tree_saved;
+	// TODO: Inline these instead of ptr
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
 

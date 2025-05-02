@@ -146,6 +146,11 @@ static void on_selected(uiCombobox *combo, void *arg) {
 	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, &b, 4);
 }
 
+static void on_menu_item_clicked(uiMenuItem *item, uiWindow *sender, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	rim_on_widget_event(ctx, RIM_EVENT_CLICK, (int)(uintptr_t)arg);
+}
+
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 	char *string = NULL;
@@ -223,8 +228,13 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiProgressBar *handle = uiNewProgressBar();
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
+	case RIM_WINDOW_MENU_ITEM: // TODO: Fix this?
 	case RIM_COMBOBOX_ITEM: {
 		w->os_handle = p->dummy;
+		} return 0;
+	case RIM_WINDOW_MENU: {
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
+		w->os_handle = (uintptr_t)uiNewMenu(string);
 		} return 0;
 	}
 	return 1;
@@ -293,7 +303,13 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		check_prop(rim_get_prop_u32(parent, RIM_PROP_COMBOBOX_SELECTED, &sel));
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiComboboxAppend((uiCombobox *)parent->os_handle, title);
-		uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel); // A hack since the call in _create doesn't work with no children
+		uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel);
+		} return 0;
+	case RIM_WINDOW_MENU: {
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
+		uiMenuItem *item = uiMenuAppendItem((uiMenu *)parent->os_handle, title);
+		uiMenuItemOnClicked(item, on_menu_item_clicked, (void *)(uintptr_t)w->unique_id);
+		w->os_handle = (uintptr_t)item;
 		} return 0;
 	}
 	return 1;
