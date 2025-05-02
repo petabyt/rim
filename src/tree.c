@@ -78,6 +78,9 @@ const char *rim_eval_widget_type(uint32_t type) {
 	case RIM_HORIZONTAL_BOX: return "layout_static";
 	case RIM_VERTICAL_BOX: return "layout_dynamic";
 	case RIM_FLEX_BOX: return "layout_flex";
+	case RIM_WINDOW_MENU_BAR: return "RIM_WINDOW_MENU_BAR";
+	case RIM_WINDOW_MENU: return "RIM_WINDOW_MENU";
+	case RIM_WINDOW_MENU_ITEM: return "RIM_WINDOW_MENU_ITEM";
 	default: return "???";
 	}
 }
@@ -192,6 +195,19 @@ void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, u
 	parent->n_props++;
 }
 
+struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
+	unsigned int of = 0;
+	for (size_t i = 0; i < h->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
+		if ((int)p->type == type) {
+			return p;
+		}
+		of += (int)p->length;
+	}
+	return NULL;
+}
+
+// TODO: rewrite with rim_get_prop
 int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
 	unsigned int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
@@ -205,18 +221,7 @@ int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
 	return -1;
 }
 
-struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
-	unsigned int of = 0;
-	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
-		if ((int)p->type == type) {
-			return p;
-		}
-		of += (int)p->length;
-	}
-	return NULL;
-}
-
+// TODO: rewrite with rim_get_prop
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
 	unsigned int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
@@ -262,6 +267,26 @@ int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
 	}
 
 	return -1;
+}
+
+struct WidgetHeader *rim_get_child(struct WidgetHeader *w, int index) {
+	unsigned int of = 0;
+	for (size_t i = 0; i < w->n_props; i++) {
+		struct WidgetProp *p = (struct WidgetProp *)(w->data + of);
+		of += p->length;
+	}
+
+	unsigned int skip = 0;
+
+	for (unsigned int i = 0; i < w->n_children; i++) {
+		struct WidgetHeader *c = (struct WidgetHeader *)(w->data + of);
+		if (c->is_detached) skip++;
+		if ((int)i == index) {
+			return c;
+		}
+		of += rim_get_node_length(c);
+	}
+	return NULL;
 }
 
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id) {

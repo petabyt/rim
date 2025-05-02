@@ -151,11 +151,44 @@ static void on_menu_item_clicked(uiMenuItem *item, uiWindow *sender, void *arg) 
 	rim_on_widget_event(ctx, RIM_EVENT_CLICK, (int)(uintptr_t)arg);
 }
 
+// LibUI requires that all menus be inited before the uiNewWindow call. So this hack is needed.
+static int init_window_menu_bar(struct RimContext *ctx, struct WidgetHeader *bar) {
+	for (int i = 0; i < bar->n_children; i++) {
+		struct WidgetHeader *menu_h = rim_get_child(bar, i);
+		if (menu_h->type != RIM_WINDOW_MENU) rim_abort("Menu not in menu bar\n");
+		char *string;
+		check_prop(rim_get_prop_string(menu_h, RIM_PROP_TEXT, &string));
+		uiMenu *menu = uiNewMenu(string);
+		menu_h->os_handle = (uintptr_t)menu;
+		for (int y = 0; y < menu_h->n_children; y++) {
+			struct WidgetHeader *item_h = rim_get_child(menu_h, y);
+			if (item_h->type != RIM_WINDOW_MENU_ITEM) rim_abort("Item not in menu\n");
+			check_prop(rim_get_prop_string(item_h, RIM_PROP_TEXT, &string));
+			uiMenuItem *item = uiMenuAppendItem(menu, string);
+			uiMenuItemOnClicked(item, on_menu_item_clicked, (void *)(uintptr_t)item_h->unique_id);
+			item_h->os_handle = (uintptr_t)item;
+		}
+	}
+
+	return 0;
+}
+
 int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	struct Priv *p = ctx->priv;
 	char *string = NULL;
 	switch (w->type) {
 	case RIM_WINDOW: {
+		int has_menu = 0;
+
+		struct Priv *p = ctx->priv;
+		struct WidgetHeader *bar = rim_get_child(w, 0);
+		bar->os_handle = p->dummy;
+		if (bar->type == RIM_WINDOW_MENU_BAR) {
+			has_menu = 1;
+		}
+
+		init_window_menu_bar(ctx, bar);
+
 		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string));
 
 		uint32_t win_width, win_height;
@@ -165,7 +198,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		win_width = rim_dp_to_px(win_width);
 		win_height = rim_dp_to_px(win_height);
 
-		uiWindow *handle = uiNewWindow(string, (int)win_width, (int)win_height, 0);
+		uiWindow *handle = uiNewWindow(string, (int)win_width, (int)win_height, has_menu);
 		uiWindowOnClosing(handle, window_closed, (void *)(uintptr_t)w->unique_id);
 		if (p->make_window_a_layout) {
 			uiBox *container = uiNewVerticalBox();
@@ -228,13 +261,15 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiProgressBar *handle = uiNewProgressBar();
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
-	case RIM_WINDOW_MENU_ITEM: // TODO: Fix this?
+	case RIM_WINDOW_MENU_ITEM:
+	case RIM_WINDOW_MENU_BAR:
+	case RIM_WINDOW_MENU:
+		if (w->os_handle == 0x0) {
+			rim_abort("Menus can only be inited once in LibUI\n");
+		}
+		return 0;
 	case RIM_COMBOBOX_ITEM: {
 		w->os_handle = p->dummy;
-		} return 0;
-	case RIM_WINDOW_MENU: {
-		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
-		w->os_handle = (uintptr_t)uiNewMenu(string);
 		} return 0;
 	}
 	return 1;
@@ -246,6 +281,9 @@ int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
 	switch (w->type) {
 	case RIM_WINDOW:
 		uiWindowOnClosing((uiWindow *)w->os_handle, window_closed, (void *)(uintptr_t)w->unique_id);
+		return 0;
+	case RIM_WINDOW_MENU_ITEM:
+		uiMenuItemOnClicked((uiMenuItem *)w->os_handle, on_menu_item_clicked, (void *)(uintptr_t)w->unique_id);
 		return 0;
 	case RIM_BUTTON:
 		uiButtonOnClicked((uiButton *)w->os_handle, button_clicked, (void *)(uintptr_t)w->unique_id);
@@ -270,6 +308,10 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 	struct Priv *p = ctx->priv;
 	if (parent == NULL) {
 		// Handle being appended to root?
+		return 0;
+	}
+	if (w->type == RIM_WINDOW_MENU_BAR || w->type == RIM_WINDOW_MENU || w->type == RIM_WINDOW_MENU_ITEM) {
+		// See init_window_menu_bar
 		return 0;
 	}
 
@@ -304,12 +346,6 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiComboboxAppend((uiCombobox *)parent->os_handle, title);
 		uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel);
-		} return 0;
-	case RIM_WINDOW_MENU: {
-		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
-		uiMenuItem *item = uiMenuAppendItem((uiMenu *)parent->os_handle, title);
-		uiMenuItemOnClicked(item, on_menu_item_clicked, (void *)(uintptr_t)w->unique_id);
-		w->os_handle = (uintptr_t)item;
 		} return 0;
 	}
 	return 1;
@@ -407,6 +443,9 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 	case RIM_TAB:
 		return 0;
 	case RIM_TAB_BAR:
+		return 0;
+	case RIM_WINDOW_MENU:
+	case RIM_WINDOW_MENU_ITEM:
 		return 0;
 	}
 	if (is_base_control_class(w->type)) {

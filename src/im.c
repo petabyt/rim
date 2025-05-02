@@ -233,6 +233,37 @@ void im_progress_bar(int progress) {
 	rim_end_widget(tree);
 }
 
+int im_begin_menu_bar(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_WINDOW_MENU_BAR, -1);
+	return 1;
+}
+
+int im_begin_menu(const char *title) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_WINDOW_MENU, -1);
+	rim_add_prop_string(tree, RIM_PROP_TEXT, title);
+	im_apply_prop(tree);
+	return 1;
+}
+
+int im_menu_item(const char *title) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_WINDOW_MENU_ITEM, -1);
+	rim_add_prop_string(tree, RIM_PROP_TEXT, title);
+	im_apply_prop(tree);
+	rim_end_widget(tree);
+	return rim_last_widget_event(0);
+}
+
+void im_end_menu(void) {
+	im_end(RIM_WINDOW_MENU);
+}
+
+void im_end_menu_bar(void) {
+	im_end(RIM_WINDOW_MENU_BAR);
+}
+
 void im_end_window(void) { im_end(RIM_WINDOW); }
 void im_end_tab(void) { im_end(RIM_TAB); }
 void im_end_tab_bar(void) { im_end(RIM_TAB_BAR); }

@@ -5,12 +5,14 @@
 #include <semaphore.h>
 #include <pthread.h>
 
+// TODO: Add parent_of?
 struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
 	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
 	// Number of allowed children in this widget
 	// If 0xffffffff, assume unlimited children
+	// TODO: Remove this
 	uint32_t allowed_children;
 	// Number of children following this header
 	uint32_t n_children;
@@ -95,6 +97,8 @@ enum RimWidgetType {
 	RIM_VERTICAL_BOX,
 	// TODO:
 	RIM_FLEX_BOX,
+	// A container for menus
+	RIM_WINDOW_MENU_BAR,
 	// A menu bar at the top of a window
 	RIM_WINDOW_MENU,
 	// A menu bar item
@@ -317,6 +321,9 @@ unsigned int rim_get_node_length(struct WidgetHeader *w);
 /// @brief Get the index of a child using its parent
 /// This will skip dead nodes to get the accurate index in the backend widget
 int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent);
+
+/// @returns NULL if out of bounds
+struct WidgetHeader *rim_get_child(struct WidgetHeader *w, int index);
 
 /// @brief Find a node in a tree via it's unique id
 /// @param of Set to the offset of where the widget is

@@ -24,7 +24,7 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 	}
 
 	if (h->os_handle == 0x0) {
-		rim_abort("BUG: h->os_handle is null %x\n");
+		rim_abort("BUG: h->os_handle is null\n");
 	}
 
 	rc = rim_widget_append(ctx, h, parent);
@@ -90,7 +90,7 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 		rim_abort("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
 	}
 
-	h->os_handle = 0;
+	//h->os_handle = 0;
 
 	return of;
 }

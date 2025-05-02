@@ -68,8 +68,8 @@ int im_begin_menu_bar(void);
 int im_begin_menu(const char *name);
 // @brief A clickable menu item
 int im_menu_item(const char *name);
-int im_end_menu(void);
-int im_end_menu_bar(void);
+void im_end_menu(void);
+void im_end_menu_bar(void);
 
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
 int im_begin_combo_box(const char *label, int *selected);
