@@ -118,6 +118,8 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
 
+	check_align(&h->os_handle);
+
 	if (tree->widget_stack_depth == 0) {
 		tree->n_root_children++;
 	}
@@ -161,6 +163,7 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
 	prop->length = sizeof(struct WidgetProp);
 	prop->type = type;
+	prop->already_fufilled = 0;
 	prop->length += copy_string(prop->data, value);
 	tree->of += (int)prop->length;
 	parent->n_props++;
@@ -175,6 +178,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
 	prop->length = sizeof(struct WidgetProp) + 8;
 	prop->type = type;
+	prop->already_fufilled = 0;
 	memcpy(prop->data, &val, 4);
 	tree->of += (int)prop->length;
 	parent->n_props++;
@@ -190,6 +194,7 @@ void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, u
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
 	prop->length = sizeof(struct WidgetProp) + length;
 	prop->type = type;
+	prop->already_fufilled = 0;
 	memcpy(prop->data, val, length);
 	tree->of += (int)prop->length;
 	parent->n_props++;
