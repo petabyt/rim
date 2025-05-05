@@ -159,7 +159,7 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 	ensure_buffer_size(tree, sizeof(struct WidgetProp) + strlen(value) + 1); // nitpick: double strlen
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = 8;
+	prop->length = sizeof(struct WidgetProp);
 	prop->type = type;
 	prop->length += copy_string(prop->data, value);
 	tree->of += (int)prop->length;
@@ -173,7 +173,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	ensure_buffer_size(tree, sizeof(struct WidgetProp) + 4);
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = 16;
+	prop->length = sizeof(struct WidgetProp) + 8;
 	prop->type = type;
 	memcpy(prop->data, &val, 4);
 	tree->of += (int)prop->length;
@@ -188,7 +188,7 @@ void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, u
 	ensure_buffer_size(tree, sizeof(struct WidgetProp) + length);
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = 8 + length;
+	prop->length = sizeof(struct WidgetProp) + length;
 	prop->type = type;
 	memcpy(prop->data, val, length);
 	tree->of += (int)prop->length;

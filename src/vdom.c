@@ -34,7 +34,7 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
-		// For many widgets this results in a double property set
+		// For most widgets this results in a double property set
 		if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 			rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
 		}
@@ -135,7 +135,7 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 	} else {
 		// Same type, copy over handle
 		new_h->os_handle = old_h->os_handle;
-		// Need to update the unique ID since it's used in onclick handler
+		// Need to update the unique ID since it's passed to the onclick handler
 		if (new_h->unique_id != old_h->unique_id) {
 			if (rim_backend_update_id(ctx, new_h)) {
 				rim_abort("Failed to update widget's unique ID\n");
@@ -170,15 +170,18 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 		} else {
 			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
 				// Property has the same state
-			} else {
-				if (old_p->type == new_p->type) {
+			} else if (old_p->type == new_p->type) {
+				if (new_p->already_fufilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
 						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));
 					}
-				} else {
-					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
-						rim_abort("Failed to add property\n");
-					}
+				}
+			} else {
+				if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
+					rim_abort("Failed to remove property\n");
+				}
+				if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+					rim_abort("Failed to add property\n");
 				}
 			}
 		}

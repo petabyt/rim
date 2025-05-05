@@ -1,5 +1,5 @@
 // Dear-ImGUI wrapper
-// Last edited 2025/5/1
+// Last edited 2025/5/3
 #ifndef IM_H
 #define IM_H
 
@@ -57,7 +57,9 @@ void im_set_next_disabled(int opt);
 /// @brief Force the next widget to expand and take up 100% of parents space
 void im_set_next_expand();
 
+/// @brief Begin a container with tabs
 int im_begin_tab_bar(int *selected);
+/// @brief Begin a selectable tab.
 int im_begin_tab(const char *title);
 void im_end_tab(void);
 void im_end_tab_bar(void);
@@ -72,9 +74,12 @@ void im_end_menu(void);
 void im_end_menu_bar(void);
 
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
+/// @brief Creates a combo box that uses 'selected' as current selected item
+/// @todo Remove label?
 int im_begin_combo_box(const char *label, int *selected);
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
 int im_begin_combo_box_ex(const char *label, int *selected, const char *preview_text);
+/// @brief Adds an item to the combo box
 void im_combo_box_item(const char *label);
 void im_end_combo_box(void);
 
@@ -99,6 +104,7 @@ void im_multiline_entry(char *buffer, unsigned int size);
 
 /// @param buffer Buffer that the text will be read from, and where characters will be written to
 /// @param size Size of buffer
+/// @todo Remove label?
 void im_entry(const char *label, char *buffer, unsigned int size);
 
 /// @brief Horizontal integer slider
@@ -106,6 +112,8 @@ void im_slider(int min, int max, int *value);
 
 /// @brief Horizontal progress bar that goes from 0-100
 void im_progress_bar(int progress);
+
+
 
 // For internal/extension use only
 //void im_apply_prop(struct RimTree *tree);

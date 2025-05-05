@@ -185,9 +185,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		bar->os_handle = p->dummy;
 		if (bar->type == RIM_WINDOW_MENU_BAR) {
 			has_menu = 1;
+			init_window_menu_bar(ctx, bar);
 		}
-
-		init_window_menu_bar(ctx, bar);
 
 		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string));
 

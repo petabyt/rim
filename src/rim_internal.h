@@ -20,15 +20,18 @@ struct __attribute__((packed)) WidgetHeader {
 	uint32_t n_props;
 	// Unique ID (only modified by UI backend and tree patcher)
 	uint32_t unique_id;
-	// Set to 1 by the tree differ if this node is dead
-	// This is set when the node has been removed from its parent, and it must be skipped
-	// when counting the order of other nodes.
-	uint16_t is_detached;
-	// Set to 1 for the tree differ to throw away this widget even if the types match
-	uint16_t invalidate;
+	// This is set to 1 by the tree differ if this node is detached from its parent.
+	// In that case this widget must be skipped when calculating the index of this node's siblings.
+	uint8_t is_detached;
+	// Set to 1 to tell the tree differ to throw away this widget even if the types match
+	// This may be used in case the widget needs to be re-appended to it's parent.
+	uint8_t invalidate;
+
+	uint8_t res0;
+	uint8_t res1;
 
 	// Pointer handle for UI backend
-	// Note: This is not aligned by 8 bytes. May need to do two 32 bit loads.
+	// This must be aligned by 8 bytes in the structure
 	uintptr_t os_handle;
 	// properties start here
 	// children start here
@@ -40,12 +43,18 @@ _Static_assert(sizeof(struct WidgetHeader) == 32, "fail size");
 // What is stored in `data` can be determined by the widget type.
 // TODO: Rename to PropHeader?
 struct __attribute__((packed)) WidgetProp {
+	/// @brief Length in bytes of this property structure and data that follows
 	uint32_t length;
+	/// @brief See enum RimPropType
 	uint32_t type;
+	// If 1, then this property has already been applied to the backend or doesn't need to be applied.
+	// This may be used in a weird case where the backend initializes a property before the tree differ gets to it.
+	uint32_t already_fufilled;
+	uint32_t res0;
 	uint8_t data[];
 };
 
-_Static_assert(sizeof(struct WidgetProp) == 8, "fail size");
+_Static_assert(sizeof(struct WidgetProp) == 16, "fail size");
 
 struct __attribute__((packed)) RimPropData {
 	uint32_t length;
@@ -105,9 +114,6 @@ enum RimWidgetType {
 	RIM_WINDOW_MENU_ITEM,
 	// A fast scrollable table
 	RIM_TABLE,
-
-	RIM_CUSTOM,
-	RIM_EOF,
 };
 
 /// 1-0xfff is reserved for Rim
@@ -125,11 +131,11 @@ enum RimPropType {
 	RIM_PROP_WIDTH_DP,
 	// Generic 'dp' height
 	RIM_PROP_HEIGHT_DP,
-	// Primary text for a widget
+	// Generic primary text for a widget
 	RIM_PROP_TEXT,
-	// Secondary text usually placed to the left of the widget
+	// Generic secondary text usually placed to the left of the widget
 	RIM_PROP_LABEL,
-	// Whether to expand horizontally/vertically
+	// Whether to expand horizontally & vertically
 	RIM_PROP_EXPAND,
 	// Padding inside a container in dp
 	RIM_PROP_INNER_PADDING,
