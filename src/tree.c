@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdarg.h>
 #include "rim_internal.h"
 
@@ -101,7 +100,7 @@ struct RimTree *rim_create_tree(void) {
 }
 
 void rim_end_widget(struct RimTree *tree) {
-	assert(tree->widget_stack_depth != 0);
+	if (tree->widget_stack_depth == 0) rim_abort("rim_end_widget called too many times");
 	tree->widget_stack_depth--;
 }
 
@@ -153,6 +152,10 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 		rim_abort("Max depth reached");
 	}
 }
+
+//struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
+//	
+//}
 
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
 	if (tree->widget_stack_depth == 0) {

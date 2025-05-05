@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include "rim.h"
 #include "rim_internal.h"
 
@@ -229,8 +228,7 @@ int rim_last_widget_event(int lookback) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (ctx->last_event.is_valid) {
-		// Checking the last created widget for the unique ID is probably not the best way to check
-		assert(ctx->tree_new->widget_stack_depth - lookback >= 0);
+		if (ctx->tree_new->widget_stack_depth - lookback < 0) rim_abort("look back underflow");
 		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback];
 		if (match->unique_id == ctx->last_event.unique_id) {
 			ctx->last_event.is_valid = 0;
@@ -269,7 +267,7 @@ void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event,
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (length > ctx->last_event.data_buf_size) {
 		ctx->last_event.data = realloc(ctx->last_event.data, length + 100);
-		assert(ctx->last_event.data != NULL);
+		if (ctx->last_event.data == NULL) abort();
 		ctx->last_event.data_buf_size = length + 100;
 	}
 	ctx->last_event.data_length = length;
