@@ -2,13 +2,14 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 project(rim)
 
-set(CMAKE_C_FLAGS_DEBUG "-g")
-set(CMAKE_CPP_FLAGS_DEBUG "-g")
-
 option(RIM_COMPILE_DEMOS "Compile demos" ON)
 option(RIM_COMPILE_LIBUI "Compile LibUI backend" ON)
 option(RIM_COMPILE_LIBUI_SCINTILLA "Compile LibUI Scintilla extension" OFF)
 option(RIM_PACKAGE_EDITOR "" OFF)
+
+set(RIM_LIBUI_DEV_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev CACHE STRING "libui dir")
+set(RIM_LIBUI_SCINTILLA_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla CACHE STRING "libui-scintilla dir")
+set(RIM_LUA53_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libs/lua-cmake CACHE STRING "lua dir")
 
 set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
 
@@ -16,9 +17,12 @@ add_library(rim_base STATIC ${RIM_CORE})
 target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if(RIM_COMPILE_LIBUI)
+	if(NOT EXISTS ${RIM_LIBUI_DEV_LOCATION})
+		message(SEND_ERROR "libui missing from ${RIM_LIBUI_DEV_LOCATION}")
+	endif()
 	option(LIBUI_COMPILE_EXAMPLES "" OFF)
 	option(LIBUI_INCLUDE_INSTALL "" OFF)
-	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-dev ${CMAKE_CURRENT_BINARY_DIR}/libui)
+	add_subdirectory(${RIM_LIBUI_DEV_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/libui)
 	if(APPLE)
 		add_library(rim_libui_osx STATIC
 			${RIM_CORE}
@@ -26,7 +30,7 @@ if(RIM_COMPILE_LIBUI)
 		)
 		target_link_libraries(rim_libui_osx LibUI::LibUI)
 		target_include_directories(rim_libui_osx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-		add_library(Rim:RimLibUIOSX ALIAS rim_libui_gtk3)
+		add_library(Rim:RimLibUIOSX ALIAS rim_libui_osx)
 		add_library(Rim:Rim ALIAS rim_libui_osx)
 	elseif(UNIX)
 		add_library(rim_libui_gtk3 STATIC
@@ -49,7 +53,10 @@ if(RIM_COMPILE_LIBUI)
 	endif()
 
 	if(RIM_COMPILE_LIBUI_SCINTILLA)
-		add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/libui-scintilla ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
+		if(NOT EXISTS ${RIM_LIBUI_SCINTILLA_LOCATION})
+			message(SEND_ERROR "libui-scintilla missing from ${RIM_LIBUI_SCINTILLA_LOCATION}")
+		endif()
+		add_subdirectory(${RIM_LIBUI_SCINTILLA_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
 		add_library(rim_libui_scintilla STATIC
 			src/libui_scintilla.c
 		)
@@ -81,6 +88,7 @@ if(RIM_COMPILE_DEMOS)
 	add_demo(log test/log.c)
 	add_demo(remap test/remap.c)
 	add_demo(minimal test/minimal.c)
+	add_demo(menus test/menus.c)
 
 	add_executable(test_differ test/test_differ.c)
 	target_link_libraries(test_differ rim_base ${WIN_LINK_LIBS})
@@ -91,6 +99,7 @@ if(RIM_COMPILE_LUA_EDITOR)
 		set(CMAKE_C_FLAGS_RELEASE "-O2")
 	else()
 		set(CMAKE_C_FLAGS_DEBUG "-g")
+		set(CMAKE_CPP_FLAGS_DEBUG "-g")
 	endif()
 
 	function(create_appimage)
@@ -117,7 +126,7 @@ if(RIM_COMPILE_LUA_EDITOR)
 	    )
 	endfunction()
 
-	include(libs/lua.cmake)
+	add_subdirectory(${RIM_LUA53_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/lua)
 
 	add_executable(rim_editor demo/main.c demo/lua.c etc/win.rc)
 	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua ${WIN_LINK_LIBS})
