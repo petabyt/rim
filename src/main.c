@@ -22,6 +22,7 @@ void rim_abort(char *fmt, ...) {
 struct RimContext *rim_init(void) {
 	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
 	ctx->nop_event_counter = 1; // 1 event for rim_poll to be called twice at beginning
+	ctx->current_event_id = 1; // 0 will be an invalid event ID
 
 	ctx->tree_new = rim_create_tree();
 	ctx->tree_old = rim_create_tree();
@@ -30,9 +31,9 @@ struct RimContext *rim_init(void) {
 	ctx->last_event.data_buf_size = 100;
 	ctx->last_event.data_length = 0;
 
-	sem_init(&ctx->event_sig, 0, 0);
+	sem_init(&ctx->event_signal, 0, 0);
 	sem_init(&ctx->run_done_signal, 0, 0);
-	sem_init(&ctx->event_consumed_sig, 0, 0);
+	sem_init(&ctx->event_consumed_signal, 0, 0);
 
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);

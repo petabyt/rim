@@ -166,7 +166,8 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct WidgetProp))) {
 				// Same state
 			} else if (old_p->type == new_p->type) {
-				if (new_p->already_fufilled == 0) {
+				// checking old_p->already_fufilled == 0 is a hack
+				if (new_p->already_fufilled == 0 && old_p->already_fufilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
 						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));
 					}
@@ -248,6 +249,12 @@ int rim_diff_tree(struct RimContext *ctx) {
 	return 0;
 }
 
+static void fufill_matching_event_prop(struct RimContext *ctx, struct WidgetHeader *w) {
+	if (ctx->last_event.affected_property != RIM_PROP_NONE) {
+		rim_mark_prop_fufilled(w, ctx->last_event.affected_property);
+	}
+}
+
 int rim_last_widget_event(int lookback) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	pthread_mutex_lock(&ctx->event_mutex);
@@ -255,10 +262,12 @@ int rim_last_widget_event(int lookback) {
 		if (ctx->tree_new->widget_stack_depth - lookback < 0) rim_abort("look back underflow");
 		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback];
 		if (match->unique_id == ctx->last_event.unique_id) {
+			fufill_matching_event_prop(ctx, match);
 			ctx->last_event.is_valid = 0;
-			sem_post(&ctx->event_consumed_sig);
+			sem_post(&ctx->event_consumed_signal);
+			int evtype = ctx->last_event.type;
 			pthread_mutex_unlock(&ctx->event_mutex);
-			return ctx->last_event.type;
+			return evtype;
 		}
 	}
 	pthread_mutex_unlock(&ctx->event_mutex);
@@ -272,22 +281,33 @@ int rim_last_widget_detach(int lookback) {
 	return 0;
 }
 
-void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
+static void wait_event_consumed(struct RimContext *ctx) {
 	// Wait for the previous event to be consumed
 	if (ctx->last_event.is_valid) {
-		// TODO: This does not work for more than two events
-		sem_wait(&ctx->event_consumed_sig);
+		// This does not work for more than two events. I don't care right now because retained-mode UI is single-threaded
+		// and shouldn't be trying to run multiple callbacks at a time.
+		sem_wait(&ctx->event_consumed_signal);
 	}
-	pthread_mutex_lock(&ctx->event_mutex);
+}
+
+static void on_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
 	ctx->last_event.is_valid = 1;
 	ctx->last_event.type = event;
 	ctx->last_event.unique_id = unique_id;
-	ctx->nop_event_counter = 2;
-	pthread_mutex_unlock(&ctx->event_mutex);
-	sem_post(&ctx->event_sig);
+	ctx->nop_event_counter = 2;	
 }
 
-void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id, const void *buffer, unsigned int length) {
+void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id) {
+	wait_event_consumed(ctx);
+	pthread_mutex_lock(&ctx->event_mutex);
+	ctx->last_event.affected_property = RIM_PROP_NONE;
+	on_event(ctx, event, unique_id);
+	pthread_mutex_unlock(&ctx->event_mutex);
+	sem_post(&ctx->event_signal);
+}
+
+void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, enum RimPropType type, int unique_id, const void *buffer, unsigned int length) {
+	wait_event_consumed(ctx);
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (length > ctx->last_event.data_buf_size) {
 		ctx->last_event.data = realloc(ctx->last_event.data, length + 100);
@@ -296,8 +316,10 @@ void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event,
 	}
 	ctx->last_event.data_length = length;
 	memcpy(ctx->last_event.data, buffer, length);
-	rim_on_widget_event(ctx, RIM_EVENT_VALUE_CHANGED, unique_id);
+	ctx->last_event.affected_property = type;
+	on_event(ctx, event, unique_id);
 	pthread_mutex_unlock(&ctx->event_mutex);
+	sem_post(&ctx->event_signal);
 }
 
 void rim_trigger_event(void) {
@@ -311,7 +333,7 @@ void rim_trigger_event(void) {
 	ctx->last_event.unique_id = 0;
 	ctx->nop_event_counter = 0;
 	pthread_mutex_unlock(&ctx->event_mutex);
-	sem_post(&ctx->event_sig);
+	sem_post(&ctx->event_signal);
 }
 
 static void init_tree(void *priv) {
@@ -360,7 +382,8 @@ int rim_poll(rim_ctx_t *ctx) {
 		ctx->nop_event_counter--;
 	} else {
 		// Wait on external event
-		sem_wait(&ctx->event_sig);
+		sem_wait(&ctx->event_signal);
+		ctx->current_event_id++;
 	}
 
 	// Clear out external events

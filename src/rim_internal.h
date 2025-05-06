@@ -119,7 +119,7 @@ enum RimWidgetType {
 /// 1-0xfff is reserved for Rim
 /// >=0x1000 is reserved for custom widgets
 enum RimPropType {
-	RIM_PROP_INVALID = 0,
+	RIM_PROP_NONE = 0,
 	// string window title
 	// TODO: Rename to RIM_PROP_TITLE
 	RIM_PROP_WIN_TITLE,
@@ -194,9 +194,14 @@ struct RimTree {
 };
 
 struct RimEvent {
+	// If 1, then this event hasn't been consumed yet.
 	int is_valid;
-	int unique_id;
+	// Type of action that triggered this event
 	enum RimWidgetEvent type;
+	// Unique ID of the widget this event corrosponds to, if any
+	int unique_id;
+	// What property in the widget this event changes, if any. If none, then RIM_PROP_NONE.
+	int affected_property;
 
 	void *data;
 	unsigned int data_buf_size;
@@ -214,6 +219,7 @@ struct RimExtension {
 	int ext_id;
 
 	// TODO: it's not clear which of these callbacks will be needed for an extension...
+	// TODO: Should the backend use these callbacks?
 
 	/// @brief Create a backend widget given the widget header
 	int (*create)(void *priv, struct WidgetHeader *w);
@@ -240,7 +246,7 @@ struct RimContext {
 	// Backend context pointer
 	void *priv;
 
-	// If 1, polling will shut down
+	// If 1, context will shut down on next cycle
 	int quit_immediately;
 	// Used to signal when rim_backend_run is finished
 	sem_t run_done_signal;
@@ -251,8 +257,11 @@ struct RimContext {
 	// Used by rim_poll for how many times to cycle without waiting for events
 	int nop_event_counter;
 	// main event signal
-	sem_t event_sig;
-	sem_t event_consumed_sig;
+	sem_t event_signal;
+	// Signal to thread waiting with an event that the last event was consumed
+	sem_t event_consumed_signal;
+	// Used to ID events, nop cycles (nop_event_counter) not counted
+	int current_event_id;
 };
 
 /// @brief Add an extension to the current context
@@ -353,7 +362,7 @@ int rim_last_widget_detach(int lookback);
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id);
 
 /// @brief Variant of rim_on_widget_event that writes data to the event buffer
-void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id, const void *buffer, unsigned int length);
+void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, enum RimPropType type, int unique_id, const void *buffer, unsigned int length);
 
 /// @brief Run the differ using old and new tree and fixup the widget tree
 int rim_diff_tree(struct RimContext *ctx);

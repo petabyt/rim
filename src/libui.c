@@ -120,7 +120,7 @@ static void on_changed(uiEntry *entry, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	char *text = uiEntryText(entry);
 	unsigned int len = strlen(text) + 1;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, text, len);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_TEXT, (int)(uintptr_t)arg, text, len);
 	uiFreeText(text);
 }
 
@@ -128,7 +128,7 @@ static void on_multiline_changed(uiMultilineEntry *entry, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	char *text = uiMultilineEntryText(entry);
 	unsigned int len = strlen(text) + 1;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, text, len);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_TEXT, (int)(uintptr_t)arg, text, len);
 	uiFreeText(text);
 }
 
@@ -136,14 +136,14 @@ static void on_slider(uiSlider *slider, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiSliderValue(slider);
 	uint32_t b = (uint32_t)val;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, &b, 4);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
 static void on_selected(uiCombobox *combo, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiComboboxSelected(combo);
 	uint32_t b = (uint32_t)val;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, (int)(uintptr_t)arg, &b, 4);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_COMBOBOX_SELECTED, (int)(uintptr_t)arg, &b, 4);
 }
 
 static void on_menu_item_clicked(uiMenuItem *item, uiWindow *sender, void *arg) {
