@@ -129,7 +129,7 @@ if(RIM_COMPILE_LUA_EDITOR)
 	add_subdirectory(${RIM_LUA53_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/lua)
 
 	add_executable(rim_editor demo/main.c demo/lua.c etc/win.rc)
-	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua ${WIN_LINK_LIBS})
+	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua-5.3 ${WIN_LINK_LIBS})
 
 	if(LINUX AND RIM_PACKAGE_EDITOR)
 		create_appimage(
