@@ -84,6 +84,10 @@ enum RimWidgetType {
 	RIM_ENTRY,
 	// Multiline text box entry
 	RIM_MULTILINE_ENTRY,
+	// Entry that hides text
+	RIM_PASSWORD_ENTRY,
+	// Entry that is styled like a search box
+	RIM_SEARCH_ENTRY,
 	// Box with buttons to decrement/increment, usually for a number
 	RIM_SPINBOX,
 	// Horizontal slider
@@ -114,6 +118,10 @@ enum RimWidgetType {
 	RIM_WINDOW_MENU_ITEM,
 	// A fast scrollable table
 	RIM_TABLE,
+	// A form container that has form entries
+	RIM_FORM,
+	// A form entry with a label and a child widget
+	RIM_FORM_ENTRY,
 };
 
 /// 1-0xfff is reserved for Rim
@@ -141,25 +149,19 @@ enum RimPropType {
 	RIM_PROP_INNER_PADDING,
 	// Set to 1 to disable widget
 	RIM_PROP_DISABLED,
-	// String tooltip on hover
+	// Text tooltip that shows on hover
 	RIM_PROP_TOOLTIP,
-
 	RIM_PROP_SLIDER_VALUE,
 	RIM_PROP_SLIDER_MIN,
 	RIM_PROP_SLIDER_MAX,
-
 	/// @brief Valid values are 0-100
 	RIM_PROP_PROGRESS_BAR_VALUE,
-
 	// Combo box current selected value/child index
 	RIM_PROP_COMBOBOX_SELECTED,
-
 	// Set to 1 to make entry read-only
 	RIM_PROP_ENTRY_READ_ONLY,
-
 	// Secondary internal ID for extensions to use
 	RIM_PROP_SECONDARY_ID,
-
 	// Etc property to ignore
 	RIM_PROP_META,
 };

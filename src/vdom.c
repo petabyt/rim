@@ -166,7 +166,8 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct WidgetProp))) {
 				// Same state
 			} else if (old_p->type == new_p->type) {
-				// checking old_p->already_fufilled == 0 is a hack
+				// checking old_p->already_fufilled == 0 is probably not a great approach I think?
+				// It relies on the fact nop_event_counter will be set to >=1 after every event.
 				if (new_p->already_fufilled == 0 && old_p->already_fufilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
 						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));

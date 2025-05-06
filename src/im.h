@@ -113,10 +113,13 @@ void im_slider(int min, int max, int *value);
 /// @brief Horizontal progress bar that goes from 0-100
 void im_progress_bar(int progress);
 
-
+void im_begin_form(void);
+void im_begin_form_entry(const char *label);
+void im_end_form_entry(void);
+void im_end_form(void);
 
 // For internal/extension use only
-//void im_apply_prop(struct RimTree *tree);
+void im_apply_prop(void);
 
 #ifdef __cplusplus
 }

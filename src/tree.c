@@ -39,20 +39,28 @@ inline static void check_align(const void *ptr) {
 #define check_align(ptr) ;
 #endif
 
-inline static int copy_string(uint8_t *to, const char *str) {
+inline static unsigned int copy_string(uint8_t *to, const char *str, unsigned int max) {
 	check_align(to);
-	size_t len = strlen(str);
-	int aligned_len = (((int)len + 1) / 8 + 1) * 8;
-	memset(to, 0, aligned_len);
-	strcpy((char *)to, str);
+	unsigned int i;
+	for (i = 0; str[i] != '\0'; i++) {
+		if (i > max) rim_abort("overflow");
+		to[i] = str[i];
+	}
+	to[i] = '\0';
+	i++;
+	unsigned int aligned_len = (i / 8 + 1) * 8;
+	for (; i < aligned_len; i++) {
+		if (i > max) rim_abort("overflow");
+		to[i] = '\0';
+	}
 	return aligned_len;
 }
-inline static int write_u32(uint8_t *from, uint32_t x) {
+inline static unsigned int write_u32(uint8_t *from, uint32_t x) {
 	check_align(from);
 	((uint32_t *)from)[0] = x;
 	return 4;
 }
-inline static uint32_t read_u32(const uint8_t *from, uint32_t *temp) {
+inline static unsigned int read_u32(const uint8_t *from, uint32_t *temp) {
 	check_align(from);
 	*temp = ((uint32_t *)from)[0];
 	return 4;
@@ -153,58 +161,43 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	}
 }
 
-//struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
-//	
-//}
-
-void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
+struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	if (tree->widget_stack_depth == 0) {
 		rim_abort("No widget to add property to\n");
 	}
-	ensure_buffer_size(tree, sizeof(struct WidgetProp) + strlen(value) + 1); // nitpick: double strlen
 	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
+	parent->n_props++;
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
 	prop->length = sizeof(struct WidgetProp);
 	prop->type = type;
 	prop->already_fufilled = 0;
 	prop->res0 = 0;
-	prop->length += copy_string(prop->data, value);
-	tree->of += (int)prop->length;
-	parent->n_props++;
+	tree->of += prop->length;
+	return prop;
+}
+
+
+void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
+	struct WidgetProp *prop = rim_add_prop(tree, type);
+	unsigned int dat_len = copy_string(prop->data, value, tree->buffer_length - tree->of);
+	prop->length += dat_len;
+	tree->of += dat_len;
 }
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val) {
-	if (tree->widget_stack_depth == 0) {
-		rim_abort("No widget to add property to\n");
-	}
-	ensure_buffer_size(tree, sizeof(struct WidgetProp) + 4);
-	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
-	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = sizeof(struct WidgetProp) + 8;
-	prop->type = type;
-	prop->already_fufilled = 0;
-	prop->res0 = 0;
+	struct WidgetProp *prop = rim_add_prop(tree, type);
 	((uint32_t *)prop->data)[0] = val;
 	((uint32_t *)prop->data)[1] = 0;
-	tree->of += (int)prop->length;
-	parent->n_props++;
+	prop->length += 8;
+	tree->of += 8;
 }
 
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
 	length = ((length / 8) + 1) * 8; // ensure align by 8
-	if (tree->widget_stack_depth == 0) {
-		rim_abort("No widget to add property to\n");
-	}
-	ensure_buffer_size(tree, sizeof(struct WidgetProp) + length);
-	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
-	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = sizeof(struct WidgetProp) + length;
-	prop->type = type;
-	prop->already_fufilled = 0;
-	prop->res0 = 0;
+	struct WidgetProp *prop = rim_add_prop(tree, type);
 	memcpy(prop->data, val, length);
-	tree->of += (int)prop->length;
-	parent->n_props++;
+	prop->length += length;
+	tree->of += length;
 }
 
 struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
