@@ -307,7 +307,11 @@ void rim_end_widget(struct RimTree *tree);
 /// @brief Add a property with a string being the only payload
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value);
 
+/// @brief Add uint32 prop
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
+
+/// @brief Mark prop as fufilled so tree differ doesn't fufill it again
+int rim_mark_prop_fufilled(struct WidgetHeader *h, int type);
 
 /// @note 'length' field will be adjusted to the correct alignment
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length);

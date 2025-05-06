@@ -33,10 +33,11 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
-		// For most widgets this results in a double property set
-		if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
-			rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
-		}
+//		if (p->already_fufilled == 0) {
+			if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
+				rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
+			}
+//		}
 		of += (int)p->length;
 	}
 
@@ -89,8 +90,6 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 		rim_abort("Couldn't destroy widget %s\n", rim_eval_widget_type(h->type));
 	}
 
-	//h->os_handle = 0;
-
 	return of;
 }
 
@@ -108,14 +107,11 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 	}
 
 	if (ctx->tree_old->of == 0) {
-		rim_abort("Should this function init the tree?\n");
+		rim_abort("BUG: Tree patcher doesn't init trees\n");
 	}
 
 	if (ctx->tree_new->of == 0) {
-		// Special handling for when the new tree has nothing, and the old tree didn't
-		// TODO: This code isn't doing anything right now
-		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
-		return 0;
+		rim_abort("BUG: Tree patcher doesn't tear down trees\n");
 	}
 
 	if (new_h->is_detached || old_h->is_detached) {
@@ -167,8 +163,8 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			(*old_of_p) += (int)old_p->length;
 			continue;
 		} else {
-			if (old_p->length == new_p->length && !memcmp(old_p, new_p, old_p->length)) {
-				// Property has the same state
+			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct WidgetProp))) {
+				// Same state
 			} else if (old_p->type == new_p->type) {
 				if (new_p->already_fufilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
@@ -179,8 +175,10 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 				if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
 					rim_abort("Failed to remove property\n");
 				}
-				if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
-					rim_abort("Failed to add property\n");
+				if (new_p->already_fufilled == 0) {
+					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+						rim_abort("Failed to add property\n");
+					}
 				}
 			}
 		}
@@ -219,9 +217,35 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 }
 
 int rim_diff_tree(struct RimContext *ctx) {
+	int max_root_children = max(ctx->tree_new->n_root_children, ctx->tree_old->n_root_children);
+
 	unsigned int old_of = 0;
 	unsigned int new_of = 0;
-	return rim_patch_tree(ctx, &old_of, &new_of, NULL);
+	int invalidate_following_siblings = 0;
+	for (int i = 0; i < max_root_children; i++) {
+		struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + old_of);
+		struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + new_of);
+		if (i >= ctx->tree_new->n_root_children) {
+			// Window removed
+			old_of += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, NULL);
+		} else if (i >= ctx->tree_old->n_root_children) {
+			// Window added
+			new_of += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, NULL);
+		} else {
+			// Handling windows being removed doesn't work well with the fact that they've already been closed down.
+			// TODO: Remove this hack
+			if (old_h->unique_id != new_h->unique_id) {
+				printf("TODO: Support for removing windows at root is not working yet\n");
+				ctx->quit_immediately = 1;
+				break;
+			}
+		
+			int rc = rim_patch_tree(ctx, &old_of, &new_of, NULL);
+			if (rc) rim_abort("differ failed\n");
+		}
+	}
+
+	return 0;
 }
 
 int rim_last_widget_event(int lookback) {
@@ -302,33 +326,7 @@ static void init_tree(void *priv) {
 static void diff_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
 
-	int max_root_children = max(ctx->tree_new->n_root_children, ctx->tree_old->n_root_children);
-
-	unsigned int old_of = 0;
-	unsigned int new_of = 0;
-	int invalidate_following_siblings = 0;
-	for (int i = 0; i < max_root_children; i++) {
-		struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + old_of);
-		struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + new_of);
-		if (i >= ctx->tree_new->n_root_children) {
-			// Window removed
-			old_of += rim_destroy_tree_widgets(ctx, ctx->tree_old, old_of, NULL);
-		} else if (i >= ctx->tree_old->n_root_children) {
-			// Window added
-			new_of += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, NULL);
-		} else {
-			// Handling windows being removed doesn't work well with the fact that they've already been closed down.
-			// TODO: Remove this hack
-			if (old_h->unique_id != new_h->unique_id) {
-				printf("TODO: Support for removing windows at root is not working yet\n");
-				ctx->quit_immediately = 1;
-				break;
-			}
-		
-			int rc = rim_patch_tree(ctx, &old_of, &new_of, NULL);
-			if (rc) rim_abort("differ failed\n");
-		}
-	}
+	rim_diff_tree(ctx);
 
 	sem_post(&ctx->run_done_signal);
 }

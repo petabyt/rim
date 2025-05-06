@@ -167,6 +167,7 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 	prop->length = sizeof(struct WidgetProp);
 	prop->type = type;
 	prop->already_fufilled = 0;
+	prop->res0 = 0;
 	prop->length += copy_string(prop->data, value);
 	tree->of += (int)prop->length;
 	parent->n_props++;
@@ -182,7 +183,9 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	prop->length = sizeof(struct WidgetProp) + 8;
 	prop->type = type;
 	prop->already_fufilled = 0;
-	memcpy(prop->data, &val, 4);
+	prop->res0 = 0;
+	((uint32_t *)prop->data)[0] = val;
+	((uint32_t *)prop->data)[1] = 0;
 	tree->of += (int)prop->length;
 	parent->n_props++;
 }
@@ -198,6 +201,7 @@ void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, u
 	prop->length = sizeof(struct WidgetProp) + length;
 	prop->type = type;
 	prop->already_fufilled = 0;
+	prop->res0 = 0;
 	memcpy(prop->data, val, length);
 	tree->of += (int)prop->length;
 	parent->n_props++;
@@ -215,32 +219,25 @@ struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
 	return NULL;
 }
 
-// TODO: rewrite with rim_get_prop
 int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
-	unsigned int of = 0;
-	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
-		if ((int)p->type == type) {
-			(*val) = (char *)p->data;
-			return 0;
-		}
-		of += (int)p->length;
-	}
-	return -1;
+	struct WidgetProp *p = rim_get_prop(h, type);
+	if (p == NULL) return -1;
+	(*val) = (char *)p->data;
+	return 0;
 }
 
-// TODO: rewrite with rim_get_prop
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
-	unsigned int of = 0;
-	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
-		if ((int)p->type == type) {
-			memcpy(val, p->data, 4);
-			return 0;
-		}
-		of += (int)p->length;
-	}
-	return -1;
+	struct WidgetProp *p = rim_get_prop(h, type);
+	if (p == NULL) return -1;
+	memcpy(val, p->data, 4);
+	return 0;
+}
+
+int rim_mark_prop_fufilled(struct WidgetHeader *h, int type) {
+	struct WidgetProp *p = rim_get_prop(h, type);
+	if (p == NULL) return -1;
+	p->already_fufilled = 1;
+	return 0;
 }
 
 unsigned int rim_get_node_length(struct WidgetHeader *w) {
