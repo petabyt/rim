@@ -23,6 +23,7 @@ void rim_tree_restore_state(void) {
 static void ensure_buffer_size(struct RimTree *tree, unsigned int size) {
 	if (tree->buffer_length < (tree->of + size)) {
 		tree->buffer = realloc(tree->buffer, size + 1000);
+		if (tree->buffer == NULL) abort();
 		tree->buffer_length = size + 1000;
 	}
 }
@@ -31,7 +32,7 @@ static void ensure_buffer_size(struct RimTree *tree, unsigned int size) {
 // to make sure misaligned reads/writes won't happen.
 #ifndef NDEBUG
 inline static void check_align(const void *ptr) {
-	if ((((uintptr_t)ptr) & 0b111) != 0) {
+	if ((((uintptr_t)ptr) & 7) != 0) {
 		rim_abort("Misaligned access\n");
 	}
 }
@@ -55,14 +56,14 @@ inline static unsigned int copy_string(uint8_t *to, const char *str, unsigned in
 	}
 	return aligned_len;
 }
-inline static unsigned int write_u32(uint8_t *from, uint32_t x) {
-	check_align(from);
-	((uint32_t *)from)[0] = x;
+inline static unsigned int write_u32(uint8_t *to, uint32_t x) {
+	check_align(to);
+	((uint32_t *)to)[0] = x;
 	return 4;
 }
 inline static unsigned int read_u32(const uint8_t *from, uint32_t *temp) {
 	check_align(from);
-	*temp = ((uint32_t *)from)[0];
+	*temp = ((const uint32_t *)from)[0];
 	return 4;
 }
 

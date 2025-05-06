@@ -180,7 +180,6 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	case RIM_WINDOW: {
 		int has_menu = 0;
 
-		struct Priv *p = ctx->priv;
 		struct WidgetHeader *bar = rim_get_child(w, 0);
 		bar->os_handle = p->dummy;
 		if (bar->type == RIM_WINDOW_MENU_BAR) {
@@ -188,7 +187,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 			init_window_menu_bar(ctx, bar);
 		}
 
-		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &string));
+		check_prop(rim_get_prop_string(w, RIM_PROP_TITLE, &string));
 
 		uint32_t win_width, win_height;
 		check_prop(rim_get_prop_u32(w, RIM_PROP_WIDTH_DP, &win_width));
@@ -207,7 +206,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		} else {
 			w->os_handle = (uintptr_t)handle;
 		}
-		rim_mark_prop_fufilled(w, RIM_PROP_WIN_TITLE);
+		rim_mark_prop_fufilled(w, RIM_PROP_TITLE);
 		rim_mark_prop_fufilled(w, RIM_PROP_WIDTH_DP);
 		rim_mark_prop_fufilled(w, RIM_PROP_HEIGHT_DP);
 		} return 0;
@@ -344,7 +343,7 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 		uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, expand);
 		return 0;
 	case RIM_TAB_BAR:
-		check_prop(rim_get_prop_string(w, RIM_PROP_WIN_TITLE, &title));
+		check_prop(rim_get_prop_string(w, RIM_PROP_TITLE, &title));
 		uiTabAppend((uiTab *)parent->os_handle, title, (uiControl *)w->os_handle);
 		return 0;
 	case RIM_COMBOBOX: {
@@ -380,7 +379,7 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 				return 0;
 			}
 			return 1;
-		case RIM_PROP_WIN_TITLE:
+		case RIM_PROP_TITLE:
 			if (p->make_window_a_layout) {
 				uiWindowSetTitle((uiWindow *)uiControlParent((uiControl *)w->os_handle), (const char *)prop->data);
 				return 0;

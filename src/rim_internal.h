@@ -128,9 +128,8 @@ enum RimWidgetType {
 /// >=0x1000 is reserved for custom widgets
 enum RimPropType {
 	RIM_PROP_NONE = 0,
-	// string window title
-	// TODO: Rename to RIM_PROP_TITLE
-	RIM_PROP_WIN_TITLE,
+	// Generic title property
+	RIM_PROP_TITLE,
 	// string path to window icon
 	RIM_PROP_WIN_ICON_PATH,
 	// ICO (Microsoft icon) data
@@ -192,7 +191,7 @@ struct RimTree {
 	int widget_stack_depth;
 	uint8_t *buffer;
 	unsigned int buffer_length;
-	int of;
+	unsigned int of;
 };
 
 struct RimEvent {

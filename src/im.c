@@ -105,7 +105,7 @@ void im_end_horizontal_box(void) {
 
 static void window(struct RimTree *tree, const char *name, int width_dp, int height_dp) {
 	rim_add_widget(tree, RIM_WINDOW, -1);
-	rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, name);
+	rim_add_prop_string(tree, RIM_PROP_TITLE, name);
 	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
 	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
 	im_apply_prop();
@@ -161,7 +161,7 @@ int im_begin_tab_bar(int *selected) {
 int im_begin_tab(const char *title) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_TAB, -1);
-	rim_add_prop_string(tree, RIM_PROP_WIN_TITLE, title);
+	rim_add_prop_string(tree, RIM_PROP_TITLE, title);
 	im_apply_prop();
 	return IM_CHILDREN_VISIBLE;
 }
