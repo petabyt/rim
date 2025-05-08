@@ -7,7 +7,7 @@ changes to a native toolkit window in real time.
 
 If that doesn't make sense to you, imagine [React.js](https://react.dev/) but:
 - Replace Javascript with C
-- Replace JSX with a C immediate-mode interface
+- Replace JSX with an immediate-mode API
 - Replace HTML/CSS with GTK, Cocoa, or any other UI toolkit
 
 That's what Rim is.
@@ -27,7 +27,7 @@ int main(void) {
     return 0;
 }
 ```
-<img src="etc/windows.png" width="400"><img src="etc/gtk3.png" width="300">
+<img src="etc/windows.png" width="400"><img src="etc/gtk3.png" width="300"><img src="etc/cocoa.png" width="300">
 
 ## Modular backend
 
@@ -44,9 +44,11 @@ For more info see [perf](docs/perf.md).
 Rim is compiled as a static library with the backend included.
 On Linux, `libgtk-3-dev` is required.
 ```
+git clone https://github.com/petabyt/libui-dev.git --depth 1 --recurse-submodules
 git clone https://github.com/petabyt/rim.git --depth 1 --recurse-submodules
 cd rim
-cmake -G Ninja -B build && cmake --build build
+cmake -G Ninja -B build -DRIM_COMPILE_DEMOS=ON CMAKE_BUILD_TYPE=Debug
+cmake --build build
 ```
 
 # Why?
@@ -54,10 +56,9 @@ cmake -G Ninja -B build && cmake --build build
 See [why](docs/why.md).
 
 ## Roadmap
-- [ ] Support window menus
 - [ ] Support tables
 - [ ] Widget Recycler
 - [ ] Support multiple sessions in one process
 - [ ] A way to handle RecyclerViews/tables
 - [ ] wxWidgets backend
-- [ ] Jetpack Compose or Views backend
+- [ ] Jetpack Compose or Android Views backend
