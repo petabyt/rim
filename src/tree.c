@@ -22,9 +22,9 @@ void rim_tree_restore_state(void) {
 // Ensure 'size' can fit into the space left in the buffer
 static void ensure_buffer_size(struct RimTree *tree, unsigned int size) {
 	if (tree->buffer_length < (tree->of + size)) {
-		tree->buffer = realloc(tree->buffer, size + 1000);
+		tree->buffer = realloc(tree->buffer, tree->of + size + 1000);
 		if (tree->buffer == NULL) abort();
-		tree->buffer_length = size + 1000;
+		tree->buffer_length = tree->of + size + 1000;
 	}
 }
 
@@ -115,6 +115,7 @@ void rim_end_widget(struct RimTree *tree) {
 
 void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children) {
 	ensure_buffer_size(tree, sizeof(struct WidgetHeader));
+	unsigned int this_w_of = tree->of;
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
 	h->type = type;
 	h->n_children = 0;
@@ -135,27 +136,13 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	tree->counter++;
 
 	if (tree->widget_stack_depth != 0) {
-		// Track a potential parent widget (simply a preceding widget)
-		// We want to know if it allows children, and if we can add this widget to it.
-		// If so, increment n_children. Else we end the preceding widget
-		struct WidgetHeader *potential_parent = tree->widget_stack[tree->widget_stack_depth - 1];
-
-		// TODO: Ending widget a widget automatically caused issues
-		// allowed_children is potentially not even needed in the first place
-#if 0
-		if (potential_parent->allowed_children != 0xffffffff && potential_parent->allowed_children >= potential_parent->n_children) {
-			end_widget(tree);
-		}
-#endif
-
-		// Add to potential parent's sibling
-		if (tree->widget_stack_depth) {
-			potential_parent = tree->widget_stack[tree->widget_stack_depth - 1];
-			potential_parent->n_children++;
-		}
+		// If this widget has a parent, increment the number of children it has
+		struct WidgetHeader *potential_parent = (struct WidgetHeader *)(tree->buffer + tree->widget_stack[tree->widget_stack_depth - 1]);
+		potential_parent->n_children++;
 	}
 
-	tree->widget_stack[tree->widget_stack_depth] = h;
+
+	tree->widget_stack[tree->widget_stack_depth] = this_w_of;
 	tree->widget_stack_depth++;
 	if (tree->widget_stack_depth == TREE_MAX_DEPTH) {
 		rim_abort("Max depth reached");
@@ -163,10 +150,11 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 }
 
 struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
+	ensure_buffer_size(tree, sizeof(struct WidgetProp));
 	if (tree->widget_stack_depth == 0) {
 		rim_abort("No widget to add property to\n");
 	}
-	struct WidgetHeader *parent = tree->widget_stack[tree->widget_stack_depth - 1];
+	struct WidgetHeader *parent = (struct WidgetHeader *)(tree->buffer + tree->widget_stack[tree->widget_stack_depth - 1]);
 	parent->n_props++;
 	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
 	prop->length = sizeof(struct WidgetProp);
@@ -180,12 +168,14 @@ struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
 	struct WidgetProp *prop = rim_add_prop(tree, type);
+	ensure_buffer_size(tree, sizeof(struct WidgetProp) + strlen(value) + 8);
 	unsigned int dat_len = copy_string(prop->data, value, tree->buffer_length - tree->of);
 	prop->length += dat_len;
 	tree->of += dat_len;
 }
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val) {
+	ensure_buffer_size(tree, sizeof(struct WidgetProp) + 8);
 	struct WidgetProp *prop = rim_add_prop(tree, type);
 	((uint32_t *)prop->data)[0] = val;
 	((uint32_t *)prop->data)[1] = 0;
@@ -195,6 +185,7 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
 	length = ((length / 8) + 1) * 8; // ensure align by 8
+	ensure_buffer_size(tree, sizeof(struct WidgetProp) + length);
 	struct WidgetProp *prop = rim_add_prop(tree, type);
 	memcpy(prop->data, val, length);
 	prop->length += length;

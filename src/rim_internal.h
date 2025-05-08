@@ -5,14 +5,15 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-// TODO: Add parent_of?
+/// @brief Never keep a pointer to this structure during runtime as
+/// the tree buffer can be reallocated 
 struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
 	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
 	// Number of allowed children in this widget
 	// If 0xffffffff, assume unlimited children
-	// TODO: Remove this
+	// TODO: Remove this, add parent_of?
 	uint32_t allowed_children;
 	// Number of children following this header
 	uint32_t n_children;
@@ -187,7 +188,8 @@ struct RimTree {
 	/// @brief Number of children at root in tree
 	int n_root_children;
 #define TREE_MAX_DEPTH 15
-	struct WidgetHeader *widget_stack[TREE_MAX_DEPTH];
+	/// @brief List of widgets in offsets from tree pointer
+	int widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
 	unsigned int buffer_length;

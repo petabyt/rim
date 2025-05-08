@@ -261,7 +261,7 @@ int rim_last_widget_event(int lookback) {
 	pthread_mutex_lock(&ctx->event_mutex);
 	if (ctx->last_event.is_valid) {
 		if (ctx->tree_new->widget_stack_depth - lookback < 0) rim_abort("look back underflow");
-		struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback];
+		struct WidgetHeader *match = (struct WidgetHeader *)(ctx->tree_new->buffer + ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback]);
 		if (match->unique_id == ctx->last_event.unique_id) {
 			fufill_matching_event_prop(ctx, match);
 			ctx->last_event.is_valid = 0;
@@ -277,7 +277,7 @@ int rim_last_widget_event(int lookback) {
 
 int rim_last_widget_detach(int lookback) {
 	struct RimContext *ctx = rim_get_global_ctx();
-	struct WidgetHeader *match = ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback];
+	struct WidgetHeader *match = (struct WidgetHeader *)(ctx->tree_new->buffer + ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback]);
 	match->is_detached = 1;
 	return 0;
 }

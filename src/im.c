@@ -65,9 +65,12 @@ void im_apply_prop(void) {
 
 static int im_end(uint32_t expected_type) {
 	struct RimTree *tree = rim_get_current_tree();
-	uint32_t last_type = tree->widget_stack[tree->widget_stack_depth - 1]->type;
-	if (last_type != expected_type) {
-		rim_abort("im_end_* mismatch\n");
+	if (tree->widget_stack_depth != 0) {
+		struct WidgetHeader *last_widget = (struct WidgetHeader *)(tree->buffer + tree->widget_stack[tree->widget_stack_depth - 1]);
+		uint32_t last_type = last_widget->type;
+		if (last_type != expected_type) {
+			rim_abort("im_end_* mismatch, expected %d, got %d\n", expected_type, last_type);
+		}
 	}
 	rim_end_widget(tree);
 	return 0;
