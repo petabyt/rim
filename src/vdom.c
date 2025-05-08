@@ -165,7 +165,12 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct PropHeader))) {
 				// Same state
 			} else if (old_p->type == new_p->type) {
-				// TODO: This isn't good enough. Have to associate properties with event IDs.
+				// If the old property 'last_changed_by' event ID still associates with the current event ID,
+				// Then we still don't need to fulfill it.
+				// TODO: Maybe not the best way to solve this problem, will come back to it later
+				if (old_p->last_changed_by == ctx->current_event_id) {
+					new_p->already_fulfilled = 1;
+				}
 				if (new_p->already_fulfilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
 						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));
@@ -250,7 +255,11 @@ int rim_diff_tree(struct RimContext *ctx) {
 
 static void fulfill_matching_event_prop(struct RimContext *ctx, struct WidgetHeader *w) {
 	if (ctx->last_event.affected_property != RIM_PROP_NONE) {
-		rim_mark_prop_fulfilled(w, ctx->last_event.affected_property);
+		struct PropHeader *p = rim_get_prop(w, ctx->last_event.affected_property);
+		if (p == NULL) return;
+		p->already_fulfilled = 1;
+		p->last_changed_by = ctx->current_event_id;
+		//rim_mark_prop_fulfilled(w, ctx->last_event.affected_property);
 	}
 }
 

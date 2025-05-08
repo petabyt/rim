@@ -166,7 +166,7 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	prop->length = sizeof(struct PropHeader);
 	prop->type = type;
 	prop->already_fulfilled = 0;
-	prop->res0 = 0;
+	prop->last_changed_by = 0;
 	tree->of += prop->length;
 	return prop;
 }

@@ -48,7 +48,8 @@ struct __attribute__((packed)) PropHeader {
 	// If 1, then this property has already been applied to the backend or doesn't need to be applied.
 	// This may be used in a weird case where the backend initializes a property before the tree differ gets to it.
 	uint32_t already_fulfilled;
-	uint32_t res0;
+	// Last Event ID that caused this property to change
+	uint32_t last_changed_by;
 	uint8_t data[];
 };
 
