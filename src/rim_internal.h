@@ -11,10 +11,8 @@ struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
 	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
-	// Number of allowed children in this widget
-	// If 0xffffffff, assume unlimited children
-	// TODO: Remove this, add parent_of?
-	uint32_t allowed_children;
+	// TODO: Replace with parent_of
+	uint32_t res2;
 	// Number of children following this header
 	uint32_t n_children;
 	// Number of properties following this header
@@ -187,9 +185,9 @@ struct RimTree {
 	int counter;
 	/// @brief Number of children at root in tree
 	int n_root_children;
-#define TREE_MAX_DEPTH 15
+#define TREE_MAX_DEPTH 100
 	/// @brief List of widgets in offsets from tree pointer
-	int widget_stack[TREE_MAX_DEPTH];
+	unsigned int widget_stack[TREE_MAX_DEPTH];
 	int widget_stack_depth;
 	uint8_t *buffer;
 	unsigned int buffer_length;
@@ -318,9 +316,9 @@ struct RimTree *rim_create_tree(void);
 void rim_reset_tree(struct RimTree *tree);
 
 /// @brief Add widget to tree and make it the current widget
-void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children);
+void rim_add_widget(struct RimTree *tree, enum RimWidgetType type);
 /// @brief End adding properties or children to the current widget and switch to it's parent
-void rim_end_widget(struct RimTree *tree);
+void rim_end_widget(struct RimTree *tree, uint32_t type);
 /// @brief Add a property with a string being the only payload
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value);
 

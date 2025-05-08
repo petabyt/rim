@@ -108,12 +108,19 @@ struct RimTree *rim_create_tree(void) {
 	return tree;
 }
 
-void rim_end_widget(struct RimTree *tree) {
+void rim_end_widget(struct RimTree *tree, uint32_t expected_type) {
 	if (tree->widget_stack_depth == 0) rim_abort("rim_end_widget called too many times");
+	if (expected_type != RIM_PROP_NONE) {
+		struct WidgetHeader *last_widget = (struct WidgetHeader *)(tree->buffer + tree->widget_stack[tree->widget_stack_depth - 1]);
+		uint32_t last_type = last_widget->type;
+		if (last_type != expected_type) {
+			rim_abort("rim_end_widget mismatch, expected %d, got %d\n", expected_type, last_type);
+		}
+	}
 	tree->widget_stack_depth--;
 }
 
-void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_children) {
+void rim_add_widget(struct RimTree *tree, enum RimWidgetType type) {
 	ensure_buffer_size(tree, sizeof(struct WidgetHeader));
 	unsigned int this_w_of = tree->of;
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
@@ -124,7 +131,6 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type, int allowed_c
 	h->is_detached = 0;
 	h->invalidate = 0;
 	h->unique_id = tree->counter;
-	h->allowed_children = (uint32_t)allowed_children;
 	tree->of += sizeof(struct WidgetHeader);
 
 	check_align(&h->os_handle);
