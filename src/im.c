@@ -6,6 +6,7 @@
 
 struct Props {
 	int expand;
+	int inner_padding;
 	int disabled;
 	int favicon;
 	int begin_disabled;
@@ -30,6 +31,9 @@ void im_set_next_window_favicon(void *data, unsigned int length) {
 void im_set_next_expand(void) {
 	props.expand = 1;
 }
+void im_set_next_inner_padding(int dp) {
+	props.inner_padding = dp;
+}
 void im_set_next_disabled(int opt) {
 	props.disabled = 1;
 }
@@ -52,6 +56,10 @@ void im_apply_prop(void) {
 	if (props.tooltip) {
 		rim_add_prop_string(tree, RIM_PROP_TOOLTIP, props.tooltip_text_ptr);
 		props.tooltip = 0;
+	}
+	if (props.inner_padding) {
+		rim_add_prop_u32(tree, RIM_PROP_INNER_PADDING, props.inner_padding);
+		props.inner_padding = 0;
 	}
 }
 

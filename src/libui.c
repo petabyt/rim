@@ -8,6 +8,8 @@
 #include <rim_internal.h>
 #include <signal.h>
 #include <string.h>
+#include <fcntl.h>
+#include <errno.h>
 
 struct Priv {
 	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
@@ -18,7 +20,7 @@ struct Priv {
 
 	uintptr_t dummy;
 
-	sem_t wait_until_ready;
+	sem_t *wait_until_ready;
 };
 
 int is_base_control_class(uint32_t type) {
@@ -375,7 +377,7 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 			return 0;
 		case RIM_PROP_INNER_PADDING:
 			if (p->make_window_a_layout) {
-				uiBoxSetPadded((uiBox *)w->os_handle, (int)val32);
+				uiWindowSetMargined((uiWindow *)uiControlParent((uiControl *)w->os_handle), (int)val32);
 				return 0;
 			}
 			return 1;
@@ -491,7 +493,7 @@ static void *ui_thread(void *arg) {
 		return NULL;
 	}
 
-	sem_post(&p->wait_until_ready);
+	sem_post(p->wait_until_ready);
 	uiMain();
 	uiUninit();
 
@@ -510,20 +512,35 @@ void rim_backend_close(struct RimContext *ctx) {
 	uiQuit();
 }
 
+void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
+	ctx->priv = malloc(sizeof(struct Priv));
+	struct Priv *p = ctx->priv;
+	p->dummy = (uintptr_t)malloc(10);
+	p->make_window_a_layout = 1;
+
+	uiInitOptions o = { 0 };
+	const char *err;
+
+	printf("Calling uiInit\n");
+	err = uiInit(&o);
+	if (err != NULL) {
+		fprintf(stderr, "Error initializing libui-ng: %s\n", err);
+		uiFreeInitError(err);
+		return;
+	}
+
+	if (done != NULL) {
+		sem_post(done);
+	}
+
+	uiMain();
+	uiUninit();	
+}
+
 int rim_backend_init(struct RimContext *ctx) {
 	ctx->priv = malloc(sizeof(struct Priv));
 	struct Priv *p = ctx->priv;
 	p->dummy = (uintptr_t)malloc(10);
 	p->make_window_a_layout = 1;
-	sem_init(&p->wait_until_ready, 0, 0);
-
-	if (pthread_create(&p->thread, NULL, ui_thread, (void *)ctx) != 0) {
-		perror("pthread_create() error");
-		return 1;
-	}
-
-	signal(SIGINT, handle_int);
-
-	sem_wait(&p->wait_until_ready);
 	return 0;
 }

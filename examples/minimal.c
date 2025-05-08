@@ -1,7 +1,7 @@
+#include <stdio.h>
 #include <rim.h>
-#include <im.h>
-int main(void) {
-    struct RimContext *ctx = rim_init();
+
+int mymain(struct RimContext *ctx, void *arg) {
     int show_more = 0;
     while (rim_poll(ctx)) {
         if (im_begin_window("My Window", 500, 500)) {
@@ -11,4 +11,7 @@ int main(void) {
         }
     }
     return 0;
+}
+int main(void) {
+    return rim_start(mymain, NULL);
 }

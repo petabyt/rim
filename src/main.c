@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "rim.h"
 #include "rim_internal.h"
 
@@ -20,6 +22,8 @@ void rim_abort(char *fmt, ...) {
 }
 
 struct RimContext *rim_init(void) {
+	if (global_context != NULL) return global_context;
+
 	struct RimContext *ctx = (struct RimContext *)calloc(1, sizeof(struct RimContext));
 	ctx->nop_event_counter = 1; // 1 event for rim_poll to be called twice at beginning
 	ctx->current_event_id = 1; // 0 will be an invalid event ID
@@ -31,9 +35,16 @@ struct RimContext *rim_init(void) {
 	ctx->last_event.data_buf_size = 100;
 	ctx->last_event.data_length = 0;
 
-	sem_init(&ctx->event_signal, 0, 0);
-	sem_init(&ctx->run_done_signal, 0, 0);
-	sem_init(&ctx->event_consumed_signal, 0, 0);
+	sem_unlink("event_signal");
+	sem_unlink("run_done_signal");
+	sem_unlink("event_consumed_signal");
+
+	ctx->event_signal = sem_open("event_signal", O_CREAT | O_EXCL, 0, 0);
+	ctx->run_done_signal = sem_open("run_done_signal", O_CREAT | O_EXCL, 0, 0);
+	ctx->event_consumed_signal = sem_open("event_consumed_signal", O_CREAT | O_EXCL, 0, 0);
+	if (ctx->event_signal == SEM_FAILED || ctx->run_done_signal == SEM_FAILED || ctx->event_consumed_signal == SEM_FAILED) {
+		rim_abort("sem_open failed %d\n", errno);
+	}
 
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
@@ -42,11 +53,52 @@ struct RimContext *rim_init(void) {
 
 	global_context = ctx;
 
-	if (rim_backend_init(ctx)) {
-		rim_abort("Failed to init backend\n");
-	}	
-
 	return ctx;
+}
+
+struct ThreadArg {
+	int (*func)(rim_ctx_t *, void *);
+	sem_t *ready;
+	struct RimContext *ctx;
+	void *arg;
+};
+
+void *ui_thread(void *arg) {
+	struct ThreadArg *thread_arg = (struct ThreadArg *)arg;
+
+	sem_wait(thread_arg->ctx->run_done_signal);
+
+	thread_arg->func(thread_arg->ctx, thread_arg->arg);
+
+	// TODO: Should signal to rim_start that we are done
+
+	pthread_exit(NULL);
+	return NULL;
+}
+
+int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
+	struct RimContext *ctx = rim_init();
+
+	struct ThreadArg thread_arg = {
+		.func = func,
+		.ctx = ctx,
+		.arg = arg,
+	};
+
+	if (pthread_create(&ctx->second_thread, NULL, ui_thread, &thread_arg) != 0) {
+		perror("pthread_create() error");
+		return 1;
+	}
+
+	rim_backend_thread(ctx, ctx->run_done_signal);
+
+	return 0;
+}
+
+void rim_close(struct RimContext *ctx) {
+	sem_close(ctx->event_signal); sem_unlink("event_signal");
+	sem_close(ctx->run_done_signal); sem_unlink("run_done_signal");
+	sem_close(ctx->event_consumed_signal); sem_unlink("event_consumed_signal");
 }
 
 int rim_get_prop_default_value(struct RimContext *ctx, enum RimPropType type, uint8_t *buffer, unsigned int length) {

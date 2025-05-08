@@ -247,10 +247,14 @@ struct RimContext {
 	// Backend context pointer
 	void *priv;
 
+	// Handles for the second thread. This may be the 
+	pthread_t second_thread;
+
 	// If 1, context will shut down on next cycle
 	int quit_immediately;
 	// Used to signal when rim_backend_run is finished
-	sem_t run_done_signal;
+	// TODO: rename to backend_done_signal
+	sem_t *run_done_signal;
 	// Mutex protecting all the event members of this struct
 	pthread_mutex_t event_mutex;
 	// Only one event is processed at a time
@@ -258,9 +262,9 @@ struct RimContext {
 	// Used by rim_poll for how many times to cycle without waiting for events
 	int nop_event_counter;
 	// main event signal
-	sem_t event_signal;
+	sem_t *event_signal;
 	// Signal to thread waiting with an event that the last event was consumed
-	sem_t event_consumed_signal;
+	sem_t *event_consumed_signal;
 	// Used to ID events, nop cycles (nop_event_counter) not counted
 	int current_event_id;
 };
@@ -273,6 +277,7 @@ void *rim_get_ext_priv(struct RimContext *ctx, int id);
 /// @defgroup Backend implementation functions
 /// @addtogroup backend
 /// @{
+void rim_backend_thread(struct RimContext *ctx, sem_t *done);
 // Setup backend and priv context
 int rim_backend_init(struct RimContext *ctx);
 // Free everything and close down thread

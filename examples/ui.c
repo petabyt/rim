@@ -1,6 +1,6 @@
 #include <stdio.h>
+#define REPLACE_MAIN
 #include <rim.h>
-#include <im.h>
 
 int main(void) {
 	struct RimContext *ctx = rim_init();

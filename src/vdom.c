@@ -33,11 +33,11 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
-//		if (p->already_fufilled == 0) {
+		if (p->already_fufilled == 0) {
 			if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 				rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
 			}
-//		}
+		}
 		of += (int)p->length;
 	}
 
@@ -265,7 +265,7 @@ int rim_last_widget_event(int lookback) {
 		if (match->unique_id == ctx->last_event.unique_id) {
 			fufill_matching_event_prop(ctx, match);
 			ctx->last_event.is_valid = 0;
-			sem_post(&ctx->event_consumed_signal);
+			sem_post(ctx->event_consumed_signal);
 			int evtype = ctx->last_event.type;
 			pthread_mutex_unlock(&ctx->event_mutex);
 			return evtype;
@@ -287,7 +287,7 @@ static void wait_event_consumed(struct RimContext *ctx) {
 	if (ctx->last_event.is_valid) {
 		// This does not work for more than two events. I don't care right now because retained-mode UI is single-threaded
 		// and shouldn't be trying to run multiple callbacks at a time.
-		sem_wait(&ctx->event_consumed_signal);
+		sem_wait(ctx->event_consumed_signal);
 	}
 }
 
@@ -304,7 +304,7 @@ void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int 
 	ctx->last_event.affected_property = RIM_PROP_NONE;
 	on_event(ctx, event, unique_id);
 	pthread_mutex_unlock(&ctx->event_mutex);
-	sem_post(&ctx->event_signal);
+	sem_post(ctx->event_signal);
 }
 
 void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, enum RimPropType type, int unique_id, const void *buffer, unsigned int length) {
@@ -320,7 +320,7 @@ void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event,
 	ctx->last_event.affected_property = type;
 	on_event(ctx, event, unique_id);
 	pthread_mutex_unlock(&ctx->event_mutex);
-	sem_post(&ctx->event_signal);
+	sem_post(ctx->event_signal);
 }
 
 void rim_trigger_event(void) {
@@ -334,7 +334,7 @@ void rim_trigger_event(void) {
 	ctx->last_event.unique_id = 0;
 	ctx->nop_event_counter = 0;
 	pthread_mutex_unlock(&ctx->event_mutex);
-	sem_post(&ctx->event_signal);
+	sem_post(ctx->event_signal);
 }
 
 static void init_tree(void *priv) {
@@ -343,7 +343,7 @@ static void init_tree(void *priv) {
 	for (int i = 0; i < ctx->tree_new->n_root_children; i++) {
 		base += rim_init_tree_widgets(ctx, ctx->tree_new, base, NULL);
 	}
-	sem_post(&ctx->run_done_signal);
+	sem_post(ctx->run_done_signal);
 }
 
 static void diff_tree(void *priv) {
@@ -351,7 +351,7 @@ static void diff_tree(void *priv) {
 
 	rim_diff_tree(ctx);
 
-	sem_post(&ctx->run_done_signal);
+	sem_post(ctx->run_done_signal);
 }
 
 int rim_poll(rim_ctx_t *ctx) {
@@ -360,17 +360,18 @@ int rim_poll(rim_ctx_t *ctx) {
 	}
 	if (ctx->quit_immediately) {
 		rim_backend_close(ctx);
+		rim_close(ctx);
 		return 0;
 	}
 
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
 		rim_backend_run(ctx, init_tree);
-		sem_wait(&ctx->run_done_signal);
+		sem_wait(ctx->run_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents
 		rim_backend_run(ctx, diff_tree);
-		sem_wait(&ctx->run_done_signal);
+		sem_wait(ctx->run_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of == 0) {
 		// If new tree suddenly has no contents, close everything down
 		rim_backend_close(ctx);
@@ -383,7 +384,7 @@ int rim_poll(rim_ctx_t *ctx) {
 		ctx->nop_event_counter--;
 	} else {
 		// Wait on external event
-		sem_wait(&ctx->event_signal);
+		sem_wait(ctx->event_signal);
 		ctx->current_event_id++;
 	}
 

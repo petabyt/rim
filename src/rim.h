@@ -1,6 +1,8 @@
 #ifndef NAITVE_IMGUI_H
 #define NAITVE_IMGUI_H
 
+#include <im.h>
+
 typedef struct RimContext rim_ctx_t;
 
 /// @brief Try and get the correct DPI value for the system, ideally what has been set by the user
@@ -12,8 +14,9 @@ int rim_get_dpi(void);
 /// After this, the UI backend must be initialized.
 rim_ctx_t *rim_init(void);
 
-// TODO
-//void rim_close(rim_ctx_t *ctx);
+int rim_start(int (*func)(rim_ctx_t *, void *), void *arg);
+
+void rim_close(rim_ctx_t *ctx);
 
 /// @brief Poll the UI for events such as button clicks and inputs,
 /// as well as external events triggered from another thread.
@@ -32,5 +35,30 @@ void rim_tree_save_state(void);
 
 /// @brief Restores the tree that was saved by rim_tree_save_state
 void rim_tree_restore_state(void);
+
+// Hack to relocate ui state thread onto a second thread for programs that want to call rim_init in main()
+#ifdef REPLACE_MAIN
+struct MyArgStruct {
+	int argc;
+	char **argv;
+};
+
+int rim_main(int argc, char **argv);
+
+int __mymain(struct RimContext *ctx, void *arg) {
+	struct MyArgStruct *my = (struct MyArgStruct *)arg;
+	return rim_main(my->argc, my->argv);
+}
+
+int main(int argc, char **argv) {
+	struct MyArgStruct my = {
+		.argc = argc,
+		.argv = argv,
+	};
+    return rim_start(__mymain, (void *)&my);
+}
+// Force main() to always take arguments
+#define main(__ARGV__) rim_main(int argc, char **argv)
+#endif
 
 #endif

@@ -29,16 +29,6 @@ enum ImReturnCode {
 	IM_CHILDREN_VISIBLE = 3,
 };
 
-struct ImModifier {
-	unsigned int color;
-	unsigned int width_x_type;
-	unsigned int width_x;
-	unsigned int width_y_type;
-	unsigned int width_y;
-	unsigned int margin[4];
-	unsigned int padding[4];
-};
-
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
 int im_begin_vertical_box(void);
 void im_end_vertical_box(void);
@@ -55,7 +45,9 @@ void im_set_next_tooltip(const char *label);
 /// @brief Disable the next widget
 void im_set_next_disabled(int opt);
 /// @brief Force the next widget to expand and take up 100% of parents space
-void im_set_next_expand();
+void im_set_next_expand(void);
+
+void im_set_next_inner_padding(int dp);
 
 /// @brief Begin a container with tabs
 int im_begin_tab_bar(int *selected);
@@ -73,6 +65,7 @@ int im_menu_item(const char *name);
 void im_end_menu(void);
 void im_end_menu_bar(void);
 
+
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
 /// @brief Creates a combo box that uses 'selected' as current selected item
 /// @todo Remove label?
@@ -83,12 +76,19 @@ int im_begin_combo_box_ex(const char *label, int *selected, const char *preview_
 void im_combo_box_item(const char *label);
 void im_end_combo_box(void);
 
+
+void im_begin_form(void);
+void im_begin_form_entry(const char *label);
+void im_end_form_entry(void);
+void im_end_form(void);
+
+
 int im_checkbox_label(const char *label, int *checked);
 
 /// @returns IM_NONE, IM_CLICKED
 int im_button(const char *label);
 /// @returns IM_NONE, IM_CLICKED
-int im_button_ex(const char *label, struct ImModifier *mod);
+int im_button_ex(const char *label);
 /// @returns IM_NONE
 int im_label(const char *label);
 
@@ -112,11 +112,6 @@ void im_slider(int min, int max, int *value);
 
 /// @brief Horizontal progress bar that goes from 0-100
 void im_progress_bar(int progress);
-
-void im_begin_form(void);
-void im_begin_form_entry(const char *label);
-void im_end_form_entry(void);
-void im_end_form(void);
 
 // For internal/extension use only
 void im_apply_prop(void);

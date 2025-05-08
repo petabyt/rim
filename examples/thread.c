@@ -1,6 +1,5 @@
-#include <stdio.h>
+#define REPLACE_MAIN
 #include <rim.h>
-#include <im.h>
 #include <pthread.h>
 #include <unistd.h>
 

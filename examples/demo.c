@@ -1,6 +1,6 @@
 #include <stdio.h>
+#define REPLACE_MAIN
 #include <rim.h>
-#include <im.h>
 
 int main(void) {
 	struct RimContext *ctx = rim_init();
@@ -9,6 +9,7 @@ int main(void) {
 	int value = 50;
 	int selected = 0;
 	while (rim_poll(ctx)) {
+		im_set_next_inner_padding(1);
 		if (im_begin_window("My Window", 500, 500)) {
 			char buffer[64];
 			sprintf(buffer, "Events: %04d", counter);
