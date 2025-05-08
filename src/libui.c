@@ -208,22 +208,22 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		} else {
 			w->os_handle = (uintptr_t)handle;
 		}
-		rim_mark_prop_fufilled(w, RIM_PROP_TITLE);
-		rim_mark_prop_fufilled(w, RIM_PROP_WIDTH_DP);
-		rim_mark_prop_fufilled(w, RIM_PROP_HEIGHT_DP);
+		rim_mark_prop_fulfilled(w, RIM_PROP_TITLE);
+		rim_mark_prop_fulfilled(w, RIM_PROP_WIDTH_DP);
+		rim_mark_prop_fulfilled(w, RIM_PROP_HEIGHT_DP);
 		} return 0;
 	case RIM_BUTTON: {
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiButton *handle = uiNewButton(string);
 		uiButtonOnClicked(handle, button_clicked, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
-		rim_mark_prop_fufilled(w, RIM_PROP_TEXT);
+		rim_mark_prop_fulfilled(w, RIM_PROP_TEXT);
 		} return 0;
 	case RIM_LABEL: {
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
 		uiLabel *handle = uiNewLabel(string);
 		w->os_handle = (uintptr_t)handle;
-		rim_mark_prop_fufilled(w, RIM_PROP_TEXT);
+		rim_mark_prop_fulfilled(w, RIM_PROP_TEXT);
 		} return 0;
 	case RIM_ENTRY: {
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
@@ -231,7 +231,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiEntrySetText(handle, string);
 		uiEntryOnChanged(handle, on_changed, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
-		rim_mark_prop_fufilled(w, RIM_PROP_TEXT);
+		rim_mark_prop_fulfilled(w, RIM_PROP_TEXT);
 		} return 0;
 	case RIM_MULTILINE_ENTRY: {
 		uiMultilineEntry *handle = uiNewNonWrappingMultilineEntry(); // uiNewMultilineEntry
@@ -257,8 +257,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
-		rim_mark_prop_fufilled(w, RIM_PROP_SLIDER_MIN);
-		rim_mark_prop_fufilled(w, RIM_PROP_SLIDER_MAX);
+		rim_mark_prop_fulfilled(w, RIM_PROP_SLIDER_MIN);
+		rim_mark_prop_fulfilled(w, RIM_PROP_SLIDER_MAX);
 		} return 0;
 	case RIM_COMBOBOX: {
 		uiCombobox *handle = uiNewCombobox();
@@ -359,7 +359,7 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 	return 1;
 }
 
-int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
 	struct Priv *p = ctx->priv;
 	uint32_t val32 = 0;
 	memcpy(&val32, prop->data, 4); // assumes len>=4

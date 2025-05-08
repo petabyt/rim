@@ -18,7 +18,7 @@ struct Props {
 }props = {0};
 
 void im_set_next_tooltip(const char *text) {
-	props.tooltip_text_ptr = text; // TODO: undefined behavior
+	props.tooltip_text_ptr = text; // TODO: undefined behavior, use strcpy instead
 	props.tooltip = 1;
 }
 
@@ -169,6 +169,15 @@ int im_begin_tab(const char *title) {
 	return IM_CHILDREN_VISIBLE;
 }
 
+static void copy_string_from_event(struct RimContext *ctx, char *buffer, unsigned int max) {
+	if (ctx->last_event.data_length > max) {
+		memcpy(buffer, ctx->last_event.data, max);
+		buffer[max - 1] = '\0';
+	} else {
+		memcpy(buffer, ctx->last_event.data, ctx->last_event.data_length);
+	}
+}
+
 void im_entry(const char *label, char *buffer, unsigned int size) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_ENTRY);
@@ -178,7 +187,7 @@ void im_entry(const char *label, char *buffer, unsigned int size) {
 	rim_end_widget(tree, RIM_ENTRY);
 	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
-		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
+		copy_string_from_event(ctx, buffer, size);
 	}
 }
 
@@ -190,7 +199,7 @@ void im_multiline_entry(char *buffer, unsigned int size) {
 	rim_end_widget(tree, RIM_MULTILINE_ENTRY);
 	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
-		snprintf(buffer, size, "%s", (char *)ctx->last_event.data);
+		copy_string_from_event(ctx, buffer, size);
 	}
 }
 

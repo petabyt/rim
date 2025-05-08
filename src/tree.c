@@ -155,17 +155,17 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type) {
 	}
 }
 
-struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
-	ensure_buffer_size(tree, sizeof(struct WidgetProp));
+struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
+	ensure_buffer_size(tree, sizeof(struct PropHeader));
 	if (tree->widget_stack_depth == 0) {
 		rim_abort("No widget to add property to\n");
 	}
 	struct WidgetHeader *parent = (struct WidgetHeader *)(tree->buffer + tree->widget_stack[tree->widget_stack_depth - 1]);
 	parent->n_props++;
-	struct WidgetProp *prop = (struct WidgetProp *)(tree->buffer + tree->of);
-	prop->length = sizeof(struct WidgetProp);
+	struct PropHeader *prop = (struct PropHeader *)(tree->buffer + tree->of);
+	prop->length = sizeof(struct PropHeader);
 	prop->type = type;
-	prop->already_fufilled = 0;
+	prop->already_fulfilled = 0;
 	prop->res0 = 0;
 	tree->of += prop->length;
 	return prop;
@@ -173,16 +173,16 @@ struct WidgetProp *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 
 
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
-	struct WidgetProp *prop = rim_add_prop(tree, type);
-	ensure_buffer_size(tree, sizeof(struct WidgetProp) + strlen(value) + 8);
+	struct PropHeader *prop = rim_add_prop(tree, type);
+	ensure_buffer_size(tree, sizeof(struct PropHeader) + strlen(value) + 8);
 	unsigned int dat_len = copy_string(prop->data, value, tree->buffer_length - tree->of);
 	prop->length += dat_len;
 	tree->of += dat_len;
 }
 
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val) {
-	ensure_buffer_size(tree, sizeof(struct WidgetProp) + 8);
-	struct WidgetProp *prop = rim_add_prop(tree, type);
+	ensure_buffer_size(tree, sizeof(struct PropHeader) + 8);
+	struct PropHeader *prop = rim_add_prop(tree, type);
 	((uint32_t *)prop->data)[0] = val;
 	((uint32_t *)prop->data)[1] = 0;
 	prop->length += 8;
@@ -191,17 +191,17 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
 	length = ((length / 8) + 1) * 8; // ensure align by 8
-	ensure_buffer_size(tree, sizeof(struct WidgetProp) + length);
-	struct WidgetProp *prop = rim_add_prop(tree, type);
+	ensure_buffer_size(tree, sizeof(struct PropHeader) + length);
+	struct PropHeader *prop = rim_add_prop(tree, type);
 	memcpy(prop->data, val, length);
 	prop->length += length;
 	tree->of += length;
 }
 
-struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
+struct PropHeader *rim_get_prop(struct WidgetHeader *h, int type) {
 	unsigned int of = 0;
 	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(h->data + of);
+		struct PropHeader *p = (struct PropHeader *)(h->data + of);
 		if ((int)p->type == type) {
 			return p;
 		}
@@ -211,30 +211,30 @@ struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type) {
 }
 
 int rim_get_prop_string(struct WidgetHeader *h, int type, char **val) {
-	struct WidgetProp *p = rim_get_prop(h, type);
+	struct PropHeader *p = rim_get_prop(h, type);
 	if (p == NULL) return -1;
 	(*val) = (char *)p->data;
 	return 0;
 }
 
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
-	struct WidgetProp *p = rim_get_prop(h, type);
+	struct PropHeader *p = rim_get_prop(h, type);
 	if (p == NULL) return -1;
 	memcpy(val, p->data, 4);
 	return 0;
 }
 
-int rim_mark_prop_fufilled(struct WidgetHeader *h, int type) {
-	struct WidgetProp *p = rim_get_prop(h, type);
+int rim_mark_prop_fulfilled(struct WidgetHeader *h, int type) {
+	struct PropHeader *p = rim_get_prop(h, type);
 	if (p == NULL) return -1;
-	p->already_fufilled = 1;
+	p->already_fulfilled = 1;
 	return 0;
 }
 
 unsigned int rim_get_node_length(struct WidgetHeader *w) {
 	unsigned int of = 0;
 	for (unsigned int i = 0; i < w->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(w->data + of);
+		struct PropHeader *p = (struct PropHeader *)(w->data + of);
 		of += p->length;
 	}
 	for (unsigned int i = 0; i < w->n_children; i++) {
@@ -247,7 +247,7 @@ unsigned int rim_get_node_length(struct WidgetHeader *w) {
 int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
 	unsigned int of = 0;
 	for (size_t i = 0; i < parent->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(parent->data + of);
+		struct PropHeader *p = (struct PropHeader *)(parent->data + of);
 		of += p->length;
 	}
 
@@ -268,7 +268,7 @@ int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
 struct WidgetHeader *rim_get_child(struct WidgetHeader *w, int index) {
 	unsigned int of = 0;
 	for (size_t i = 0; i < w->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(w->data + of);
+		struct PropHeader *p = (struct PropHeader *)(w->data + of);
 		of += p->length;
 	}
 
@@ -295,7 +295,7 @@ int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id)
 	(*of) += sizeof(struct WidgetHeader);
 
 	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(tree->buffer + (*of));
+		struct PropHeader *p = (struct PropHeader *)(tree->buffer + (*of));
 		(*of) += (int)p->length;
 	}
 

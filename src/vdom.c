@@ -32,8 +32,8 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 	}
 
 	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
-		if (p->already_fufilled == 0) {
+		struct PropHeader *p = (struct PropHeader *)(buffer + of);
+		if (p->already_fulfilled == 0) {
 			if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 				rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
 			}
@@ -62,7 +62,7 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 	of += sizeof(struct WidgetHeader);
 
 	for (size_t i = 0; i < h->n_props; i++) {
-		struct WidgetProp *p = (struct WidgetProp *)(buffer + of);
+		struct PropHeader *p = (struct PropHeader *)(buffer + of);
 		of += (int)p->length;
 	}
 
@@ -93,8 +93,7 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 	return of;
 }
 
-// TODO: Rename 'parent' to old_parent to be more clear
-static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int *new_of_p, struct WidgetHeader *parent) {
+static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int *new_of_p, struct WidgetHeader *old_parent) {
 	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
 
@@ -124,13 +123,13 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 	if (old_h->type != new_h->type || new_h->invalidate) {
 		// Type has changed in this widget so we'll assume the rest of the tree is unusable.
 		// So: Destroy widgets in old tree, init widgets in new tree.
-		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), parent);
-		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, (*new_of_p), parent);
+		(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), old_parent);
+		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, (*new_of_p), old_parent);
 		return 0;
 	} else {
 		// Same type, copy over handle
 		new_h->os_handle = old_h->os_handle;
-		// Need to update the unique ID since it's passed to the onclick handler
+		// Need to update the unique ID since it was passed to the onclick handler
 		if (new_h->unique_id != old_h->unique_id) {
 			if (rim_backend_update_id(ctx, new_h)) {
 				rim_abort("Failed to update widget's unique ID\n");
@@ -147,8 +146,8 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 
 	uint32_t max_n_props = max(old_h->n_props, new_h->n_props);
 	for (size_t i = 0; i < max_n_props; i++) {
-		struct WidgetProp *old_p = (struct WidgetProp *)(ctx->tree_old->buffer + (*old_of_p));
-		struct WidgetProp *new_p = (struct WidgetProp *)(ctx->tree_new->buffer + (*new_of_p));
+		struct PropHeader *old_p = (struct PropHeader *)(ctx->tree_old->buffer + (*old_of_p));
+		struct PropHeader *new_p = (struct PropHeader *)(ctx->tree_new->buffer + (*new_of_p));
 
 		if (i >= old_h->n_props) {
 			if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
@@ -163,11 +162,11 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			(*old_of_p) += (int)old_p->length;
 			continue;
 		} else {
-			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct WidgetProp))) {
+			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct PropHeader))) {
 				// Same state
 			} else if (old_p->type == new_p->type) {
 				// TODO: This isn't good enough. Have to associate properties with event IDs.
-				if (new_p->already_fufilled == 0) {
+				if (new_p->already_fulfilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
 						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));
 					}
@@ -176,7 +175,7 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 				if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
 					rim_abort("Failed to remove property\n");
 				}
-				if (new_p->already_fufilled == 0) {
+				if (new_p->already_fulfilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
 						rim_abort("Failed to add property\n");
 					}
@@ -198,7 +197,7 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 			// Child removed from tree
 			(*old_of_p) += rim_destroy_tree_widgets(ctx, ctx->tree_old, (*old_of_p), old_h);
 		} else {
-			// Sad: Since the backend API currently isn't capable of inserting widgets into a parent at a specific index
+			// Sad: Since the backend API currently isn't capable of inserting widgets into an old_parent at a specific index
 			// (it can only append), the rest of the tree has to be thrown away if a single widget differs.
 			struct WidgetHeader *old_child_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 			struct WidgetHeader *new_child_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
@@ -249,9 +248,9 @@ int rim_diff_tree(struct RimContext *ctx) {
 	return 0;
 }
 
-static void fufill_matching_event_prop(struct RimContext *ctx, struct WidgetHeader *w) {
+static void fulfill_matching_event_prop(struct RimContext *ctx, struct WidgetHeader *w) {
 	if (ctx->last_event.affected_property != RIM_PROP_NONE) {
-		rim_mark_prop_fufilled(w, ctx->last_event.affected_property);
+		rim_mark_prop_fulfilled(w, ctx->last_event.affected_property);
 	}
 }
 
@@ -262,7 +261,7 @@ int rim_last_widget_event(int lookback) {
 		if (ctx->tree_new->widget_stack_depth - lookback < 0) rim_abort("look back underflow\n");
 		struct WidgetHeader *match = (struct WidgetHeader *)(ctx->tree_new->buffer + ctx->tree_new->widget_stack[ctx->tree_new->widget_stack_depth - lookback]);
 		if (match->unique_id == ctx->last_event.unique_id) {
-			fufill_matching_event_prop(ctx, match);
+			fulfill_matching_event_prop(ctx, match);
 			ctx->last_event.is_valid = 0;
 			sem_post(ctx->event_consumed_signal);
 			int evtype = ctx->last_event.type;
@@ -342,7 +341,7 @@ static void init_tree(void *priv) {
 	for (int i = 0; i < ctx->tree_new->n_root_children; i++) {
 		base += rim_init_tree_widgets(ctx, ctx->tree_new, base, NULL);
 	}
-	sem_post(ctx->run_done_signal);
+	sem_post(ctx->backend_done_signal);
 }
 
 static void diff_tree(void *priv) {
@@ -350,7 +349,7 @@ static void diff_tree(void *priv) {
 
 	rim_diff_tree(ctx);
 
-	sem_post(ctx->run_done_signal);
+	sem_post(ctx->backend_done_signal);
 }
 
 int rim_poll(rim_ctx_t *ctx) {
@@ -366,11 +365,11 @@ int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
 		rim_backend_run(ctx, init_tree);
-		sem_wait(ctx->run_done_signal);
+		sem_wait(ctx->backend_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents
 		rim_backend_run(ctx, diff_tree);
-		sem_wait(ctx->run_done_signal);
+		sem_wait(ctx->backend_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of == 0) {
 		// If new tree suddenly has no contents, close everything down
 		rim_backend_close(ctx);

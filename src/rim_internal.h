@@ -23,7 +23,7 @@ struct __attribute__((packed)) WidgetHeader {
 	// In that case this widget must be skipped when calculating the index of this node's siblings.
 	uint8_t is_detached;
 	// Set to 1 to tell the tree differ to throw away this widget even if the types match
-	// This may be used in case the widget needs to be re-appended to it's parent.
+	// This may be used in case the widget needs to be re-appended to its parent.
 	uint8_t invalidate;
 
 	uint8_t res0;
@@ -40,20 +40,19 @@ _Static_assert(sizeof(struct WidgetHeader) == 32, "fail size");
 
 // This is the common layout of all properties
 // What is stored in `data` can be determined by the widget type.
-// TODO: Rename to PropHeader?
-struct __attribute__((packed)) WidgetProp {
+struct __attribute__((packed)) PropHeader {
 	/// @brief Length in bytes of this property structure and data that follows
 	uint32_t length;
 	/// @brief See enum RimPropType
 	uint32_t type;
 	// If 1, then this property has already been applied to the backend or doesn't need to be applied.
 	// This may be used in a weird case where the backend initializes a property before the tree differ gets to it.
-	uint32_t already_fufilled;
+	uint32_t already_fulfilled;
 	uint32_t res0;
 	uint8_t data[];
 };
 
-_Static_assert(sizeof(struct WidgetProp) == 16, "fail size");
+_Static_assert(sizeof(struct PropHeader) == 16, "fail size");
 
 struct __attribute__((packed)) RimPropData {
 	uint32_t length;
@@ -199,7 +198,7 @@ struct RimEvent {
 	int is_valid;
 	// Type of action that triggered this event
 	enum RimWidgetEvent type;
-	// Unique ID of the widget this event corrosponds to, if any
+	// Unique ID of the widget this event corresponds to, if any
 	int unique_id;
 	// What property in the widget this event changes, if any. If none, then RIM_PROP_NONE.
 	int affected_property;
@@ -225,7 +224,7 @@ struct RimExtension {
 	/// @brief Create a backend widget given the widget header
 	int (*create)(void *priv, struct WidgetHeader *w);
 	/// @brief Change a property of a backend widget
-	int (*tweak)(void *priv, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
+	int (*tweak)(void *priv, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type);
 	/// @brief Append a backend widget to a parent backend widget.
 	int (*append)(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
 	/// @brief Remove a widget from a parent
@@ -247,17 +246,16 @@ struct RimContext {
 	// Backend context pointer
 	void *priv;
 
-	// Handles for the second thread. This may be the 
+	// Handle for the second thread. This may be the backend or ui state thread.
 	pthread_t second_thread;
 
 	// If 1, context will shut down on next cycle
 	int quit_immediately;
-	// Used to signal when rim_backend_run is finished
-	// TODO: rename to backend_done_signal
-	sem_t *run_done_signal;
-	// Mutex protecting all the event members of this struct
+	/// @brief Used to signal when the backend thread is finished doing something
+	sem_t *backend_done_signal;
+	/// @brief Mutex protecting all the event members of this struct
 	pthread_mutex_t event_mutex;
-	// Only one event is processed at a time
+	/// @brief Only one event is processed at a time
 	struct RimEvent last_event;
 	// Used by rim_poll for how many times to cycle without waiting for events
 	int nop_event_counter;
@@ -294,7 +292,7 @@ int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 /// @brief Append a backend widget to a parent backend widget.
 int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 /// @brief Change a property of a backend widget
-int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
+int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type);
 /// @brief Queue a function to run in the UI backend thread
 int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback);
 /// @}
@@ -303,7 +301,7 @@ int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback);
 /// @addtogroup backend
 /// @{
 int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w);
-int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type);
+int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type);
 int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w);
@@ -325,13 +323,13 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 /// @brief Add uint32 prop
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
 
-/// @brief Mark prop as fufilled so tree differ doesn't fufill it again
-int rim_mark_prop_fufilled(struct WidgetHeader *h, int type);
+/// @brief Mark prop as fulfilled so tree differ doesn't fulfill it again
+int rim_mark_prop_fulfilled(struct WidgetHeader *h, int type);
 
 /// @note 'length' field will be adjusted to the correct alignment
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length);
 
-struct WidgetProp *rim_get_prop(struct WidgetHeader *h, int type);
+struct PropHeader *rim_get_prop(struct WidgetHeader *h, int type);
 
 /// @brief Get string property
 /// @param val Set to the pointer of a standard null terminated string

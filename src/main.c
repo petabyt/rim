@@ -36,13 +36,13 @@ struct RimContext *rim_init(void) {
 	ctx->last_event.data_length = 0;
 
 	sem_unlink("event_signal");
-	sem_unlink("run_done_signal");
+	sem_unlink("backend_done_signal");
 	sem_unlink("event_consumed_signal");
 
 	ctx->event_signal = sem_open("event_signal", O_CREAT | O_EXCL, 0, 0);
-	ctx->run_done_signal = sem_open("run_done_signal", O_CREAT | O_EXCL, 0, 0);
+	ctx->backend_done_signal = sem_open("backend_done_signal", O_CREAT | O_EXCL, 0, 0);
 	ctx->event_consumed_signal = sem_open("event_consumed_signal", O_CREAT | O_EXCL, 0, 0);
-	if (ctx->event_signal == SEM_FAILED || ctx->run_done_signal == SEM_FAILED || ctx->event_consumed_signal == SEM_FAILED) {
+	if (ctx->event_signal == SEM_FAILED || ctx->backend_done_signal == SEM_FAILED || ctx->event_consumed_signal == SEM_FAILED) {
 		rim_abort("sem_open failed %d\n", errno);
 	}
 
@@ -58,7 +58,6 @@ struct RimContext *rim_init(void) {
 
 struct ThreadArg {
 	int (*func)(rim_ctx_t *, void *);
-	sem_t *ready;
 	struct RimContext *ctx;
 	void *arg;
 };
@@ -66,14 +65,13 @@ struct ThreadArg {
 void *ui_thread(void *arg) {
 	struct ThreadArg *thread_arg = (struct ThreadArg *)arg;
 
-	sem_wait(thread_arg->ctx->run_done_signal);
+	sem_wait(thread_arg->ctx->backend_done_signal);
 
 	thread_arg->func(thread_arg->ctx, thread_arg->arg);
 
-	// TODO: Should signal to rim_start that we are done
+	// TODO: Should signal to rim_start that we are done so this thread isn't killed prematurely
 
 	pthread_exit(NULL);
-	return NULL;
 }
 
 int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
@@ -90,14 +88,14 @@ int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
 		return 1;
 	}
 
-	rim_backend_thread(ctx, ctx->run_done_signal);
+	rim_backend_thread(ctx, ctx->backend_done_signal);
 
 	return 0;
 }
 
 void rim_close(struct RimContext *ctx) {
 	sem_close(ctx->event_signal); sem_unlink("event_signal");
-	sem_close(ctx->run_done_signal); sem_unlink("run_done_signal");
+	sem_close(ctx->backend_done_signal); sem_unlink("backend_done_signal");
 	sem_close(ctx->event_consumed_signal); sem_unlink("event_consumed_signal");
 }
 
@@ -139,12 +137,12 @@ int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	return -1;
 }
 
-int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
-	char temp[sizeof(struct WidgetProp) + 100];
+int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
+	char temp[sizeof(struct PropHeader) + 100];
 	if (type == RIM_PROP_REMOVED) {
-		memcpy(temp, prop, sizeof(struct WidgetProp));
-		prop = (struct WidgetProp *)temp;
-		prop->length = sizeof(struct WidgetProp) + 100;
+		memcpy(temp, prop, sizeof(struct PropHeader));
+		prop = (struct PropHeader *)temp;
+		prop->length = sizeof(struct PropHeader) + 100;
 		if (rim_get_prop_default_value(ctx, prop->type, prop->data, 100)) {
 			rim_abort("Failed getting default property value\n");
 		}
