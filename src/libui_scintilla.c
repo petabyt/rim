@@ -1,10 +1,8 @@
 // LibUI scintilla extension for rim
 // This is an extension that provides both retained and immediate mode APIs.
-//#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <rim_internal.h>
-//#include <signal.h>
 #include <string.h>
 #include <rim_internal.h>
 #include <rim.h>
@@ -33,8 +31,8 @@ int im_scintilla(int id, void (*init)(uiScintilla *handle)) {
 	rim_add_widget(tree, RIM_SCINTILLA);
 	rim_add_prop_u32(tree, RIM_PROP_EXPAND, 100);
 	rim_add_prop_u32(tree, RIM_PROP_SECONDARY_ID, id);
-	uintptr_t ptr = (uintptr_t)init;
-	rim_add_prop_data(tree, RIM_PROP_SC_INIT, &ptr, sizeof(uintptr_t));
+	uint64_t ptr = (uint64_t)(uintptr_t)init;
+	rim_add_prop_u64(tree, RIM_PROP_SC_INIT, ptr);
 	rim_end_widget(tree, RIM_SCINTILLA);
 	return RIM_EVENT_VALUE_CHANGED;
 }
@@ -75,11 +73,9 @@ static int rim_sc_create(void *priv, struct WidgetHeader *w) {
 		p->list_len++;
 		w->os_handle = (uintptr_t)sc;
 		{
-			struct PropHeader *prop = rim_get_prop(w, RIM_PROP_SC_INIT);
-			uintptr_t ptr;
-			if (prop == NULL) rim_abort("");
-			memcpy(&ptr, prop->data, sizeof(uintptr_t));
-			sc_init *init = (sc_init *)(void *)ptr;
+			uint64_t ptr;
+			check_prop(rim_get_prop_u64(w, RIM_PROP_SC_INIT, (uint64_t *)&ptr));
+			sc_init *init = (sc_init *)(void *)(uintptr_t)ptr;
 			init(sc);
 		}
 		return 0;

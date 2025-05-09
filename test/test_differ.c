@@ -48,9 +48,13 @@ int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
 }
 
 void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
+	printf("Backend thread...\n");
+	// Busy wait?
 }
 
-void rim_backend_close(struct RimContext *ctx) {}
+void rim_backend_close(struct RimContext *ctx) {
+	printf("Closing down backend\n");
+}
 
 int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
 	printf("Updating widget ID for '%s'\n", rim_eval_widget_type(w->type));

@@ -11,17 +11,20 @@ int rim_get_dpi(void);
 #define rim_dp_to_px(dp) ((rim_get_dpi() * (dp)) / 160)
 
 /// @brief Initialize the context structure
-/// After this, the UI backend must be initialized.
+/// @note For testing use only
 rim_ctx_t *rim_init(void);
 
-int rim_start(int (*func)(rim_ctx_t *, void *), void *arg);
-
+// @brief Close down the context structure
+/// @note For testing use only
 void rim_close(rim_ctx_t *ctx);
+
+/// @brief Start a ui state thread and backend. Blocks until application is finished.
+/// Once returned, everything is automatically freed and torn down.
+int rim_start(int (*func)(rim_ctx_t *, void *), void *arg);
 
 /// @brief Poll the UI for events such as button clicks and inputs,
 /// as well as external events triggered from another thread.
-/// @returns Returns 1 when there is an event.
-/// @note When 0 is returned, the backend and context will already be closed down.
+/// @returns 1, once an event is triggered. If 0, then the application has closed down.
 int rim_poll(rim_ctx_t *ctx);
 
 /// @brief Can be called from any other thread to trigger an update to the UI.

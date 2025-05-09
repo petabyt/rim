@@ -145,6 +145,8 @@ enum RimPropType {
 	RIM_PROP_EXPAND,
 	// Padding inside a container in dp
 	RIM_PROP_INNER_PADDING,
+	// Gap in dp between children
+	RIM_PROP_GAP,
 	// Set to 1 to disable widget
 	RIM_PROP_DISABLED,
 	// Text tooltip that shows on hover
@@ -276,9 +278,8 @@ void *rim_get_ext_priv(struct RimContext *ctx, int id);
 /// @defgroup Backend implementation functions
 /// @addtogroup backend
 /// @{
+// Blocking entry function for the backend thread
 void rim_backend_thread(struct RimContext *ctx, sem_t *done);
-// Setup backend and priv context
-int rim_backend_init(struct RimContext *ctx);
 // Free everything and close down thread
 void rim_backend_close(struct RimContext *ctx);
 /// @brief Create a backend widget given the widget header
@@ -324,7 +325,10 @@ void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char
 /// @brief Add uint32 prop
 void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val);
 
-/// @brief Mark prop as fulfilled so tree differ doesn't fulfill it again
+/// @brief add uint64 prop
+void rim_add_prop_u64(struct RimTree *tree, enum RimPropType type, uint64_t val);
+
+/// @brief Set 'already_fulfilled' setting in a property
 int rim_mark_prop_fulfilled(struct WidgetHeader *h, int type);
 
 /// @note 'length' field will be adjusted to the correct alignment
@@ -338,6 +342,9 @@ int rim_get_prop_string(struct WidgetHeader *h, int type, char **val);
 
 /// @brief Get a u32 property by type for a widget
 int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val);
+
+/// @brief Get a u32 property by type for a widget
+int rim_get_prop_u64(struct WidgetHeader *h, int type, uint64_t *val);
 
 /// @brief Find the length of a node (so it can be skipped through)
 unsigned int rim_get_node_length(struct WidgetHeader *w);

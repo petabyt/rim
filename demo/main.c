@@ -53,6 +53,16 @@ int mymain(rim_ctx_t *ctx, void *arg) {
 	while (rim_poll(ctx)) {
 		int run_lua = 0;
 		if (im_begin_window("Rim Lua Demo", 1000, 1000)) {
+			if (im_begin_menu_bar()) {
+				if (im_begin_menu("File")) {
+					if (im_menu_item("Save")) {
+						printf("Save\n");
+					}
+					im_end_menu();
+				}
+				im_end_menu_bar();
+			}
+
 			im_scintilla(1, init);
 			if (is_running && dummy_window_var) {
 				if (im_button("Stop")) {

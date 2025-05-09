@@ -16,8 +16,6 @@ struct Priv {
 	/// If 0, it will be uiWindow
 	int make_window_a_layout;
 
-	pthread_t thread;
-
 	uintptr_t dummy;
 
 	sem_t *wait_until_ready;
@@ -477,36 +475,6 @@ int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
 	return 0;
 }
 
-static void *ui_thread(void *arg) {
-	rim_ctx_t *ctx = arg;
-	struct Priv *p = ctx->priv;
-
-	uiInitOptions o = { 0 };
-	const char *err;
-
-	printf("Calling uiInit\n");
-	fflush(stdout);
-	err = uiInit(&o);
-	if (err != NULL) {
-		fprintf(stderr, "Error initializing libui-ng: %s\n", err);
-		uiFreeInitError(err);
-		return NULL;
-	}
-
-	sem_post(p->wait_until_ready);
-	uiMain();
-	uiUninit();
-
-	return NULL;
-}
-
-static void handle_int(int code) {
-	printf("Handling sig int");
-	struct Priv *p = (struct Priv *)rim_get_global_ctx()->priv;
-	pthread_kill(p->thread, 9);
-	exit(0);
-}
-
 void rim_backend_close(struct RimContext *ctx) {
 	struct Priv *p = ctx->priv;
 	free(p);
@@ -536,12 +504,4 @@ void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
 
 	uiMain();
 	uiUninit();	
-}
-
-int rim_backend_init(struct RimContext *ctx) {
-	ctx->priv = malloc(sizeof(struct Priv));
-	struct Priv *p = ctx->priv;
-	p->dummy = (uintptr_t)malloc(10);
-	p->make_window_a_layout = 1;
-	return 0;
 }

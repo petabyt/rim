@@ -35,7 +35,7 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 		struct PropHeader *p = (struct PropHeader *)(buffer + of);
 		if (p->already_fulfilled == 0) {
 			if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
-				rim_abort("Failed to change property %s %d\n", rim_eval_widget_type(h->type), p->type);
+				printf("Failed to change property\n");
 			}
 		}
 		of += (int)p->length;
@@ -151,13 +151,13 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 
 		if (i >= old_h->n_props) {
 			if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
-				rim_abort("Failed to add property\n");
+				printf("Failed to add property\n");
 			}
 			(*new_of_p) += (int)new_p->length;
 			continue;
 		} else if (i >= new_h->n_props) {
 			if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
-				rim_abort("Failed to remove property");
+				printf("Failed to remove property\n");
 			}
 			(*old_of_p) += (int)old_p->length;
 			continue;
@@ -173,16 +173,16 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 				}
 				if (new_p->already_fulfilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
-						rim_abort("Failed to change property %d on %s\n", new_p->type, rim_eval_widget_type(new_h->type));
+						printf("Failed to change property\n");
 					}
 				}
 			} else {
 				if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
-					rim_abort("Failed to remove property\n");
+					printf("Failed to remove property\n");
 				}
 				if (new_p->already_fulfilled == 0) {
 					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
-						rim_abort("Failed to add property\n");
+						printf("Failed to add property\n");
 					}
 				}
 			}
@@ -363,11 +363,9 @@ static void diff_tree(void *priv) {
 
 int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->last_event.is_valid) {
-		rim_abort("Event not consumed by application\n");
+		rim_abort("Event not consumed by tree\n");
 	}
 	if (ctx->quit_immediately) {
-		rim_backend_close(ctx);
-		rim_close(ctx);
 		return 0;
 	}
 
@@ -380,8 +378,7 @@ int rim_poll(rim_ctx_t *ctx) {
 		rim_backend_run(ctx, diff_tree);
 		sem_wait(ctx->backend_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of == 0) {
-		// If new tree suddenly has no contents, close everything down
-		rim_backend_close(ctx);
+		// If new tree suddenly has no contents, exit
 		return 0;
 	} else {
 		printf("Empty frame\n");

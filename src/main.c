@@ -60,6 +60,7 @@ struct ThreadArg {
 	int (*func)(rim_ctx_t *, void *);
 	struct RimContext *ctx;
 	void *arg;
+	int rc;
 };
 
 void *ui_thread(void *arg) {
@@ -67,11 +68,17 @@ void *ui_thread(void *arg) {
 
 	sem_wait(thread_arg->ctx->backend_done_signal);
 
-	thread_arg->func(thread_arg->ctx, thread_arg->arg);
+	thread_arg->rc = thread_arg->func(thread_arg->ctx, thread_arg->arg);
 
-	// TODO: Should signal to rim_start that we are done so this thread isn't killed prematurely
+	// Force backend to end
+	rim_backend_close(thread_arg->ctx);
 
 	pthread_exit(NULL);
+}
+
+static void handle_int(int code) {
+	printf("TODO: Handle int?");
+	exit(0);
 }
 
 int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
@@ -81,6 +88,7 @@ int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
 		.func = func,
 		.ctx = ctx,
 		.arg = arg,
+		.rc = 0,
 	};
 
 	if (pthread_create(&ctx->second_thread, NULL, ui_thread, &thread_arg) != 0) {
@@ -90,7 +98,9 @@ int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
 
 	rim_backend_thread(ctx, ctx->backend_done_signal);
 
-	return 0;
+	rim_close(ctx);
+
+	return thread_arg.rc;
 }
 
 void rim_close(struct RimContext *ctx) {
@@ -143,6 +153,8 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Prop
 		return 0;
 	}
 
+	// If removing a property, we have to know its default value, so we can set it back. This is to prevent
+	// The backend from having to handle RimPropTrigger.
 	char temp[sizeof(struct PropHeader) + 100];
 	if (type == RIM_PROP_REMOVED) {
 		memcpy(temp, prop, sizeof(struct PropHeader));
@@ -161,6 +173,11 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Prop
 		if (rc == 0) {
 			return 0;
 		}
+	}
+	if (w->type < 0x1000) {
+		printf("Failed to change property %d on '%s'\n", prop->type, rim_eval_widget_type(w->type));
+	} else {
+		printf("Failed to change property %d on custom widget %d\n", w->type, prop->type);
 	}
 	return -1;
 }

@@ -5,6 +5,7 @@
 #include "im.h"
 
 struct Props {
+	int gap;
 	int expand;
 	int inner_padding;
 	int disabled;
@@ -21,15 +22,16 @@ void im_set_next_tooltip(const char *text) {
 	props.tooltip_text_ptr = text; // TODO: undefined behavior, use strcpy instead
 	props.tooltip = 1;
 }
-
 void im_set_next_window_favicon(void *data, unsigned int length) {
 	props.favicon_dest = data;
 	props.favicon_len = length;
 	props.favicon = 1;
-} 
-
+}
 void im_set_next_expand(void) {
 	props.expand = 1;
+}
+void im_set_next_gap(int dp) {
+	props.gap = dp;
 }
 void im_set_next_inner_padding(int dp) {
 	props.inner_padding = dp;
@@ -48,6 +50,10 @@ void im_apply_prop(void) {
 	if (props.expand) {
 		rim_add_prop_u32(tree, RIM_PROP_EXPAND, 100);
 		props.expand = 0;
+	}
+	if (props.gap) {
+		rim_add_prop_u32(tree, RIM_PROP_GAP, props.gap);
+		props.gap = 0;
 	}
 	if (props.disabled || props.begin_disabled) {
 		rim_add_prop_u32(tree, RIM_PROP_DISABLED, 1);

@@ -46,8 +46,11 @@ void im_set_next_tooltip(const char *label);
 void im_set_next_disabled(int opt);
 /// @brief Force the next widget to expand and take up 100% of parents space
 void im_set_next_expand(void);
-
+/// @brief Set the inner padding of the next widget, equivalent to:
+/// box-sizing: border-box; padding: x;
 void im_set_next_inner_padding(int dp);
+/// @brief Set gap between children in dp, equivalent to css 'gap' property
+void im_set_next_gap(int dp);
 
 /// @brief Begin a container with tabs
 int im_begin_tab_bar(int *selected);

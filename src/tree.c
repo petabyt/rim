@@ -192,6 +192,14 @@ void rim_add_prop_u32(struct RimTree *tree, enum RimPropType type, uint32_t val)
 	tree->of += 8;
 }
 
+void rim_add_prop_u64(struct RimTree *tree, enum RimPropType type, uint64_t val) {
+	ensure_buffer_size(tree, sizeof(struct PropHeader) + 8);
+	struct PropHeader *prop = rim_add_prop(tree, type);
+	((uint64_t *)prop->data)[0] = val;
+	prop->length += 8;
+	tree->of += 8;
+}
+
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length) {
 	length = ((length / 8) + 1) * 8; // ensure align by 8
 	ensure_buffer_size(tree, sizeof(struct PropHeader) + length);
@@ -224,6 +232,13 @@ int rim_get_prop_u32(struct WidgetHeader *h, int type, uint32_t *val) {
 	struct PropHeader *p = rim_get_prop(h, type);
 	if (p == NULL) return -1;
 	memcpy(val, p->data, 4);
+	return 0;
+}
+
+int rim_get_prop_u64(struct WidgetHeader *h, int type, uint64_t *val) {
+	struct PropHeader *p = rim_get_prop(h, type);
+	if (p == NULL) return -1;
+	memcpy(val, p->data, 8);
 	return 0;
 }
 
