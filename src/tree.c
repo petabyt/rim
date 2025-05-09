@@ -89,7 +89,10 @@ const char *rim_eval_widget_type(uint32_t type) {
 	case RIM_WINDOW_MENU_BAR: return "RIM_WINDOW_MENU_BAR";
 	case RIM_WINDOW_MENU: return "RIM_WINDOW_MENU";
 	case RIM_WINDOW_MENU_ITEM: return "RIM_WINDOW_MENU_ITEM";
-	default: return "???";
+	default: {
+		printf("rim_eval_widget_type: unknown %d\n", type);
+		return "???";
+	}
 	}
 }
 

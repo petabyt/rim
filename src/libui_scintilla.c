@@ -30,12 +30,12 @@ typedef void sc_init(uiScintilla *handle);
 
 int im_scintilla(int id, void (*init)(uiScintilla *handle)) {
 	struct RimTree *tree = rim_get_current_tree();
-	rim_add_widget(tree, RIM_SCINTILLA, 0);
+	rim_add_widget(tree, RIM_SCINTILLA);
 	rim_add_prop_u32(tree, RIM_PROP_EXPAND, 100);
 	rim_add_prop_u32(tree, RIM_PROP_SECONDARY_ID, id);
 	uintptr_t ptr = (uintptr_t)init;
 	rim_add_prop_data(tree, RIM_PROP_SC_INIT, &ptr, sizeof(uintptr_t));
-	rim_end_widget(tree);
+	rim_end_widget(tree, RIM_SCINTILLA);
 	return RIM_EVENT_VALUE_CHANGED;
 }
 
@@ -75,7 +75,7 @@ static int rim_sc_create(void *priv, struct WidgetHeader *w) {
 		p->list_len++;
 		w->os_handle = (uintptr_t)sc;
 		{
-			struct WidgetProp *prop = rim_get_prop(w, RIM_PROP_SC_INIT);
+			struct PropHeader *prop = rim_get_prop(w, RIM_PROP_SC_INIT);
 			uintptr_t ptr;
 			if (prop == NULL) rim_abort("");
 			memcpy(&ptr, prop->data, sizeof(uintptr_t));
@@ -91,8 +91,9 @@ static int rim_sc_append(void *priv, struct WidgetHeader *w, struct WidgetHeader
 	return 1;
 }
 
-static int rim_sc_tweak(void *priv, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
-	return 1;
+static int rim_sc_tweak(void *priv, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
+	// No properties to change
+	return 0;
 }
 
 int rim_scintilla_init(struct RimContext *ctx) {

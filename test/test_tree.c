@@ -1,3 +1,4 @@
+#error "dead"
 #include <stdio.h>
 #include <rim.h>
 #include <im.h>

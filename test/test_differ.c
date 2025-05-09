@@ -16,7 +16,7 @@ int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
 	w->os_handle = 0;
 	return 0;
 }
-int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetProp *prop, enum RimPropTrigger type) {
+int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
 	assert(w->os_handle != 0);
 	if (type == RIM_PROP_ADDED) {
 		printf("Adding prop to widget '%s'\n", rim_eval_widget_type(w->type));
@@ -43,16 +43,19 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 }
 
 int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
+	printf("rim_backend_run\n");
 	return 0;
 }
 
-int rim_backend_init(struct RimContext *ctx) {
-	return 0;
+void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
 }
 
 void rim_backend_close(struct RimContext *ctx) {}
 
-int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {return 1;}
+int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
+	printf("Updating widget ID for '%s'\n", rim_eval_widget_type(w->type));
+	return 0;
+}
 
 static void build_ui2(int counter) {
 	if (im_begin_window("My Window", 500, 500)) {
@@ -66,6 +69,10 @@ static void build_ui2(int counter) {
 
 		im_label("Two labels with the same text!");
 		im_label("Two labels with the same text!");
+		im_end_window();
+	}
+	if (im_begin_window("Window 2", 500, 500)) {
+		im_label("123");
 		im_end_window();
 	}
 }

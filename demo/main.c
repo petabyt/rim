@@ -41,8 +41,7 @@ void init(uiScintilla *handle) {
 	uiScintillaSendMessage(handle, SCI_SETMARGINWIDTHN, 0, 30);
 }
 
-int main(void) {
-	struct RimContext *ctx = rim_init();
+int mymain(rim_ctx_t *ctx, void *arg) {
 	rim_scintilla_init(ctx);
 
 	lua_State *L = luaL_newstate();
@@ -118,4 +117,8 @@ int main(void) {
 	}
 
 	return 0;
+}
+
+int main(void) {
+	return rim_start(mymain, NULL);
 }

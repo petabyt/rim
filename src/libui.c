@@ -509,6 +509,7 @@ static void handle_int(int code) {
 
 void rim_backend_close(struct RimContext *ctx) {
 	struct Priv *p = ctx->priv;
+	free(p);
 	uiQuit();
 }
 

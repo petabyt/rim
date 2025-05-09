@@ -138,6 +138,11 @@ int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
 }
 
 int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
+	// Only these two property types should ever be ignored
+	if (prop->type == RIM_PROP_SECONDARY_ID || prop->type == RIM_PROP_META) {
+		return 0;
+	}
+
 	char temp[sizeof(struct PropHeader) + 100];
 	if (type == RIM_PROP_REMOVED) {
 		memcpy(temp, prop, sizeof(struct PropHeader));
