@@ -23,4 +23,4 @@ jobs:
         git clone https://github.com/petabyt/libui-scintilla.git --depth 1 --recurse-submodules
 
     - name: Build everything
-      run: cmake -G Ninja -B build -DRIM_PACKAGE_EDITOR=ON -DCMAKE_BUILD_TYPE=Release -DRIM_COMPILE_DEMOS=ON -DRIM_COMPILE_LIBUI_SCINTILLA=ON -DRIM_COMPILE_LUA_EDITOR=ON && build --build
+      run: cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DRIM_COMPILE_DEMOS=ON -DRIM_COMPILE_LIBUI_SCINTILLA=ON -DRIM_COMPILE_LUA_EDITOR=ON && build --build
