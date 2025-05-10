@@ -470,15 +470,21 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Pro
 	return 1;
 }
 
-int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
-	uiQueueMain(callback, ctx);
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void *arg) {
+	uiQueueMain(callback, arg);
 	return 0;
 }
 
+static void destroy(void *arg) {
+	uiQuit();
+	sem_post(((struct RimContext *)arg)->backend_done_signal);
+}
+
 void rim_backend_close(struct RimContext *ctx) {
+	rim_backend_run(ctx, destroy, ctx);
+	sem_wait(ctx->backend_done_signal);
 	struct Priv *p = ctx->priv;
 	free(p);
-	uiQuit();
 }
 
 void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
@@ -514,6 +520,8 @@ struct DialogPriv {
 	unsigned int size;
 };
 
+// TODO: Figure out a better way to accomplish this
+
 static void open_file(void *priv) {
 	struct DialogPriv *p = (struct DialogPriv *)priv;
 
@@ -529,7 +537,7 @@ static void open_file(void *priv) {
 	sem_post(p->ctx->backend_done_signal);
 }
 
-int im_open_file_picker(char *buffer, unsigned int size) {
+int im_open_file(char *buffer, unsigned int size) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	struct Priv *p = ctx->priv;
 	struct RimTree *tree = rim_get_old_tree();
@@ -551,8 +559,8 @@ int im_open_file_picker(char *buffer, unsigned int size) {
 		.size = size,
 	};
 
-	uiQueueMain(open_file, (void *)&dp);
+	rim_backend_run(ctx, open_file, (void *)&dp);
 	sem_wait(ctx->backend_done_signal);
 
-	return IM_SELECTED;
+	return dp.rc;
 }

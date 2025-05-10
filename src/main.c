@@ -5,6 +5,9 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "rim.h"
 #include "rim_internal.h"
 
@@ -35,6 +38,21 @@ struct RimContext *rim_init(void) {
 	ctx->last_event.data_buf_size = 100;
 	ctx->last_event.data_length = 0;
 
+#ifndef __APPLE__
+#define RIM_USE_SEM_INIT
+#endif
+
+#ifdef RIM_USE_SEM_INIT
+	ctx->event_signal = malloc(sizeof(sem_t));
+	ctx->backend_done_signal = malloc(sizeof(sem_t));
+	ctx->event_consumed_signal = malloc(sizeof(sem_t));
+	sem_init(ctx->event_signal, 0, 0);
+	sem_init(ctx->backend_done_signal, 0, 0);
+	sem_init(ctx->event_consumed_signal, 0, 0);
+	if (ctx->event_signal == SEM_FAILED || ctx->backend_done_signal == SEM_FAILED || ctx->event_consumed_signal == SEM_FAILED) {
+		rim_abort("sem_open failed %d\n", errno);
+	}
+#else
 	sem_unlink("event_signal");
 	sem_unlink("backend_done_signal");
 	sem_unlink("event_consumed_signal");
@@ -45,6 +63,7 @@ struct RimContext *rim_init(void) {
 	if (ctx->event_signal == SEM_FAILED || ctx->backend_done_signal == SEM_FAILED || ctx->event_consumed_signal == SEM_FAILED) {
 		rim_abort("sem_open failed %d\n", errno);
 	}
+#endif
 
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
@@ -66,14 +85,16 @@ struct ThreadArg {
 void *ui_thread(void *arg) {
 	struct ThreadArg *thread_arg = (struct ThreadArg *)arg;
 
+	// Wait until backend is done initializing
 	sem_wait(thread_arg->ctx->backend_done_signal);
 
 	thread_arg->rc = thread_arg->func(thread_arg->ctx, thread_arg->arg);
 
-	// Force backend to end
+	// Force backend to end - it won't close down unless we tell it to
 	rim_backend_close(thread_arg->ctx);
 
 	pthread_exit(NULL);
+	return NULL;
 }
 
 static void handle_int(int code) {
@@ -82,6 +103,11 @@ static void handle_int(int code) {
 }
 
 int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
+#ifdef _WIN32
+	AttachConsole(-1);
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
+#endif
 	struct RimContext *ctx = rim_init();
 
 	struct ThreadArg thread_arg = {
@@ -104,9 +130,14 @@ int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
 }
 
 void rim_close(struct RimContext *ctx) {
-	sem_close(ctx->event_signal); sem_unlink("event_signal");
-	sem_close(ctx->backend_done_signal); sem_unlink("backend_done_signal");
-	sem_close(ctx->event_consumed_signal); sem_unlink("event_consumed_signal");
+	sem_destroy(ctx->event_signal);
+	sem_destroy(ctx->backend_done_signal);
+	sem_destroy(ctx->event_consumed_signal);
+	#ifndef RIM_USE_SEM_INIT
+	sem_unlink("event_signal");
+	sem_unlink("backend_done_signal");
+	sem_unlink("event_consumed_signal");
+	#endif
 }
 
 int rim_get_prop_default_value(struct RimContext *ctx, enum RimPropType type, uint8_t *buffer, unsigned int length) {
@@ -237,6 +268,6 @@ struct RimTree *rim_get_old_tree(void) {
 }
 
 int rim_get_dpi(void) {
-	// TODO: Actually get display dp
+	// TODO: Implement this :(
 	return 96;
 }
