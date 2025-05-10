@@ -505,3 +505,54 @@ void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
 	uiMain();
 	uiUninit();	
 }
+
+struct DialogPriv {
+	struct RimContext *ctx;
+	uiWindow *win;
+	int rc;
+	char *buffer;
+	unsigned int size;
+};
+
+static void open_file(void *priv) {
+	struct DialogPriv *p = (struct DialogPriv *)priv;
+
+	char *path = uiOpenFile(p->win);
+	if (path == NULL) {
+		p->rc = IM_CANCELED;
+	} else {
+		snprintf(p->buffer, p->size, "%s", path);
+		uiFreeText(path);
+		p->rc = IM_SELECTED;
+	}
+
+	sem_post(p->ctx->backend_done_signal);
+}
+
+int im_open_file_picker(char *buffer, unsigned int size) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	struct Priv *p = ctx->priv;
+	struct RimTree *tree = rim_get_old_tree();
+
+	struct WidgetHeader *widget_0_hdr = (struct WidgetHeader *)(tree->buffer);
+
+	uiWindow *w;
+	if (p->make_window_a_layout) {
+		w = (uiWindow *)uiControlParent((uiControl *)(void *)widget_0_hdr->os_handle);
+	} else {
+		w = (uiWindow *)(void *)widget_0_hdr->os_handle;
+	}
+
+	struct DialogPriv dp = {
+		.ctx = ctx,
+		.win = w,
+		.rc = 0,
+		.buffer = buffer,
+		.size = size,
+	};
+
+	uiQueueMain(open_file, (void *)&dp);
+	sem_wait(ctx->backend_done_signal);
+
+	return IM_SELECTED;
+}

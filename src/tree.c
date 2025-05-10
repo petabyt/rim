@@ -128,6 +128,11 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type) {
 	unsigned int this_w_of = tree->of;
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + tree->of);
 	h->type = type;
+	if (tree->widget_stack_depth == 0) {
+		h->parent_of = 0xffffffff;
+	} else {
+		h->parent_of = tree->widget_stack[tree->widget_stack_depth - 1];
+	}
 	h->n_children = 0;
 	h->n_props = 0;
 	h->os_handle = 0;

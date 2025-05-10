@@ -11,8 +11,8 @@ struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
 	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
-	// TODO: Replace with parent_of
-	uint32_t res2;
+	// Offset of this widgets parent
+	uint32_t parent_of;
 	// Number of children following this header
 	uint32_t n_children;
 	// Number of properties following this header
@@ -61,6 +61,13 @@ struct __attribute__((packed)) RimPropData {
 	uintptr_t ptr;
 };
 _Static_assert(sizeof(struct RimPropData) == 16, "fail size");
+
+// TODO: Cast PropHeader.data to this
+union RimPropUnion {
+	uint32_t u32;
+	uint64_t u64;
+	struct RimPropData data;
+};
 
 /// @brief Tree ID for all Rim widgets
 /// 1-0xfff is reserved for Rim
@@ -317,7 +324,7 @@ void rim_reset_tree(struct RimTree *tree);
 
 /// @brief Add widget to tree and make it the current widget
 void rim_add_widget(struct RimTree *tree, enum RimWidgetType type);
-/// @brief End adding properties or children to the current widget and switch to it's parent
+/// @brief End adding properties or children to the current widget and switch to its parent
 void rim_end_widget(struct RimTree *tree, uint32_t type);
 /// @brief Add a property with a string being the only payload
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value);
@@ -356,12 +363,12 @@ int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent);
 /// @returns NULL if out of bounds
 struct WidgetHeader *rim_get_child(struct WidgetHeader *w, int index);
 
-/// @brief Find a node in a tree via it's unique id
+/// @brief Find a node in a tree via its unique id
 /// @param of Set to the offset of where the widget is
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id);
 
-/// @brief Run down current widget in `tree` offset `base` and call backend->create for all of it's widgets.
-/// @brief The start widget and all of it's sublings will be appended to `parent`.
+/// @brief Run down current widget in `tree` offset `base` and call backend->create for all of its widgets.
+/// @brief The start widget and all of its sublings will be appended to `parent`.
 /// @depth Optional, for debugging
 unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, unsigned int base, struct WidgetHeader *parent);
 
@@ -386,9 +393,12 @@ const char *rim_eval_widget_type(uint32_t type);
 __attribute__((noreturn))
 void rim_abort(char *fmt, ...);
 
-/// @brief Returns a pointer to the tree to currently append to.
+/// @brief Returns the tree that is currently being built up.
 /// Will never return NULL.
 struct RimTree *rim_get_current_tree(void);
+
+/// @brief Returns the old tree (what the UI currently looks like)
+struct RimTree *rim_get_old_tree(void);
 
 /// @brief To be used sparingly, hopefully not permanently
 struct RimContext *rim_get_global_ctx(void);

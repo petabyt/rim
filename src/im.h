@@ -27,6 +27,7 @@ enum ImReturnCode {
 	IM_CLICKED = 1,
 	IM_SELECTED = 2,
 	IM_CHILDREN_VISIBLE = 3,
+	IM_CANCELED = 4,
 };
 
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
@@ -49,7 +50,7 @@ void im_set_next_expand(void);
 /// @brief Set the inner padding of the next widget, equivalent to:
 /// box-sizing: border-box; padding: x;
 void im_set_next_inner_padding(int dp);
-/// @brief Set gap between children in dp, equivalent to css 'gap' property
+/// @brief Set gap between children in dp, similar to css 'gap' property
 void im_set_next_gap(int dp);
 
 /// @brief Begin a container with tabs
@@ -115,6 +116,11 @@ void im_slider(int min, int max, int *value);
 
 /// @brief Horizontal progress bar that goes from 0-100
 void im_progress_bar(int progress);
+
+/// @brief Opens a file picker dialog, blocks until user is finished
+/// @note Recommended buffer size is 512
+/// @returns IM_SELECTED or IM_CANCELED
+int im_open_file_picker(char *buffer, unsigned int size);
 
 // For internal/extension use only
 void im_apply_prop(void);

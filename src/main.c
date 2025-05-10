@@ -232,6 +232,10 @@ struct RimTree *rim_get_current_tree(void) {
 	return rim_get_global_ctx()->tree_new;
 }
 
+struct RimTree *rim_get_old_tree(void) {
+	return rim_get_global_ctx()->tree_old;
+}
+
 int rim_get_dpi(void) {
 	// TODO: Actually get display dp
 	return 96;
