@@ -15,7 +15,7 @@ extern int dummy_window_var;
 
 void init(uiScintilla *handle) {
 	script_lua[script_lua_len - 1] = '\0';
-	uiScintillaSetText(handle, (char *)script_lua);
+	uiScintillaSetText(handle, (char *)script_lua, script_lua_len);
 	uiScintillaSendMessage(handle, SCI_SETVIEWWS, SCWS_INVISIBLE, 0);
 	uiScintillaSendMessage(handle, SCI_SETELEMENTCOLOUR, SC_ELEMENT_CARET, 0xffffffff);
 	uiScintillaSendMessage(handle, SCI_SETELEMENTCOLOUR, SC_ELEMENT_WHITE_SPACE_BACK, 0x0);
@@ -50,13 +50,19 @@ int mymain(rim_ctx_t *ctx, void *arg) {
 
 	int is_running = 0;
 	int lua_rc = 0;
+	char file_path[512];
 	while (rim_poll(ctx)) {
 		int run_lua = 0;
 		if (im_begin_window("Rim Lua Demo", 1000, 1000)) {
 			if (im_begin_menu_bar()) {
 				if (im_begin_menu("File")) {
 					if (im_menu_item("Save")) {
-						printf("Save\n");
+						int rc = im_open_file(file_path, sizeof(file_path));
+						if (rc == IM_CANCELED) {
+							printf("User canceled\n");
+						} else {
+							printf("File: %s\n", file_path);
+						}
 					}
 					im_end_menu();
 				}

@@ -371,14 +371,15 @@ int rim_poll(rim_ctx_t *ctx) {
 
 	if (ctx->tree_old->of == 0 && ctx->tree_new->of != 0) {
 		// If new tree has gained contents and old tree is empty, init the tree
-		rim_backend_run(ctx, init_tree);
+		rim_backend_run(ctx, init_tree, ctx);
 		sem_wait(ctx->backend_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of != 0) {
 		// Only run differ if both trees have contents
-		rim_backend_run(ctx, diff_tree);
+		rim_backend_run(ctx, diff_tree, ctx);
 		sem_wait(ctx->backend_done_signal);
 	} else if (ctx->tree_old->of != 0 && ctx->tree_new->of == 0) {
 		// If new tree suddenly has no contents, exit
+		// Code that is run after this should close everything down.
 		return 0;
 	} else {
 		printf("Empty frame\n");

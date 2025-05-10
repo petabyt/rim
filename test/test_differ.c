@@ -42,7 +42,7 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 	return 0;
 }
 
-int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback) {
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void *arg) {
 	printf("rim_backend_run\n");
 	return 0;
 }

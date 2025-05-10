@@ -155,7 +155,6 @@ void rim_add_widget(struct RimTree *tree, enum RimWidgetType type) {
 		potential_parent->n_children++;
 	}
 
-
 	tree->widget_stack[tree->widget_stack_depth] = this_w_of;
 	tree->widget_stack_depth++;
 	if (tree->widget_stack_depth == TREE_MAX_DEPTH) {

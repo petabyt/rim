@@ -11,7 +11,7 @@ struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
 	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
-	// Offset of this widgets parent
+	// Offset of this widgets parent. If 0xffffffff, then this is a top-level widget.
 	uint32_t parent_of;
 	// Number of children following this header
 	uint32_t n_children;
@@ -280,6 +280,8 @@ struct RimContext {
 /// @brief Add an extension to the current context
 void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
 
+/// @brief Get extension priv pointer from extension ID
+/// @returns NULL if not found
 void *rim_get_ext_priv(struct RimContext *ctx, int id);
 
 /// @defgroup Backend implementation functions
@@ -287,7 +289,7 @@ void *rim_get_ext_priv(struct RimContext *ctx, int id);
 /// @{
 // Blocking entry function for the backend thread
 void rim_backend_thread(struct RimContext *ctx, sem_t *done);
-// Free everything and close down thread
+// Close down everything and stop backend thread
 void rim_backend_close(struct RimContext *ctx);
 /// @brief Create a backend widget given the widget header
 /// @note All of the widget's properties will be set with rim_backend_tweak after this is called
@@ -303,10 +305,10 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 /// @brief Change a property of a backend widget
 int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type);
 /// @brief Queue a function to run in the UI backend thread
-int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback);
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void *priv);
 /// @}
 
-/// @defgroup Extension/backend wrapper interface for
+/// @defgroup Extension/backend wrapper interface for widgets
 /// @addtogroup backend
 /// @{
 int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w);
@@ -319,7 +321,7 @@ int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w);
 /// @brief Create a widget tree
 struct RimTree *rim_create_tree(void);
 
-/// @brief Reset a tree to empty
+/// @brief Reset a tree to be empty
 void rim_reset_tree(struct RimTree *tree);
 
 /// @brief Add widget to tree and make it the current widget
@@ -341,6 +343,7 @@ int rim_mark_prop_fulfilled(struct WidgetHeader *h, int type);
 /// @note 'length' field will be adjusted to the correct alignment
 void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, unsigned int length);
 
+/// @brief Find property in widget by type
 struct PropHeader *rim_get_prop(struct WidgetHeader *h, int type);
 
 /// @brief Get string property
@@ -372,35 +375,37 @@ int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id)
 /// @depth Optional, for debugging
 unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree, unsigned int base, struct WidgetHeader *parent);
 
-// Get event code for last created event
+/// @brief Get event code for last widget in the tree
 int rim_last_widget_event(int lookback);
 
+/// @brief Mark the last widget in tree as detached from parent.
+/// This is only useful for widgets that detach themselves
 int rim_last_widget_detach(int lookback);
 
-/// @brief backend calls this when a widget has an event
+/// @brief Called by code during the tree building process to check if a widget has an event associated with it
 void rim_on_widget_event(struct RimContext *ctx, enum RimWidgetEvent event, int unique_id);
 
 /// @brief Variant of rim_on_widget_event that writes data to the event buffer
 void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event, enum RimPropType type, int unique_id, const void *buffer, unsigned int length);
 
-/// @brief Run the differ using old and new tree and fixup the widget tree
+/// @brief Run the tree differ using old and new tree
 int rim_diff_tree(struct RimContext *ctx);
 
 // debugging only
 const char *rim_eval_widget_type(uint32_t type);
-
-// debugging only
 __attribute__((noreturn))
 void rim_abort(char *fmt, ...);
 
 /// @brief Returns the tree that is currently being built up.
 /// Will never return NULL.
+/// @note Should only be used during tree building
 struct RimTree *rim_get_current_tree(void);
 
 /// @brief Returns the old tree (what the UI currently looks like)
+/// @note Should only be used during tree building
 struct RimTree *rim_get_old_tree(void);
 
-/// @brief To be used sparingly, hopefully not permanently
+/// @brief Get the Rim context for this process
 struct RimContext *rim_get_global_ctx(void);
 
 static void check_prop(int c) {

@@ -120,7 +120,12 @@ void im_progress_bar(int progress);
 /// @brief Opens a file picker dialog, blocks until user is finished
 /// @note Recommended buffer size is 512
 /// @returns IM_SELECTED or IM_CANCELED
-int im_open_file_picker(char *buffer, unsigned int size);
+int im_open_file(char *buffer, unsigned int size);
+int im_save_file(char *buffer, unsigned int size);
+int im_open_folder(char *buffer, unsigned int size);
+
+int im_msg_box(const char *title, const char *desc);
+int im_err_box(const char *title, const char *desc);
 
 // For internal/extension use only
 void im_apply_prop(void);
