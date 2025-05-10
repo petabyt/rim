@@ -14,17 +14,21 @@ That's what Rim is.
 
 ## Example
 ```
+#include <stdio.h>
+#include <rim.h>
+int mymain(struct RimContext *ctx, void *arg) {
+	int show_more = 0;
+	while (rim_poll(ctx)) {
+		if (im_begin_window("My Window", 500, 500)) {
+			if (im_button("Button")) show_more = !show_more;
+			if (show_more) im_label("Hello World");
+			im_end_window();
+		}
+	}
+	return 0;
+}
 int main(void) {
-    struct RimContext *ctx = rim_init();
-    int show_more = 0;
-    while (rim_poll(ctx)) {
-        if (im_begin_window("My Window", 500, 500)) {
-            if (im_button("Button")) show_more = !show_more;
-            if (show_more) im_label("Hello World");
-            im_end_window();
-        }
-    }
-    return 0;
+	return rim_start(mymain, NULL);
 }
 ```
 <img src="etc/windows.png" width="400"><img src="etc/gtk3.png" width="300"><img src="etc/cocoa.png" width="300">
