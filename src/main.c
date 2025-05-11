@@ -1,4 +1,4 @@
-// runtime and virtual DOM implementation
+// Runtime and thread support code
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +11,6 @@
 #include "rim.h"
 #include "rim_internal.h"
 
-// TODO: Move to thread local storage in backend thread?
 static struct RimContext *global_context = NULL;
 
 __attribute__((noreturn))
@@ -38,6 +37,7 @@ struct RimContext *rim_init(void) {
 	ctx->last_event.data_buf_size = 100;
 	ctx->last_event.data_length = 0;
 
+// Some jank needed because Mingw doesn't support sem_open and MacOS doesn't support sem_init.
 #ifndef __APPLE__
 #define RIM_USE_SEM_INIT
 #endif
@@ -103,10 +103,12 @@ static void handle_int(int code) {
 }
 
 int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
+#if 0
 #ifdef _WIN32
 	AttachConsole(-1);
 	freopen("CONOUT$", "w", stdout);
 	freopen("CONOUT$", "w", stderr);
+#endif
 #endif
 	struct RimContext *ctx = rim_init();
 

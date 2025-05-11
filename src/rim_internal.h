@@ -368,6 +368,7 @@ struct WidgetHeader *rim_get_child(struct WidgetHeader *w, int index);
 
 /// @brief Find a node in a tree via its unique id
 /// @param of Set to the offset of where the widget is
+/// @returns 1 if found
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id);
 
 /// @brief Run down current widget in `tree` offset `base` and call backend->create for all of its widgets.

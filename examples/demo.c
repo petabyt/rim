@@ -1,9 +1,7 @@
 #include <stdio.h>
-#define REPLACE_MAIN
 #include <rim.h>
 
-int main(void) {
-	struct RimContext *ctx = rim_init();
+int mymain(struct RimContext *ctx, void *arg) {
 	int show_more = 0;
 	int counter = 0;
 	int value = 50;
@@ -41,4 +39,7 @@ int main(void) {
 	}
 
 	return 0;
+}
+int main(void) {
+    return rim_start(mymain, NULL);
 }

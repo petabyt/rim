@@ -1,3 +1,4 @@
+// UI tree building and reading functions
 // Copyright Daniel C 2025
 #include <stdlib.h>
 #include <stdint.h>
@@ -19,7 +20,7 @@ void rim_tree_restore_state(void) {
 	memcpy(ctx->tree_new, &ctx->tree_saved, sizeof(struct RimTree));
 }
 
-// Ensure 'size' can fit into the space left in the buffer
+// Ensures 'size' can fit into the space left in the buffer
 static void ensure_buffer_size(struct RimTree *tree, unsigned int size) {
 	if (tree->buffer_length < (tree->of + size)) {
 		tree->buffer = realloc(tree->buffer, tree->of + size + 1000);
