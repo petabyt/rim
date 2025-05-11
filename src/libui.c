@@ -6,10 +6,10 @@
 #include <pthread.h>
 #include <rim.h>
 #include <rim_internal.h>
-#include <signal.h>
+//#include <signal.h>
 #include <string.h>
 #include <fcntl.h>
-#include <errno.h>
+//#include <errno.h>
 
 struct Priv {
 	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
@@ -512,15 +512,34 @@ void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
 	uiUninit();	
 }
 
+// Get the old handle for the current window
+static struct WidgetHeader *get_current_window_old_tree(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	if (tree->widget_stack_depth == 0) {
+		rim_abort("get_current_window: stack too short\n");
+	}
+	struct WidgetHeader *w = (struct WidgetHeader *)(tree->buffer + tree->widget_stack[0]);
+	if (w->type != RIM_WINDOW) {
+		rim_abort("get_current_window: not a window\n");
+	}
+
+	tree = rim_get_old_tree();
+	unsigned int of = 0;
+	int rc = rim_find_in_tree(tree, &of, w->unique_id);
+	if (rc == 0) rim_abort("get_current_window: failed to find window in old tree\n");
+	w = (struct WidgetHeader *)(tree->buffer + of);
+	return w;
+}
+
 struct DialogPriv {
 	struct RimContext *ctx;
 	uiWindow *win;
 	int rc;
 	char *buffer;
 	unsigned int size;
+	const char *title;
+	const char *desc;
 };
-
-// TODO: Figure out a better way to accomplish this
 
 static void open_file(void *priv) {
 	struct DialogPriv *p = (struct DialogPriv *)priv;
@@ -540,15 +559,17 @@ static void open_file(void *priv) {
 int im_open_file(char *buffer, unsigned int size) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	struct Priv *p = ctx->priv;
-	struct RimTree *tree = rim_get_old_tree();
 
-	struct WidgetHeader *widget_0_hdr = (struct WidgetHeader *)(tree->buffer);
+//	struct RimTree *tree = rim_get_old_tree();
+	//struct WidgetHeader *widget_0_hdr = (struct WidgetHeader *)(tree->buffer);
+
+	struct WidgetHeader *window = get_current_window_old_tree();
 
 	uiWindow *w;
 	if (p->make_window_a_layout) {
-		w = (uiWindow *)uiControlParent((uiControl *)(void *)widget_0_hdr->os_handle);
+		w = (uiWindow *)uiControlParent((uiControl *)(void *)window->os_handle);
 	} else {
-		w = (uiWindow *)(void *)widget_0_hdr->os_handle;
+		w = (uiWindow *)(void *)window->os_handle;
 	}
 
 	struct DialogPriv dp = {
