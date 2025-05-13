@@ -1,4 +1,4 @@
-### Why not just use <imgui library>?
+### Why not just use &lt;imgui library&gt;?
 
 There's plenty of reasons why immediate-mode libraries are better then retained-mode ones:
 - State only has to be maintained in one place
@@ -30,7 +30,7 @@ Rim is an attempt to get the best of both worlds. It's capable of solving all of
 - Not nearly as flexible as the renderers of some imgui libraries
   - Just look at https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v176/tracy_profiler.png - GTK will never be able to do anything like that :(
 
-### Why not just use <retained-mode library>
+### Why not just use &lt;retained-mode library&gt;
 
 It's well known that properly maintaining UI state in a retained-mode application is difficult, very bug prone, and mostly downright painful.
 State has to be maintained in two different places using glue code (with the best approach being [MVVM](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel)).
