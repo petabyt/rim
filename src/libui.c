@@ -193,8 +193,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		check_prop(rim_get_prop_u32(w, RIM_PROP_WIDTH_DP, &win_width));
 		check_prop(rim_get_prop_u32(w, RIM_PROP_HEIGHT_DP, &win_height));
 
-		win_width = rim_dp_to_px(win_width);
-		win_height = rim_dp_to_px(win_height);
+//		win_width = rim_dp_to_px(win_width);
+//		win_height = rim_dp_to_px(win_height);
 
 		uiWindow *handle = uiNewWindow(string, (int)win_width, (int)win_height, has_menu);
 		uiWindowOnClosing(handle, window_closed, (void *)(uintptr_t)w->unique_id);

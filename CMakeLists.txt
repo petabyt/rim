@@ -14,7 +14,7 @@ set(RIM_LUA53_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libs/lua-cmake CACHE STRING "
 set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
 
 add_library(rim_base STATIC ${RIM_CORE})
-target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/extensions)
 
 set(RIM_CFLAGS -Wall -Wshadow -Wcast-qual -Wpedantic -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=return-type -Wno-unused-variable -Wno-unused-function)
 
@@ -31,31 +31,27 @@ if(RIM_COMPILE_LIBUI)
 			src/libui.c
 		)
 		target_link_libraries(rim_libui_osx LibUI::LibUI)
-		target_include_directories(rim_libui_osx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-		target_compile_options(rim_libui_osx PRIVATE ${RIM_CFLAGS})
-		add_library(Rim:RimLibUIOSX ALIAS rim_libui_osx)
-		add_library(Rim:Rim ALIAS rim_libui_osx)
+		set(RIM_LIB_NAME rim_libui_osx)
 	elseif(UNIX)
 		add_library(rim_libui_gtk3 STATIC
 			${RIM_CORE}
 			src/libui.c
 		)
 		target_link_libraries(rim_libui_gtk3 LibUI::LibUI)
-		target_include_directories(rim_libui_gtk3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-		target_compile_options(rim_libui_gtk3 PRIVATE ${RIM_CFLAGS})
-		add_library(Rim:RimLibUIGTK3 ALIAS rim_libui_gtk3)
-		add_library(Rim:Rim ALIAS rim_libui_gtk3)
+		set(RIM_LIB_NAME rim_libui_gtk3)
 	elseif(WIN32)
 		add_library(rim_libui_win STATIC
 			${RIM_CORE}
 			src/libui.c
 		)
 		target_link_libraries(rim_libui_win LibUI::LibUI)
-		target_include_directories(rim_libui_win PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-		target_compile_options(rim_libui_win PRIVATE ${RIM_CFLAGS})
-		add_library(Rim:RimLibUIWin ALIAS rim_libui_win)
-		add_library(Rim:Rim ALIAS rim_libui_win)
+		set(RIM_LIB_NAME rim_libui_win)
 	endif()
+
+	target_include_directories(${RIM_LIB_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/extensions)
+	target_compile_options(${RIM_LIB_NAME} PRIVATE ${RIM_CFLAGS})
+	add_library(Rim::RimLibUI ALIAS ${RIM_LIB_NAME})
+	add_library(Rim::Rim ALIAS ${RIM_LIB_NAME})
 
 	if(RIM_COMPILE_LIBUI_SCINTILLA)
 		if(NOT EXISTS ${RIM_LIBUI_SCINTILLA_LOCATION})
@@ -63,10 +59,10 @@ if(RIM_COMPILE_LIBUI)
 		endif()
 		add_subdirectory(${RIM_LIBUI_SCINTILLA_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/scintilla)
 		add_library(rim_libui_scintilla STATIC
-			src/libui_scintilla.c
+			extensions/libui_scintilla.c
 		)
-		target_link_libraries(rim_libui_scintilla libui_scintilla Rim:Rim)
-		add_library(Rim:Scintilla ALIAS rim_libui_scintilla)
+		target_link_libraries(rim_libui_scintilla libui_scintilla Rim::RimLibUI)
+		add_library(Rim::ScintillaLibUI ALIAS rim_libui_scintilla)
 	endif()
 endif()
 
@@ -85,10 +81,10 @@ if(RIM_COMPILE_DEMOS)
 	function(add_demo name src)
 		if(WIN32)
 			add_executable(${name} ${src} etc/win.rc)
-			target_link_libraries(${name} Rim:Rim ${WIN_LINK_LIBS})
+			target_link_libraries(${name} Rim::Rim ${WIN_LINK_LIBS})
 		else()
 			add_executable(${name} ${src})
-			target_link_libraries(${name} Rim:Rim)
+			target_link_libraries(${name} Rim::Rim)
 		endif()
 	endfunction()
 
@@ -105,7 +101,7 @@ if(RIM_COMPILE_DEMOS)
 	target_link_libraries(test_differ rim_base ${WIN_LINK_LIBS})
 endif()
 
-if(RIM_COMPILE_LUA_EDITOR)
+if(RIM_COMPILE_LUA_EDITOR AND RIM_COMPILE_LIBUI)
 	if (CMAKE_BUILD_TYPE STREQUAL "Release")
 		set(CMAKE_C_FLAGS_RELEASE "-O2")
 	else()
@@ -139,8 +135,8 @@ if(RIM_COMPILE_LUA_EDITOR)
 
 	add_subdirectory(${RIM_LUA53_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/lua)
 
-	add_executable(rim_editor demo/main.c demo/lua.c etc/win.rc)
-	target_link_libraries(rim_editor Rim:Scintilla Rim:Rim lua-5.3 ${WIN_LINK_LIBS})
+	add_executable(rim_editor examples/demo/main.c examples/demo/lua.c etc/win.rc)
+	target_link_libraries(rim_editor Rim::ScintillaLibUI Rim::RimLibUI lua-5.3 ${WIN_LINK_LIBS})
 
 	if(LINUX AND RIM_PACKAGE_EDITOR)
 		create_appimage(
