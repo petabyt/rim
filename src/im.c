@@ -1,5 +1,5 @@
 // Immediate-mode 'im_' API implementation for Rim
-#include <stdio.h>
+//#include <stdio.h>
 #include <string.h>
 #include "rim_internal.h"
 #include "im.h"
@@ -273,6 +273,20 @@ int im_menu_item(const char *title) {
 	im_apply_prop();
 	rim_end_widget(tree, RIM_WINDOW_MENU_ITEM);
 	return rim_last_widget_event(0);
+}
+
+void im_spinbox(int min, int max, int *value) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_SPINBOX);
+	rim_add_prop_u32(tree, RIM_PROP_SPINBOX_MIN, (uint32_t)min);
+	rim_add_prop_u32(tree, RIM_PROP_SPINBOX_MAX, (uint32_t)max);
+	rim_add_prop_u32(tree, RIM_PROP_SPINBOX_VALUE, (uint32_t)(*value));
+	im_apply_prop();
+	rim_end_widget(tree, RIM_SPINBOX);
+	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
+		struct RimContext *ctx = rim_get_global_ctx();
+		memcpy(value, ctx->last_event.data, 4);
+	}
 }
 
 void im_end_menu(void) {

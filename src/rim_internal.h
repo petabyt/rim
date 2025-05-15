@@ -158,9 +158,14 @@ enum RimPropType {
 	RIM_PROP_DISABLED,
 	// Text tooltip that shows on hover
 	RIM_PROP_TOOLTIP,
+	// slider stuff
 	RIM_PROP_SLIDER_VALUE,
 	RIM_PROP_SLIDER_MIN,
 	RIM_PROP_SLIDER_MAX,
+	// spinbox stuff
+	RIM_PROP_SPINBOX_VALUE,
+	RIM_PROP_SPINBOX_MIN,
+	RIM_PROP_SPINBOX_MAX,
 	/// @brief Valid values are 0-100
 	RIM_PROP_PROGRESS_BAR_VALUE,
 	// Combo box current selected value/child index
@@ -241,11 +246,13 @@ struct RimExtension {
 	int (*remove)(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
 	/// @brief Free the widget from memory
 	int (*destroy)(void *priv, struct WidgetHeader *w);
+	/// @brief Close down any context and handle freeing data in 'priv'
+	int (*close)(void *priv);
 };
 
 struct RimContext {
 	struct RimTree tree_saved;
-	// TODO: Inline these instead of ptr
+	// TODO: Maybe inline these instead of ptr
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
 

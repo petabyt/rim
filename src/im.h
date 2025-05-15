@@ -117,6 +117,9 @@ void im_slider(int min, int max, int *value);
 /// @brief Horizontal progress bar that goes from 0-100
 void im_progress_bar(int progress);
 
+/// @brief Editable number entry box with arrows for increment/decrement
+void im_spinbox(int min, int max, int *value);
+
 /// @brief Opens a file picker dialog, blocks until user is finished
 /// @note Recommended buffer size is 512
 /// @returns IM_SELECTED or IM_CANCELED

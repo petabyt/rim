@@ -89,6 +89,7 @@ if(RIM_COMPILE_DEMOS)
 	endfunction()
 
 	add_demo(demo examples/demo.c)
+	add_demo(demo2 examples/demo2.c)
 	add_demo(ui examples/ui.c)
 	add_demo(thread examples/thread.c)
 	add_demo(windows examples/windows.c)

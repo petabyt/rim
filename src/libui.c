@@ -139,6 +139,13 @@ static void on_slider(uiSlider *slider, void *arg) {
 	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
+static void on_spinbox(uiSpinbox *slider, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	int val = uiSpinboxValue(slider);
+	uint32_t b = (uint32_t)val;
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
+}
+
 static void on_selected(uiCombobox *combo, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiComboboxSelected(combo);
@@ -249,7 +256,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		w->os_handle = (uintptr_t)uiNewVerticalBox();
 		} return 0;
 	case RIM_SLIDER: {
-		uint32_t min, max, val;
+		uint32_t min, max;
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min));
 		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max));
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
@@ -277,6 +284,16 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	case RIM_COMBOBOX_ITEM: {
 		w->os_handle = p->dummy;
 		} return 0;
+	case RIM_SPINBOX: {
+		uint32_t min, max;
+		check_prop(rim_get_prop_u32(w, RIM_PROP_SPINBOX_MIN, &min));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_SPINBOX_MAX, &max));
+		uiSpinbox *handle = uiNewSpinbox(min, max);
+		w->os_handle = (uintptr_t)handle;
+		uiSpinboxOnChanged(handle, on_spinbox, (void *)(uintptr_t)w->unique_id);
+		rim_mark_prop_fulfilled(w, RIM_PROP_SPINBOX_MIN);
+		rim_mark_prop_fulfilled(w, RIM_PROP_SPINBOX_MAX);
+		} return 0;
 	}
 	return 1;
 }
@@ -302,6 +319,9 @@ int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
 		return 0;
 	case RIM_SLIDER:
 		uiSliderOnChanged((uiSlider *)w->os_handle, on_slider, (void *)(uintptr_t)w->unique_id);
+		return 0;
+	case RIM_SPINBOX:
+		uiSpinboxOnChanged((uiSpinbox *)w->os_handle, on_spinbox, (void *)(uintptr_t)w->unique_id);
 		return 0;
 	case RIM_COMBOBOX:
 		uiComboboxOnSelected((uiCombobox *)w->os_handle, on_selected, (void *)(uintptr_t)w->unique_id);
@@ -422,11 +442,15 @@ int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Pro
 		break;
 	case RIM_SLIDER:
 		switch (prop->type) {
-		case RIM_PROP_SLIDER_MAX:
-		case RIM_PROP_SLIDER_MIN:
-			return 0;
 		case RIM_PROP_SLIDER_VALUE:
 			uiSliderSetValue((uiSlider *)w->os_handle, (int)val32);
+			return 0;
+		}
+		break;
+	case RIM_SPINBOX:
+		switch (prop->type) {
+		case RIM_PROP_SPINBOX_VALUE:
+			uiSpinboxSetValue((uiSpinbox *)w->os_handle, (int)val32);
 			return 0;
 		}
 		break;

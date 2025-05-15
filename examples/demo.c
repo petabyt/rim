@@ -33,6 +33,8 @@ int mymain(struct RimContext *ctx, void *arg) {
 				im_end_combo_box();
 			}
 
+			im_spinbox(0, 100, &selected);
+
 			counter++;
 			im_end_window();
 		}
