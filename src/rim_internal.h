@@ -104,6 +104,8 @@ enum RimWidgetType {
 	RIM_COMBOBOX_ITEM,
 	// Multiple choice single answer element
 	RIM_RADIO,
+	// Selectable item in a radio box
+	RIM_RADIO_ITEM,
 	// Date picker, may open a window if clicked
 	RIM_DATE_PICKER,
 	// A container where tabs can be added
@@ -246,8 +248,10 @@ struct RimExtension {
 	int (*remove)(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent);
 	/// @brief Free the widget from memory
 	int (*destroy)(void *priv, struct WidgetHeader *w);
+	/// @brief Update the onclick handler to use the widgets new unique ID
+	int (*update_onclick)(void *priv, struct WidgetHeader *w);
 	/// @brief Close down any context and handle freeing data in 'priv'
-	int (*close)(void *priv);
+	void (*close)(void *priv);
 };
 
 struct RimContext {
@@ -256,12 +260,10 @@ struct RimContext {
 	struct RimTree *tree_old;
 	struct RimTree *tree_new;
 
-#define RIM_MAX_EXTS 10
-	struct RimExtension exts[RIM_MAX_EXTS];
-	int n_exts;
+	struct RimExtension backend;
 
-	// Backend context pointer
-	void *priv;
+	struct RimExtension exts[20];
+	int n_exts;
 
 	// Handle for the second thread. This may be the backend or ui state thread.
 	pthread_t second_thread;
@@ -291,29 +293,10 @@ void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext);
 /// @returns NULL if not found
 void *rim_get_ext_priv(struct RimContext *ctx, int id);
 
-/// @defgroup Backend implementation functions
-/// @addtogroup backend
-/// @{
-// Blocking entry function for the backend thread
-void rim_backend_thread(struct RimContext *ctx, sem_t *done);
-// Close down everything and stop backend thread
-void rim_backend_close(struct RimContext *ctx);
-/// @brief Create a backend widget given the widget header
-/// @note All of the widget's properties will be set with rim_backend_tweak after this is called
-int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w);
-/// @brief Update unique ID in backend widget so events can be correctly traced from it when it sends an event
-int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w);
-/// @brief Free the widget from memory
-int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w);
-/// @brief Remove a widget from a parent
-int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-/// @brief Append a backend widget to a parent backend widget.
-int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
-/// @brief Change a property of a backend widget
-int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type);
-/// @brief Queue a function to run in the UI backend thread
-int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void *priv);
-/// @}
+/// @brief Initialize the backend and start its thread
+void rim_backend_start(struct RimContext *ctx, sem_t *done);
+/// @brief Run some code on the backend UI thread
+int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void *arg);
 
 /// @defgroup Extension/backend wrapper interface for widgets
 /// @addtogroup backend
@@ -323,6 +306,7 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Prop
 int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w);
+int rim_widget_update_onclick(struct RimContext *ctx, struct WidgetHeader *w);
 /// @}
 
 /// @brief Create a widget tree

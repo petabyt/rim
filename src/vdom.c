@@ -131,8 +131,8 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 		new_h->os_handle = old_h->os_handle;
 		// Need to update the unique ID since it was passed to the onclick handler
 		if (new_h->unique_id != old_h->unique_id) {
-			if (rim_backend_update_id(ctx, new_h)) {
-				rim_abort("Failed to update widget's unique ID\n");
+			if (rim_widget_update_onclick(ctx, new_h)) {
+				rim_abort("Failed to update widget's onclick\n");
 			}
 		}
 	}
@@ -239,6 +239,7 @@ int rim_diff_tree(struct RimContext *ctx) {
 		} else {
 			// Handling windows being removed doesn't work well with the fact that they've already been closed down.
 			// TODO: Remove this hack
+			// TODO: This also fails when a widget is added/removed to a previous window... so bad
 			if (old_h->unique_id != new_h->unique_id) {
 				printf("TODO: Support for removing windows at root is not working yet\n");
 				ctx->quit_immediately = 1;

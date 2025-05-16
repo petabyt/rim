@@ -91,7 +91,7 @@ void *ui_thread(void *arg) {
 	thread_arg->rc = thread_arg->func(thread_arg->ctx, thread_arg->arg);
 
 	// Force backend to end - it won't close down unless we tell it to
-	rim_backend_close(thread_arg->ctx);
+	thread_arg->ctx->backend.close(thread_arg->ctx->backend.priv);
 
 	pthread_exit(NULL);
 	return NULL;
@@ -124,7 +124,7 @@ int rim_start(int (*func)(rim_ctx_t *, void *), void *arg) {
 		return 1;
 	}
 
-	rim_backend_thread(ctx, ctx->backend_done_signal);
+	rim_backend_start(ctx, ctx->backend_done_signal);
 
 	rim_close(ctx);
 
@@ -135,11 +135,11 @@ void rim_close(struct RimContext *ctx) {
 	sem_destroy(ctx->event_signal);
 	sem_destroy(ctx->backend_done_signal);
 	sem_destroy(ctx->event_consumed_signal);
-	#ifndef RIM_USE_SEM_INIT
+#ifndef RIM_USE_SEM_INIT
 	sem_unlink("event_signal");
 	sem_unlink("backend_done_signal");
 	sem_unlink("event_consumed_signal");
-	#endif
+#endif
 }
 
 int rim_get_prop_default_value(struct RimContext *ctx, enum RimPropType type, uint8_t *buffer, unsigned int length) {
@@ -152,7 +152,7 @@ int rim_get_prop_default_value(struct RimContext *ctx, enum RimPropType type, ui
 }
 
 void rim_add_extension(struct RimContext *ctx, struct RimExtension *ext) {
-	if (ctx->n_exts >= RIM_MAX_EXTS) rim_abort("more than 5 exts\n");
+	if (ctx->n_exts >= (sizeof(ctx->exts) / sizeof(ctx->exts[0]))) rim_abort("more than 5 exts\n");
 	memcpy(&ctx->exts[ctx->n_exts], ext, sizeof(struct RimExtension));
 	ctx->n_exts++;
 }
@@ -167,7 +167,7 @@ void *rim_get_ext_priv(struct RimContext *ctx, int id) {
 }
 
 int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w) {
-	int rc = rim_backend_create(ctx, w);
+	int rc = ctx->backend.create(ctx->backend.priv, w);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
 		if (ctx->exts[i].create == NULL) continue;
@@ -198,7 +198,7 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Prop
 		}
 	}
 
-	int rc = rim_backend_tweak(ctx, w, prop, type);
+	int rc = ctx->backend.tweak(ctx->backend.priv, w, prop, type);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
 		if (ctx->exts[i].tweak == NULL) continue;
@@ -216,7 +216,7 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Prop
 }
 
 int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	int rc = rim_backend_append(ctx, w, parent);
+	int rc = ctx->backend.append(ctx->backend.priv, w, parent);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
 		if (ctx->exts[i].append == NULL) continue;
@@ -229,7 +229,7 @@ int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 }
 
 int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	int rc = rim_backend_remove(ctx, w, parent);
+	int rc = ctx->backend.remove(ctx->backend.priv, w, parent);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
 		if (ctx->exts[i].remove == NULL) continue;
@@ -242,11 +242,24 @@ int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 }
 
 int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
-	int rc = rim_backend_destroy(ctx, w);
+	int rc = ctx->backend.destroy(ctx->backend.priv, w);
 	if (rc == 0) return 0;
 	for (int i = 0; i < ctx->n_exts; i++) {
 		if (ctx->exts[i].destroy == NULL) continue;
 		rc = ctx->exts[i].destroy(ctx->exts[i].priv, w);
+		if (rc == 0) {
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int rim_widget_update_onclick(struct RimContext *ctx, struct WidgetHeader *w) {
+	int rc = ctx->backend.update_onclick(ctx->backend.priv, w);
+	if (rc == 0) return 0;
+	for (int i = 0; i < ctx->n_exts; i++) {
+		if (ctx->exts[i].update_onclick == NULL) continue;
+		rc = ctx->exts[i].update_onclick(ctx->exts[i].priv, w);
 		if (rc == 0) {
 			return 0;
 		}

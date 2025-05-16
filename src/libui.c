@@ -16,9 +16,8 @@ struct Priv {
 	/// If 0, it will be uiWindow
 	int make_window_a_layout;
 
+	/// @brief Dummy handle because several widgets don't have a handle
 	uintptr_t dummy;
-
-	sem_t *wait_until_ready;
 };
 
 int is_base_control_class(uint32_t type) {
@@ -31,6 +30,7 @@ int is_base_control_class(uint32_t type) {
 		RIM_MULTILINE_ENTRY,
 		RIM_SPINBOX,
 		RIM_SLIDER,
+		RIM_SPINBOX,
 		RIM_COMBOBOX,
 		RIM_RADIO,
 		RIM_DATE_PICKER,
@@ -46,7 +46,7 @@ int is_base_control_class(uint32_t type) {
 	return 0;
 }
 
-int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
+static int rim_backend_remove(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
 		if (w->type != RIM_WINDOW) {
 			rim_abort("Only windows should be removed from root...\n");
@@ -78,28 +78,21 @@ int rim_backend_remove(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 	return 1;
 }
 
-int rim_backend_destroy(struct RimContext *ctx, struct WidgetHeader *w) {
-	struct Priv *p = ctx->priv;
-
+static int rim_backend_destroy(void *priv, struct WidgetHeader *w) {
+	struct Priv *p = priv;
+	if (is_base_control_class(w->type)) {
+		uiControlDestroy((uiControl *)w->os_handle);
+		return 0;
+	}
 	switch (w->type) {
 	// Dummy widget
-	case RIM_COMBOBOX_ITEM:
-		return 0;
+	case RIM_COMBOBOX_ITEM: return 0;
 	case RIM_TAB:
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
 			uiControlDestroy(uiControlParent((uiControl *)w->os_handle));
 			return 0;
 		}
-	case RIM_COMBOBOX:
-	case RIM_BUTTON:
-	case RIM_LABEL:
-	case RIM_HORIZONTAL_BOX:
-	case RIM_VERTICAL_BOX:
-	case RIM_ENTRY:
-	case RIM_PROGRESS_BAR:
-		uiControlDestroy((uiControl *)w->os_handle);
-		return 0;
 	}
 	return 1;
 }
@@ -159,7 +152,7 @@ static void on_menu_item_clicked(uiMenuItem *item, uiWindow *sender, void *arg) 
 }
 
 // LibUI requires that all menus be inited before the uiNewWindow call. So this hack is needed.
-static int init_window_menu_bar(struct RimContext *ctx, struct WidgetHeader *bar) {
+static int init_window_menu_bar(struct WidgetHeader *bar) {
 	for (int i = 0; i < bar->n_children; i++) {
 		struct WidgetHeader *menu_h = rim_get_child(bar, i);
 		if (menu_h->type != RIM_WINDOW_MENU) rim_abort("Menu not in menu bar\n");
@@ -180,8 +173,8 @@ static int init_window_menu_bar(struct RimContext *ctx, struct WidgetHeader *bar
 	return 0;
 }
 
-int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
-	struct Priv *p = ctx->priv;
+static int rim_backend_create(void *priv, struct WidgetHeader *w) {
+	struct Priv *p = priv;
 	char *string = NULL;
 	switch (w->type) {
 	case RIM_WINDOW: {
@@ -191,7 +184,7 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 		bar->os_handle = p->dummy;
 		if (bar->type == RIM_WINDOW_MENU_BAR) {
 			has_menu = 1;
-			init_window_menu_bar(ctx, bar);
+			init_window_menu_bar(bar);
 		}
 
 		check_prop(rim_get_prop_string(w, RIM_PROP_TITLE, &string));
@@ -298,8 +291,8 @@ int rim_backend_create(struct RimContext *ctx, struct WidgetHeader *w) {
 	return 1;
 }
 
-int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
-	struct Priv *p = ctx->priv;
+static int rim_backend_update_id(void *priv, struct WidgetHeader *w) {
+	struct Priv *p = priv;
 	char *string = NULL;
 	switch (w->type) {
 	case RIM_WINDOW:
@@ -330,8 +323,8 @@ int rim_backend_update_id(struct RimContext *ctx, struct WidgetHeader *w) {
 	return 1;
 }
 
-int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent) {
-	struct Priv *p = ctx->priv;
+static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	struct Priv *p = priv;
 	if (parent == NULL) {
 		// Handle being appended to root?
 		return 0;
@@ -377,8 +370,8 @@ int rim_backend_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wi
 	return 1;
 }
 
-int rim_backend_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
-	struct Priv *p = ctx->priv;
+static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
+	struct Priv *p = priv;
 	uint32_t val32 = 0;
 	memcpy(&val32, prop->data, 4); // assumes len>=4
 
@@ -504,18 +497,26 @@ static void destroy(void *arg) {
 	sem_post(((struct RimContext *)arg)->backend_done_signal);
 }
 
-void rim_backend_close(struct RimContext *ctx) {
+static void rim_backend_close(void *priv) {
+	struct RimContext *ctx = rim_get_global_ctx();
 	rim_backend_run(ctx, destroy, ctx);
 	sem_wait(ctx->backend_done_signal);
-	struct Priv *p = ctx->priv;
+	struct Priv *p = ctx->backend.priv;
 	free(p);
 }
 
-void rim_backend_thread(struct RimContext *ctx, sem_t *done) {
-	ctx->priv = malloc(sizeof(struct Priv));
-	struct Priv *p = ctx->priv;
+void rim_backend_start(struct RimContext *ctx, sem_t *done) {
+	struct Priv *p = malloc(sizeof(struct Priv));
 	p->dummy = (uintptr_t)malloc(10);
 	p->make_window_a_layout = 1;
+	ctx->backend.priv = p;
+	ctx->backend.create = rim_backend_create;
+	ctx->backend.tweak = rim_backend_tweak;
+	ctx->backend.append = rim_backend_append;
+	ctx->backend.remove = rim_backend_remove;
+	ctx->backend.destroy = rim_backend_destroy;
+	ctx->backend.close = rim_backend_close;
+	ctx->backend.update_onclick = rim_backend_update_id;
 
 	uiInitOptions o = { 0 };
 	const char *err;
@@ -582,7 +583,7 @@ static void open_file(void *priv) {
 
 int im_open_file(char *buffer, unsigned int size) {
 	struct RimContext *ctx = rim_get_global_ctx();
-	struct Priv *p = ctx->priv;
+	struct Priv *p = ctx->backend.priv;
 
 //	struct RimTree *tree = rim_get_old_tree();
 	//struct WidgetHeader *widget_0_hdr = (struct WidgetHeader *)(tree->buffer);

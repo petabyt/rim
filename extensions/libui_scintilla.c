@@ -84,11 +84,17 @@ static int rim_sc_create(void *priv, struct WidgetHeader *w) {
 }
 
 static int rim_sc_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
+	// Shouldn't append children to this widget
 	return 1;
 }
 
 static int rim_sc_tweak(void *priv, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
 	// No properties to change
+	return 0;
+}
+
+static int update_onclick(void *priv, struct WidgetHeader *w) {
+	// Nothing to do
 	return 0;
 }
 
@@ -99,6 +105,7 @@ int rim_scintilla_init(struct RimContext *ctx) {
 		.tweak = rim_sc_tweak,
 		.remove = rim_sc_remove,
 		.destroy = rim_sc_destroy,
+		.update_onclick = update_onclick,
 		.ext_id = EXTENSION_ID,
 		.priv = calloc(1, sizeof(struct Priv)),
 	};
