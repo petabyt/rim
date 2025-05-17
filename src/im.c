@@ -244,6 +244,26 @@ void im_end_combo_box(void) {
 	im_end(RIM_COMBOBOX);
 }
 
+int im_begin_radio(int *selected) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_RADIO);
+	rim_add_prop_u32(tree, RIM_PROP_RADIO_SELECTED, (*selected));
+	if (rim_last_widget_event(1) == RIM_EVENT_VALUE_CHANGED) {
+		struct RimContext *ctx = rim_get_global_ctx();
+		memcpy(selected, ctx->last_event.data, 4);
+	}
+	return 1;
+}
+void im_radio_item(const char *label) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_RADIO_ITEM);
+	rim_add_prop_string(tree, RIM_PROP_TEXT, label);
+	rim_end_widget(tree, RIM_RADIO_ITEM);
+}
+void im_end_radio(void) {
+	im_end(RIM_RADIO);
+}
+
 void im_progress_bar(int progress) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_PROGRESS_BAR);

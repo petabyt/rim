@@ -6,12 +6,11 @@
 #include <pthread.h>
 #include <rim.h>
 #include <rim_internal.h>
-//#include <signal.h>
 #include <string.h>
 #include <fcntl.h>
-//#include <errno.h>
 
 struct Priv {
+	struct RimContext *ctx;
 	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
 	/// If 0, it will be uiWindow
 	int make_window_a_layout;
@@ -62,6 +61,9 @@ static int rim_backend_remove(void *priv, struct WidgetHeader *w, struct WidgetH
 		if (index == -1) rim_abort("child index failed\n");
 		uiComboboxDelete((uiCombobox *)parent->os_handle, index);
 		} return 0;
+	case RIM_RADIO: {
+		printf("WTF libui doesn't have uiRadioButtonsDelete\n");
+		} return 0;
 	case RIM_TAB_BAR: {
 		int index = rim_get_child_index(w, parent);
 		if (index == -1) rim_abort("child index failed\n");
@@ -86,7 +88,9 @@ static int rim_backend_destroy(void *priv, struct WidgetHeader *w) {
 	}
 	switch (w->type) {
 	// Dummy widget
-	case RIM_COMBOBOX_ITEM: return 0;
+	case RIM_RADIO_ITEM:
+	case RIM_COMBOBOX_ITEM:
+		return 0;
 	case RIM_TAB:
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
@@ -125,28 +129,35 @@ static void on_multiline_changed(uiMultilineEntry *entry, void *arg) {
 	uiFreeText(text);
 }
 
-static void on_slider(uiSlider *slider, void *arg) {
+static void on_slider(uiSlider *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
-	int val = uiSliderValue(slider);
+	int val = uiSliderValue(handle);
 	uint32_t b = (uint32_t)val;
 	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
-static void on_spinbox(uiSpinbox *slider, void *arg) {
+static void on_spinbox(uiSpinbox *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
-	int val = uiSpinboxValue(slider);
+	int val = uiSpinboxValue(handle);
 	uint32_t b = (uint32_t)val;
 	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
-static void on_selected(uiCombobox *combo, void *arg) {
+static void on_radio(uiRadioButtons *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
-	int val = uiComboboxSelected(combo);
+	int val = uiRadioButtonsSelected(handle);
+	uint32_t b = (uint32_t)val;
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
+}
+
+static void on_selected(uiCombobox *handle, void *arg) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	int val = uiComboboxSelected(handle);
 	uint32_t b = (uint32_t)val;
 	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_COMBOBOX_SELECTED, (int)(uintptr_t)arg, &b, 4);
 }
 
-static void on_menu_item_clicked(uiMenuItem *item, uiWindow *sender, void *arg) {
+static void on_menu_item_clicked(uiMenuItem *handle, uiWindow *sender, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	rim_on_widget_event(ctx, RIM_EVENT_CLICK, (int)(uintptr_t)arg);
 }
@@ -274,6 +285,7 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 			rim_abort("Menus can only be inited once in LibUI\n");
 		}
 		return 0;
+	case RIM_RADIO_ITEM:
 	case RIM_COMBOBOX_ITEM: {
 		w->os_handle = p->dummy;
 		} return 0;
@@ -286,6 +298,11 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 		uiSpinboxOnChanged(handle, on_spinbox, (void *)(uintptr_t)w->unique_id);
 		rim_mark_prop_fulfilled(w, RIM_PROP_SPINBOX_MIN);
 		rim_mark_prop_fulfilled(w, RIM_PROP_SPINBOX_MAX);
+		} return 0;
+	case RIM_RADIO: {
+		uiRadioButtons *handle = uiNewRadioButtons();
+		w->os_handle = (uintptr_t)handle;
+		uiRadioButtonsOnSelected(handle, on_radio, (void *)(uintptr_t)w->unique_id);
 		} return 0;
 	}
 	return 1;
@@ -318,6 +335,9 @@ static int rim_backend_update_id(void *priv, struct WidgetHeader *w) {
 		return 0;
 	case RIM_COMBOBOX:
 		uiComboboxOnSelected((uiCombobox *)w->os_handle, on_selected, (void *)(uintptr_t)w->unique_id);
+		return 0;
+	case RIM_RADIO:
+		uiRadioButtonsOnSelected((uiRadioButtons *)w->os_handle, on_radio, (void *)(uintptr_t)w->unique_id);
 		return 0;
 	}
 	return 1;
@@ -365,6 +385,21 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiComboboxAppend((uiCombobox *)parent->os_handle, title);
 		uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel);
+		} return 0;
+	case RIM_RADIO: {
+		uint32_t sel = 0;
+		check_prop(rim_get_prop_u32(parent, RIM_PROP_RADIO_SELECTED, &sel));
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
+		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
+// Needed for cases where the _create uiRadioButtonsSetSelected didn't work out
+//		if (sel != -1) {
+//			struct WidgetHeader *c = rim_get_child(parent, (int)sel);
+//			if (c == NULL) rim_abort("???");
+//			if (c->unique_id == w->unique_id) {
+//				uiRadioButtonsSetSelected((uiRadioButtons *)parent->os_handle, (int)sel);
+//			}
+//		}
+
 		} return 0;
 	}
 	return 1;
@@ -447,6 +482,20 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			return 0;
 		}
 		break;
+	case RIM_RADIO:
+		switch (prop->type) {
+		case RIM_PROP_RADIO_SELECTED: {
+			struct RimTree *old_tree = rim_get_old_tree();
+			unsigned int of = 0;
+			if (rim_find_in_tree(old_tree, &of, w->unique_id)) return 0;
+
+			struct WidgetHeader *old_c = (struct WidgetHeader *)(old_tree->buffer + of);
+			if ((int)old_c->n_children > (int)val32) {
+				uiRadioButtonsSetSelected((uiRadioButtons *)w->os_handle, (int)val32);
+			}
+			} return 0;
+		}
+		break;
 	case RIM_COMBOBOX:
 		switch (prop->type) {
 		case RIM_PROP_LABEL:
@@ -456,17 +505,30 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			return 0;
 		}
 		break;
-	case RIM_COMBOBOX_ITEM:
-		return 0;
 	case RIM_PROGRESS_BAR:
 		if (prop->type == RIM_PROP_PROGRESS_BAR_VALUE) {
 			uiProgressBarSetValue((uiProgressBar *)w->os_handle, (int)val32);
 			return 0;
 		}
+		break;
+	case RIM_COMBOBOX_ITEM:
+		if (prop->type == RIM_PROP_TEXT) {
+			struct WidgetHeader *parent = (struct WidgetHeader *)(rim_get_current_tree()->buffer + w->parent_of);
+			int index = rim_get_child_index(w, parent);
+			if (index == -1) rim_abort("child index failed\n");
+			uiComboboxDelete((uiCombobox *)parent->os_handle, index);
+			uiComboboxInsertAt((uiCombobox *)parent->os_handle, index, (const char *)prop->data);
+			// Just screwed with it so it needs to be updated again
+			uint32_t sel;
+			check_prop(rim_get_prop_u32(parent, RIM_PROP_COMBOBOX_SELECTED, &sel));
+			uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel);
+			return 0;
+		}
+		break;
+	// Ignore all properties for now
+	case RIM_RADIO_ITEM:
 	case RIM_TAB:
-		return 0;
 	case RIM_TAB_BAR:
-		return 0;
 	case RIM_WINDOW_MENU:
 	case RIM_WINDOW_MENU_ITEM:
 		return 0;
@@ -492,51 +554,6 @@ int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void 
 	return 0;
 }
 
-static void destroy(void *arg) {
-	uiQuit();
-	sem_post(((struct RimContext *)arg)->backend_done_signal);
-}
-
-static void rim_backend_close(void *priv) {
-	struct RimContext *ctx = rim_get_global_ctx();
-	rim_backend_run(ctx, destroy, ctx);
-	sem_wait(ctx->backend_done_signal);
-	struct Priv *p = ctx->backend.priv;
-	free(p);
-}
-
-void rim_backend_start(struct RimContext *ctx, sem_t *done) {
-	struct Priv *p = malloc(sizeof(struct Priv));
-	p->dummy = (uintptr_t)malloc(10);
-	p->make_window_a_layout = 1;
-	ctx->backend.priv = p;
-	ctx->backend.create = rim_backend_create;
-	ctx->backend.tweak = rim_backend_tweak;
-	ctx->backend.append = rim_backend_append;
-	ctx->backend.remove = rim_backend_remove;
-	ctx->backend.destroy = rim_backend_destroy;
-	ctx->backend.close = rim_backend_close;
-	ctx->backend.update_onclick = rim_backend_update_id;
-
-	uiInitOptions o = { 0 };
-	const char *err;
-
-	printf("Calling uiInit\n");
-	err = uiInit(&o);
-	if (err != NULL) {
-		fprintf(stderr, "Error initializing libui-ng: %s\n", err);
-		uiFreeInitError(err);
-		return;
-	}
-
-	if (done != NULL) {
-		sem_post(done);
-	}
-
-	uiMain();
-	uiUninit();	
-}
-
 // Get the old handle for the current window
 static struct WidgetHeader *get_current_window_old_tree(void) {
 	struct RimTree *tree = rim_get_current_tree();
@@ -548,10 +565,12 @@ static struct WidgetHeader *get_current_window_old_tree(void) {
 		rim_abort("get_current_window: not a window\n");
 	}
 
+	// This this code is called in the tree-building phase, we have to get the window handle
+	// from the old tree
 	tree = rim_get_old_tree();
 	unsigned int of = 0;
 	int rc = rim_find_in_tree(tree, &of, w->unique_id);
-	if (rc == 0) rim_abort("get_current_window: failed to find window in old tree\n");
+	if (rc) rim_abort("get_current_window: failed to find window in old tree\n");
 	w = (struct WidgetHeader *)(tree->buffer + of);
 	return w;
 }
@@ -585,9 +604,6 @@ int im_open_file(char *buffer, unsigned int size) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	struct Priv *p = ctx->backend.priv;
 
-//	struct RimTree *tree = rim_get_old_tree();
-	//struct WidgetHeader *widget_0_hdr = (struct WidgetHeader *)(tree->buffer);
-
 	struct WidgetHeader *window = get_current_window_old_tree();
 
 	uiWindow *w;
@@ -609,4 +625,51 @@ int im_open_file(char *buffer, unsigned int size) {
 	sem_wait(ctx->backend_done_signal);
 
 	return dp.rc;
+}
+
+static void destroy(void *arg) {
+	uiQuit();
+	sem_post(((struct RimContext *)arg)->backend_done_signal);
+}
+
+static void rim_backend_close(void *priv) {
+	struct RimContext *ctx = rim_get_global_ctx();
+	rim_backend_run(ctx, destroy, ctx);
+	sem_wait(ctx->backend_done_signal);
+	struct Priv *p = ctx->backend.priv;
+	free(p);
+}
+
+void rim_backend_start(struct RimContext *ctx, sem_t *done) {
+	struct Priv *p = malloc(sizeof(struct Priv));
+	p->ctx = ctx;
+	p->dummy = (uintptr_t)8008135;
+	p->make_window_a_layout = 1;
+	ctx->backend.priv = p;
+	ctx->backend.ext_id = 1;
+	ctx->backend.create = rim_backend_create;
+	ctx->backend.tweak = rim_backend_tweak;
+	ctx->backend.append = rim_backend_append;
+	ctx->backend.remove = rim_backend_remove;
+	ctx->backend.destroy = rim_backend_destroy;
+	ctx->backend.close = rim_backend_close;
+	ctx->backend.update_onclick = rim_backend_update_id;
+
+	uiInitOptions o = { 0 };
+	const char *err;
+
+	printf("Calling uiInit\n");
+	err = uiInit(&o);
+	if (err != NULL) {
+		fprintf(stderr, "Error initializing libui-ng: %s\n", err);
+		uiFreeInitError(err);
+		return;
+	}
+
+	if (done != NULL) {
+		sem_post(done);
+	}
+
+	uiMain();
+	uiUninit();	
 }

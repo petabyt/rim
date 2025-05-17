@@ -5,41 +5,45 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-/// @brief Never keep a pointer to this structure during runtime as
-/// the tree buffer can be reallocated 
+// Note: All structures are 8-byte aligned
+
+/// @note A pointer to this structure may not be kept during runtime as
+/// the tree buffer can be reallocated by the tree builder
 struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
 	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
-	// Offset of this widgets parent. If 0xffffffff, then this is a top-level widget.
+	// Offset of this widget's parent. If 0xffffffff, then this is a top-level widget.
 	uint32_t parent_of;
 	// Number of children following this header
 	uint32_t n_children;
-	// Number of properties following this header
+	/// @brief Number of properties following this header
 	uint32_t n_props;
-	// Unique ID (only modified by UI backend and tree patcher)
+	/// @brief Unique ID (only modified by UI backend and tree patcher)
 	uint32_t unique_id;
-	// This is set to 1 by the tree differ if this node is detached from its parent.
-	// In that case this widget must be skipped when calculating the index of this node's siblings.
+	/// @brief If 1, then this node has been detached from its parent.
+	/// This can be set by the tree differ to keep track of which widgets have been removed from their parent.
+	/// In that case this widget must be skipped when calculating the index of this node's siblings.
+	/// It may also be set by the tree builder to signal that a widget has destroyed itself (such as a window closing)
+	/// and it shouldn't try and destroy it.
 	uint8_t is_detached;
-	// Set to 1 to tell the tree differ to throw away this widget even if the types match
-	// This may be used in case the widget needs to be re-appended to its parent.
+	/// @brief Set to 1 to tell the tree differ to throw away this widget even if the types match.
+	/// This is needed to make inserting widgets work, because the backend doesn't have an 'insert' method yet.
 	uint8_t invalidate;
 
 	uint8_t res0;
-	uint8_t res1;
+	uint8_t res1; // TODO: os_handle_is_valid
 
-	// Pointer handle for UI backend
-	// This must be aligned by 8 bytes in the structure
+	/// @brief Pointer handle for UI backend
 	uintptr_t os_handle;
-	// properties start here
-	// children start here
 	uint8_t data[];
+	// What follows are 'n_props' properties,
+	// and 'n_children' child nodes
 };
 _Static_assert(sizeof(struct WidgetHeader) == 32, "fail size");
 
-// This is the common layout of all properties
-// What is stored in `data` can be determined by the widget type.
+/// @brief This is the common layout of all properties
+/// @brief What is stored in `data` can be determined by the property type.
 struct __attribute__((packed)) PropHeader {
 	/// @brief Length in bytes of this property structure and data that follows
 	uint32_t length;
@@ -52,7 +56,6 @@ struct __attribute__((packed)) PropHeader {
 	uint32_t last_changed_by;
 	uint8_t data[];
 };
-
 _Static_assert(sizeof(struct PropHeader) == 16, "fail size");
 
 struct __attribute__((packed)) RimPropData {
@@ -168,6 +171,9 @@ enum RimPropType {
 	RIM_PROP_SPINBOX_VALUE,
 	RIM_PROP_SPINBOX_MIN,
 	RIM_PROP_SPINBOX_MAX,
+
+	RIM_PROP_RADIO_SELECTED,
+	
 	/// @brief Valid values are 0-100
 	RIM_PROP_PROGRESS_BAR_VALUE,
 	// Combo box current selected value/child index
@@ -227,16 +233,15 @@ struct RimEvent {
 
 typedef void rim_on_run_callback(void *priv);
 
-/// @brief Structure holding handlers for an extension widget(s) on top of the backend
+/// @brief Structure holding handlers for an extension (or backend).
+/// This is a basic abstraction layer over a retained-mode toolkit, giving the tree differ
+/// what it needs to maintain state.
 struct RimExtension {
 	void *priv;
 
 	/// @brief Unique extension ID for functions that need to get the priv pointer
 	/// that aren't the callbacks
 	int ext_id;
-
-	// TODO: it's not clear which of these callbacks will be needed for an extension...
-	// TODO: Should the backend use these callbacks?
 
 	/// @brief Create a backend widget given the widget header
 	int (*create)(void *priv, struct WidgetHeader *w);
@@ -298,7 +303,7 @@ void rim_backend_start(struct RimContext *ctx, sem_t *done);
 /// @brief Run some code on the backend UI thread
 int rim_backend_run(struct RimContext *ctx, rim_on_run_callback *callback, void *arg);
 
-/// @defgroup Extension/backend wrapper interface for widgets
+/// @defgroup Backend/extension wrapper interface for widgets
 /// @addtogroup backend
 /// @{
 int rim_widget_create(struct RimContext *ctx, struct WidgetHeader *w);
@@ -385,6 +390,7 @@ int rim_diff_tree(struct RimContext *ctx);
 
 // debugging only
 const char *rim_eval_widget_type(uint32_t type);
+const char *rim_eval_prop_type(uint32_t type);
 __attribute__((noreturn))
 void rim_abort(char *fmt, ...);
 

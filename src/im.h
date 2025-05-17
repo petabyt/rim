@@ -80,6 +80,12 @@ int im_begin_combo_box_ex(const char *label, int *selected, const char *preview_
 void im_combo_box_item(const char *label);
 void im_end_combo_box(void);
 
+/// @returns IM_NONE, IM_CHILDREN_VISIBLE
+int im_begin_radio(int *selected);
+/// @brief Adds an item to the radio list
+void im_radio_item(const char *label);
+void im_end_radio(void);
+
 
 void im_begin_form(void);
 void im_begin_form_entry(const char *label);

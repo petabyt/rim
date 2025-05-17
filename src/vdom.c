@@ -80,7 +80,7 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 
 	int rc = rim_widget_remove(ctx, h, parent);
 	if (rc) {
-		rim_abort("Couldn't remove widget\n");
+		rim_abort("Couldn't remove widget '%s' from '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
 	}
 
 	h->is_detached = 1;

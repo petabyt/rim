@@ -68,35 +68,6 @@ inline static unsigned int read_u32(const uint8_t *from, uint32_t *temp) {
 	return 4;
 }
 
-const char *rim_eval_widget_type(uint32_t type) {
-	switch (type) {
-	case RIM_WINDOW: return "window";
-	case RIM_LABEL: return "label";
-	case RIM_BUTTON: return "button";
-	case RIM_PROGRESS_BAR: return "progress_bar";
-	case RIM_IMAGE: return "image";
-	case RIM_ENTRY: return "entry";
-	case RIM_SPINBOX: return "spinbox";
-	case RIM_SLIDER: return "slider";
-	case RIM_COMBOBOX: return "combobox";
-	case RIM_RADIO: return "radio";
-	case RIM_DATE_PICKER: return "date_picker";
-	case RIM_TABLE: return "table";
-	case RIM_TAB: return "tab";
-	case RIM_TAB_BAR: return "tab_bar";
-	case RIM_HORIZONTAL_BOX: return "layout_static";
-	case RIM_VERTICAL_BOX: return "layout_dynamic";
-	case RIM_FLEX_BOX: return "layout_flex";
-	case RIM_WINDOW_MENU_BAR: return "RIM_WINDOW_MENU_BAR";
-	case RIM_WINDOW_MENU: return "RIM_WINDOW_MENU";
-	case RIM_WINDOW_MENU_ITEM: return "RIM_WINDOW_MENU_ITEM";
-	default: {
-		printf("rim_eval_widget_type: unknown %d\n", type);
-		return "???";
-	}
-	}
-}
-
 void rim_reset_tree(struct RimTree *tree) {
 	tree->widget_stack_depth = 0;
 	tree->of = 0;
@@ -309,24 +280,24 @@ struct WidgetHeader *rim_get_child(struct WidgetHeader *w, int index) {
 }
 
 int rim_find_in_tree(struct RimTree *tree, unsigned int *of, uint32_t unique_id) {
-	if (tree->of < (int)sizeof(struct WidgetHeader)) abort();
+	if (tree->of < ((*of) + sizeof(struct WidgetHeader))) return -1;
 
 	struct WidgetHeader *h = (struct WidgetHeader *)(tree->buffer + (*of));
 
-	if (h->unique_id == unique_id) return 1;
+	if (h->unique_id == unique_id) return 0;
 
 	(*of) += sizeof(struct WidgetHeader);
 
 	for (size_t i = 0; i < h->n_props; i++) {
+		if (tree->of < ((*of) + sizeof(struct PropHeader))) return -1;
 		struct PropHeader *p = (struct PropHeader *)(tree->buffer + (*of));
 		(*of) += (int)p->length;
 	}
 
 	for (size_t i = 0; i < h->n_children; i++) {
-		if (rim_find_in_tree(tree, of, unique_id)) {
-			return 1;
-		}
+		int rc = rim_find_in_tree(tree, of, unique_id);
+		if (rc == 0) return rc;
 	}
 
-	return 0;
+	return 1;
 }

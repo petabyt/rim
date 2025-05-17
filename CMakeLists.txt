@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 project(rim)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+	set(CMAKE_C_FLAGS_RELEASE "-O2")
+else()
+	set(CMAKE_C_FLAGS_DEBUG "-g")
+	set(CMAKE_CPP_FLAGS_DEBUG "-g")
+endif()
+
 option(RIM_COMPILE_DEMOS "Compile demos" ON)
 option(RIM_COMPILE_LIBUI "Compile LibUI backend" ON)
 option(RIM_COMPILE_LIBUI_SCINTILLA "Compile LibUI Scintilla extension" OFF)
@@ -11,7 +18,7 @@ set(RIM_LIBUI_DEV_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev CACHE STRING
 set(RIM_LIBUI_SCINTILLA_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla CACHE STRING "libui-scintilla dir")
 set(RIM_LUA53_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libs/lua-cmake CACHE STRING "lua dir")
 
-set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c)
+set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c src/enum.c)
 
 add_library(rim_base STATIC ${RIM_CORE})
 target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/extensions)
@@ -103,13 +110,6 @@ if(RIM_COMPILE_DEMOS)
 endif()
 
 if(RIM_COMPILE_LUA_EDITOR AND RIM_COMPILE_LIBUI)
-	if (CMAKE_BUILD_TYPE STREQUAL "Release")
-		set(CMAKE_C_FLAGS_RELEASE "-O2")
-	else()
-		set(CMAKE_C_FLAGS_DEBUG "-g")
-		set(CMAKE_CPP_FLAGS_DEBUG "-g")
-	endif()
-
 	function(create_appimage)
 	    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "TARGET;ICON;DESKTOP" "")
 
