@@ -31,18 +31,36 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 		rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
 	}
 
+	int has_set_after_children = 0;
+	int prop_of = of;
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct PropHeader *p = (struct PropHeader *)(buffer + of);
+		of += (int)p->length;
+		if (p->set_after_children) {
+			has_set_after_children = 1;
+			continue;
+		}
 		if (p->already_fulfilled == 0) {
 			if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 				printf("Failed to change property\n");
 			}
 		}
-		of += (int)p->length;
 	}
 
 	for (size_t i = 0; i < h->n_children; i++) {
 		of += rim_init_tree_widgets(ctx, tree, base + of, h);
+	}
+
+	if (has_set_after_children) {
+		for (size_t i = 0; i < h->n_props; i++) {
+			struct PropHeader *p = (struct PropHeader *)(buffer + prop_of);
+			prop_of += (int)p->length;
+			if (p->set_after_children && p->already_fulfilled == 0) {
+				if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
+					printf("Failed to change property\n");
+				}
+			}
+		}
 	}
 
 	return of;
@@ -93,7 +111,62 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 	return of;
 }
 
-static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int *new_of_p, struct WidgetHeader *old_parent) {
+int rim_patch_props(struct RimContext *ctx, struct WidgetHeader *old_h, struct WidgetHeader *new_h, unsigned int *old_of_p, unsigned int *new_of_p, int set_after_children) {
+	uint32_t max_n_props = max(old_h->n_props, new_h->n_props);
+	int has_set_after_children = 1;
+	for (size_t i = 0; i < max_n_props; i++) {
+		struct PropHeader *old_p = (struct PropHeader *)(ctx->tree_old->buffer + (*old_of_p));
+		struct PropHeader *new_p = (struct PropHeader *)(ctx->tree_new->buffer + (*new_of_p));
+
+		(*new_of_p) += (int)new_p->length;
+		(*old_of_p) += (int)old_p->length;
+
+		if (new_p->set_after_children && set_after_children == 0) {
+			has_set_after_children = 1;
+			continue;
+		}
+
+		if (i >= old_h->n_props) {
+			if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+				printf("Failed to add property\n");
+			}
+			continue;
+		} else if (i >= new_h->n_props) {
+			if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
+				printf("Failed to remove property\n");
+			}
+			continue;
+		} else {
+			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct PropHeader))) {
+				// Same state
+			} else if (old_p->type == new_p->type) {
+				// If the old property 'last_changed_by' event ID still associates with the current event ID,
+				// Then we don't need to fulfill it. Sync it up and it won't be updated again.
+				if (old_p->last_changed_by == ctx->current_event_id) {
+					new_p->already_fulfilled = 1;
+				}
+				if (new_p->already_fulfilled == 0) {
+					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
+						printf("Failed to change property\n");
+					}
+				}
+			} else {
+				if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
+					printf("Failed to remove property\n");
+				}
+				if (new_p->already_fulfilled == 0) {
+					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
+						printf("Failed to add property\n");
+					}
+				}
+			}
+		}
+	}
+
+	return has_set_after_children;
+}
+
+int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int *new_of_p, struct WidgetHeader *old_parent) {
 	struct WidgetHeader *old_h = (struct WidgetHeader *)(ctx->tree_old->buffer + (*old_of_p));
 	struct WidgetHeader *new_h = (struct WidgetHeader *)(ctx->tree_new->buffer + (*new_of_p));
 
@@ -144,53 +217,14 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 	(*new_of_p) += sizeof(struct WidgetHeader);
 	(*old_of_p) += sizeof(struct WidgetHeader);
 
-	uint32_t max_n_props = max(old_h->n_props, new_h->n_props);
-	for (size_t i = 0; i < max_n_props; i++) {
-		struct PropHeader *old_p = (struct PropHeader *)(ctx->tree_old->buffer + (*old_of_p));
-		struct PropHeader *new_p = (struct PropHeader *)(ctx->tree_new->buffer + (*new_of_p));
+	// TODO: Set up properties after children are done?
+	// Would be problematic in the case of a layout that declares X number of rows/columns as a property
+	// TODO: Allow properties to be get themselves set before/after children?
+	// Ugh, would have to diff properties twice
 
-		if (i >= old_h->n_props) {
-			if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
-				printf("Failed to add property\n");
-			}
-			(*new_of_p) += (int)new_p->length;
-			continue;
-		} else if (i >= new_h->n_props) {
-			if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
-				printf("Failed to remove property\n");
-			}
-			(*old_of_p) += (int)old_p->length;
-			continue;
-		} else {
-			if (old_p->length == new_p->length && !memcmp(old_p->data, new_p->data, old_p->length - sizeof(struct PropHeader))) {
-				// Same state
-			} else if (old_p->type == new_p->type) {
-				// If the old property 'last_changed_by' event ID still associates with the current event ID,
-				// Then we still don't need to fulfill it.
-				// TODO: Maybe not the best way to solve this problem, will come back to it later
-				if (old_p->last_changed_by == ctx->current_event_id) {
-					new_p->already_fulfilled = 1;
-				}
-				if (new_p->already_fulfilled == 0) {
-					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_CHANGED)) {
-						printf("Failed to change property\n");
-					}
-				}
-			} else {
-				if (rim_widget_tweak(ctx, new_h, old_p, RIM_PROP_REMOVED)) {
-					printf("Failed to remove property\n");
-				}
-				if (new_p->already_fulfilled == 0) {
-					if (rim_widget_tweak(ctx, new_h, new_p, RIM_PROP_ADDED)) {
-						printf("Failed to add property\n");
-					}
-				}
-			}
-		}
-
-		(*old_of_p) += (int)old_p->length;
-		(*new_of_p) += (int)new_p->length;
-	}
+	unsigned int props_old_of_p = (*old_of_p);
+	unsigned int props_new_of_p = (*new_of_p);
+	int has_set_after_children = rim_patch_props(ctx, old_h, new_h, old_of_p, new_of_p, 0);
 
 	uint32_t max_n_child = max(old_h->n_children, new_h->n_children);
 	int invalidate_following_siblings = 0;
@@ -216,6 +250,10 @@ static int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsign
 
 			rim_patch_tree(ctx, old_of_p, new_of_p, old_h); // Recurse
 		}
+	}
+
+	if (has_set_after_children) {
+		rim_patch_props(ctx, old_h, new_h, &props_old_of_p, &props_new_of_p, 1);
 	}
 
 	return 0;

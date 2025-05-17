@@ -51,7 +51,12 @@ struct __attribute__((packed)) PropHeader {
 	uint32_t type;
 	// If 1, then this property has already been applied to the backend or doesn't need to be applied.
 	// This may be used in a weird case where the backend initializes a property before the tree differ gets to it.
-	uint32_t already_fulfilled;
+	// It's also used to prevent SetText being called on a widget on every keystroke. This messes with the cursor in some toolkits.
+	uint8_t already_fulfilled;
+	// If 1, then this property will be set once the widget it belongs to has all its children set up.
+	uint8_t set_after_children;
+	uint8_t res1;
+	uint8_t res2;
 	// Last Event ID that caused this property to change
 	uint32_t last_changed_by;
 	uint8_t data[];

@@ -146,6 +146,14 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	prop->type = type;
 	prop->already_fulfilled = 0;
 	prop->last_changed_by = 0;
+	prop->set_after_children = 0;
+	prop->res1 = 0;
+	prop->res2 = 0;
+
+	if (type == RIM_PROP_COMBOBOX_SELECTED || type == RIM_PROP_RADIO_SELECTED) {
+		prop->set_after_children = 1;
+	}
+	
 	tree->of += prop->length;
 	return prop;
 }

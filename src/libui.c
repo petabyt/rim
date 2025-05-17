@@ -384,22 +384,12 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 		check_prop(rim_get_prop_u32(parent, RIM_PROP_COMBOBOX_SELECTED, &sel));
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiComboboxAppend((uiCombobox *)parent->os_handle, title);
-		uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel);
 		} return 0;
 	case RIM_RADIO: {
 		uint32_t sel = 0;
 		check_prop(rim_get_prop_u32(parent, RIM_PROP_RADIO_SELECTED, &sel));
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
-// Needed for cases where the _create uiRadioButtonsSetSelected didn't work out
-//		if (sel != -1) {
-//			struct WidgetHeader *c = rim_get_child(parent, (int)sel);
-//			if (c == NULL) rim_abort("???");
-//			if (c->unique_id == w->unique_id) {
-//				uiRadioButtonsSetSelected((uiRadioButtons *)parent->os_handle, (int)sel);
-//			}
-//		}
-
 		} return 0;
 	}
 	return 1;
@@ -484,16 +474,11 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		break;
 	case RIM_RADIO:
 		switch (prop->type) {
-		case RIM_PROP_RADIO_SELECTED: {
-			struct RimTree *old_tree = rim_get_old_tree();
-			unsigned int of = 0;
-			if (rim_find_in_tree(old_tree, &of, w->unique_id)) return 0;
-
-			struct WidgetHeader *old_c = (struct WidgetHeader *)(old_tree->buffer + of);
-			if ((int)old_c->n_children > (int)val32) {
+		case RIM_PROP_RADIO_SELECTED:
+			if (w->n_children > val32) {
 				uiRadioButtonsSetSelected((uiRadioButtons *)w->os_handle, (int)val32);
 			}
-			} return 0;
+			return 0;
 		}
 		break;
 	case RIM_COMBOBOX:
@@ -501,7 +486,9 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		case RIM_PROP_LABEL:
 			return 0;
 		case RIM_PROP_COMBOBOX_SELECTED:
-			uiComboboxSetSelected((uiCombobox *)w->os_handle, (int)val32);
+			if (w->n_children > val32) {
+				uiComboboxSetSelected((uiCombobox *)w->os_handle, (int)val32);
+			}
 			return 0;
 		}
 		break;
