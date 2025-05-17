@@ -3,9 +3,8 @@
 
 int mymain(struct RimContext *ctx, void *arg) {
 	int show_more = 0;
-	int counter = 0;
-	int value = 50;
 	int selected = 0;
+	int n_options = 4;
 	while (rim_poll(ctx)) {
 		im_set_next_inner_padding(1);
 		if (im_begin_window("My Window", 500, 500)) {
@@ -13,28 +12,25 @@ int mymain(struct RimContext *ctx, void *arg) {
 				show_more = !show_more;
 			}
 			if (show_more) {
-				im_label("Select an item");
+				im_label("Inserted a node");
 			}
-			im_spinbox(0, 10, &selected);
+			im_spinbox(0, 10, &n_options);
 			if (im_begin_combo_box("Combo", &selected)) {
-				if (show_more) {
-					im_combo_box_item("hello");
-				} else {
+				for (int i = 0; i < n_options; i++) {
 					im_combo_box_item("Item 1");
 				}
-				im_combo_box_item("Item 2");
-				im_combo_box_item("Item 3");
 				im_end_combo_box();
 			}
 
 			if (im_begin_radio(&selected)) {
-				im_radio_item("Hello 1");
-				im_radio_item("Hello 2");
-				im_radio_item("Hello 3");
+				for (int i = 0; i < n_options; i++) {
+					im_radio_item("Item 1");
+				}
 				im_end_radio();
 			}
 
-			counter++;
+			im_spinbox(0, 10, &selected);
+
 			im_end_window();
 		}
 	}

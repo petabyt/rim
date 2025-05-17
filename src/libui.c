@@ -13,6 +13,7 @@ struct Priv {
 	struct RimContext *ctx;
 	/// @brief If 1, the root widget of a window will be a uiVerticalBox.
 	/// If 0, it will be uiWindow
+	/// If more than 1 widget is added to a window, things get weird.
 	int make_window_a_layout;
 
 	/// @brief Dummy handle because several widgets don't have a handle
@@ -62,7 +63,7 @@ static int rim_backend_remove(void *priv, struct WidgetHeader *w, struct WidgetH
 		uiComboboxDelete((uiCombobox *)parent->os_handle, index);
 		} return 0;
 	case RIM_RADIO: {
-		printf("WTF libui doesn't have uiRadioButtonsDelete\n");
+		// WTF libui doesn't have uiRadioButtonsDelete, your app will get screwed
 		} return 0;
 	case RIM_TAB_BAR: {
 		int index = rim_get_child_index(w, parent);
@@ -312,6 +313,8 @@ static int rim_backend_update_id(void *priv, struct WidgetHeader *w) {
 	struct Priv *p = priv;
 	char *string = NULL;
 	switch (w->type) {
+	case RIM_RADIO_ITEM:
+		return 0;
 	case RIM_WINDOW:
 		uiWindowOnClosing((uiWindow *)w->os_handle, window_closed, (void *)(uintptr_t)w->unique_id);
 		return 0;
