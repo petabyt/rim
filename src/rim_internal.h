@@ -80,6 +80,9 @@ union RimPropUnion {
 /// @brief Tree ID for all Rim widgets
 /// 1-0xfff is reserved for Rim
 /// >=0x1000 is reserved for custom widgets
+static inline int is_rim_widget(unsigned int type) {
+	return (type >= 0) && (type <= 0xfff);
+}
 enum RimWidgetType {
 	RIM_NONE = 0,
 	// Full-size window

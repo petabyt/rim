@@ -149,7 +149,7 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	prop->set_after_children = 0;
 	prop->res1 = 0;
 	prop->res2 = 0;
-
+	// TODO: Better way of handling this
 	if (type == RIM_PROP_COMBOBOX_SELECTED || type == RIM_PROP_RADIO_SELECTED) {
 		prop->set_after_children = 1;
 	}
@@ -160,8 +160,8 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 
 
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
-	struct PropHeader *prop = rim_add_prop(tree, type);
 	ensure_buffer_size(tree, sizeof(struct PropHeader) + strlen(value) + 8);
+	struct PropHeader *prop = rim_add_prop(tree, type);
 	unsigned int dat_len = copy_string(prop->data, value, tree->buffer_length - tree->of);
 	prop->length += dat_len;
 	tree->of += dat_len;

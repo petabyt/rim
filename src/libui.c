@@ -25,7 +25,6 @@ int is_base_control_class(uint32_t type) {
 		RIM_LABEL,
 		RIM_BUTTON,
 		RIM_PROGRESS_BAR,
-//		RIM_IMAGE,
 		RIM_ENTRY,
 		RIM_MULTILINE_ENTRY,
 		RIM_SPINBOX,
@@ -37,7 +36,6 @@ int is_base_control_class(uint32_t type) {
 		RIM_TAB_BAR,
 		RIM_HORIZONTAL_BOX,
 		RIM_VERTICAL_BOX,
-//		RIM_FLEX_BOX,
 		RIM_TABLE,
 	};
 	for (int i = 0; i < sizeof(base) / sizeof(base[0]); i++) {
@@ -343,6 +341,7 @@ static int rim_backend_update_id(void *priv, struct WidgetHeader *w) {
 		uiRadioButtonsOnSelected((uiRadioButtons *)w->os_handle, on_radio, (void *)(uintptr_t)w->unique_id);
 		return 0;
 	}
+	if (is_rim_widget(w->type)) return 0;
 	return 1;
 }
 
@@ -383,14 +382,10 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 		uiTabAppend((uiTab *)parent->os_handle, title, (uiControl *)w->os_handle);
 		return 0;
 	case RIM_COMBOBOX: {
-		uint32_t sel;
-		check_prop(rim_get_prop_u32(parent, RIM_PROP_COMBOBOX_SELECTED, &sel));
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiComboboxAppend((uiCombobox *)parent->os_handle, title);
 		} return 0;
 	case RIM_RADIO: {
-		uint32_t sel = 0;
-		check_prop(rim_get_prop_u32(parent, RIM_PROP_RADIO_SELECTED, &sel));
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
 		} return 0;

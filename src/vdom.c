@@ -205,7 +205,7 @@ int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int 
 		// Need to update the unique ID since it was passed to the onclick handler
 		if (new_h->unique_id != old_h->unique_id) {
 			if (rim_widget_update_onclick(ctx, new_h)) {
-				rim_abort("Failed to update widget's onclick\n");
+				rim_abort("Failed to update onclick on '%s'\n", rim_eval_widget_type(new_h->type));
 			}
 		}
 	}
@@ -402,7 +402,7 @@ static void diff_tree(void *priv) {
 
 int rim_poll(rim_ctx_t *ctx) {
 	if (ctx->last_event.is_valid) {
-		rim_abort("Event not consumed by tree\n");
+		rim_abort("Event not consumed by tree builder\n");
 	}
 	if (ctx->quit_immediately) {
 		return 0;
@@ -420,8 +420,6 @@ int rim_poll(rim_ctx_t *ctx) {
 		// If new tree suddenly has no contents, exit
 		// Code that is run after this should close everything down.
 		return 0;
-	} else {
-		printf("Empty frame\n");
 	}
 
 	if (ctx->nop_event_counter) {
