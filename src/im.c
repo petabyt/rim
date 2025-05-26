@@ -96,6 +96,7 @@ int im_label(const char *label) {
 int im_begin_vertical_box(void) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_VERTICAL_BOX);
+	im_apply_prop();
 	return 1;
 }
 
@@ -106,6 +107,7 @@ void im_end_vertical_box(void) {
 int im_begin_horizontal_box(void) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_HORIZONTAL_BOX);
+	im_apply_prop();
 	return 1;
 }
 
@@ -212,9 +214,9 @@ void im_multiline_entry(char *buffer, unsigned int size) {
 void im_slider(int min, int max, int *value) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_SLIDER);
-	rim_add_prop_u32(tree, RIM_PROP_SLIDER_VALUE, (uint32_t)(*value));
-	rim_add_prop_u32(tree, RIM_PROP_SLIDER_MAX, (uint32_t)max);
-	rim_add_prop_u32(tree, RIM_PROP_SLIDER_MIN, (uint32_t)min);
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_VALUE, (uint32_t)(*value));
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_MAX, (uint32_t)max);
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_MIN, (uint32_t)min);
 	im_apply_prop();
 	rim_end_widget(tree, RIM_SLIDER);
 	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {
@@ -227,7 +229,7 @@ int im_begin_combo_box(const char *label, int *selected) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_COMBOBOX);
 	rim_add_prop_string(tree, RIM_PROP_LABEL, label);
-	rim_add_prop_u32(tree, RIM_PROP_COMBOBOX_SELECTED, (*selected));
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_VALUE, (*selected));
 	if (rim_last_widget_event(1) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		memcpy(selected, ctx->last_event.data, 4);
@@ -247,7 +249,7 @@ void im_end_combo_box(void) {
 int im_begin_radio(int *selected) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_RADIO);
-	rim_add_prop_u32(tree, RIM_PROP_RADIO_SELECTED, (*selected));
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_VALUE, (*selected));
 	if (rim_last_widget_event(1) == RIM_EVENT_VALUE_CHANGED) {
 		struct RimContext *ctx = rim_get_global_ctx();
 		memcpy(selected, ctx->last_event.data, 4);
@@ -267,7 +269,7 @@ void im_end_radio(void) {
 void im_progress_bar(int progress) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_PROGRESS_BAR);
-	rim_add_prop_u32(tree, RIM_PROP_PROGRESS_BAR_VALUE, (uint32_t)progress);
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_VALUE, (uint32_t)progress);
 	im_apply_prop();
 	rim_end_widget(tree, RIM_PROGRESS_BAR);
 }
@@ -298,9 +300,9 @@ int im_menu_item(const char *title) {
 void im_spinbox(int min, int max, int *value) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_SPINBOX);
-	rim_add_prop_u32(tree, RIM_PROP_SPINBOX_MIN, (uint32_t)min);
-	rim_add_prop_u32(tree, RIM_PROP_SPINBOX_MAX, (uint32_t)max);
-	rim_add_prop_u32(tree, RIM_PROP_SPINBOX_VALUE, (uint32_t)(*value));
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_MIN, (uint32_t)min);
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_MAX, (uint32_t)max);
+	rim_add_prop_u32(tree, RIM_PROP_NUMBER_VALUE, (uint32_t)(*value));
 	im_apply_prop();
 	rim_end_widget(tree, RIM_SPINBOX);
 	if (rim_last_widget_event(0) == RIM_EVENT_VALUE_CHANGED) {

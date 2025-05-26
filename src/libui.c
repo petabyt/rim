@@ -132,28 +132,28 @@ static void on_slider(uiSlider *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiSliderValue(handle);
 	uint32_t b = (uint32_t)val;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_NUMBER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
 static void on_spinbox(uiSpinbox *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiSpinboxValue(handle);
 	uint32_t b = (uint32_t)val;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_NUMBER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
 static void on_radio(uiRadioButtons *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiRadioButtonsSelected(handle);
 	uint32_t b = (uint32_t)val;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_SLIDER_VALUE, (int)(uintptr_t)arg, &b, 4);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_NUMBER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
 static void on_selected(uiCombobox *handle, void *arg) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	int val = uiComboboxSelected(handle);
 	uint32_t b = (uint32_t)val;
-	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_COMBOBOX_SELECTED, (int)(uintptr_t)arg, &b, 4);
+	rim_on_widget_event_data(ctx, RIM_EVENT_VALUE_CHANGED, RIM_PROP_NUMBER_VALUE, (int)(uintptr_t)arg, &b, 4);
 }
 
 static void on_menu_item_clicked(uiMenuItem *handle, uiWindow *sender, void *arg) {
@@ -260,13 +260,13 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 		} return 0;
 	case RIM_SLIDER: {
 		uint32_t min, max;
-		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MIN, &min));
-		check_prop(rim_get_prop_u32(w, RIM_PROP_SLIDER_MAX, &max));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_NUMBER_MIN, &min));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_NUMBER_MAX, &max));
 		uiSlider *handle = uiNewSlider((int)min, (int)max);
 		uiSliderOnChanged(handle, on_slider, (void *)(uintptr_t)w->unique_id);
 		w->os_handle = (uintptr_t)handle;
-		rim_mark_prop_fulfilled(w, RIM_PROP_SLIDER_MIN);
-		rim_mark_prop_fulfilled(w, RIM_PROP_SLIDER_MAX);
+		rim_mark_prop_fulfilled(w, RIM_PROP_NUMBER_MIN);
+		rim_mark_prop_fulfilled(w, RIM_PROP_NUMBER_MAX);
 		} return 0;
 	case RIM_COMBOBOX: {
 		uiCombobox *handle = uiNewCombobox();
@@ -290,13 +290,13 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 		} return 0;
 	case RIM_SPINBOX: {
 		uint32_t min, max;
-		check_prop(rim_get_prop_u32(w, RIM_PROP_SPINBOX_MIN, &min));
-		check_prop(rim_get_prop_u32(w, RIM_PROP_SPINBOX_MAX, &max));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_NUMBER_MIN, &min));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_NUMBER_MAX, &max));
 		uiSpinbox *handle = uiNewSpinbox(min, max);
 		w->os_handle = (uintptr_t)handle;
 		uiSpinboxOnChanged(handle, on_spinbox, (void *)(uintptr_t)w->unique_id);
-		rim_mark_prop_fulfilled(w, RIM_PROP_SPINBOX_MIN);
-		rim_mark_prop_fulfilled(w, RIM_PROP_SPINBOX_MAX);
+		rim_mark_prop_fulfilled(w, RIM_PROP_NUMBER_MIN);
+		rim_mark_prop_fulfilled(w, RIM_PROP_NUMBER_MAX);
 		} return 0;
 	case RIM_RADIO: {
 		uiRadioButtons *handle = uiNewRadioButtons();
@@ -393,10 +393,14 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 	return 1;
 }
 
+
+
 static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
 	struct Priv *p = priv;
 	uint32_t val32 = 0;
 	memcpy(&val32, prop->data, 4); // assumes len>=4
+
+	int libui_bool = val32 ? 1 : 0;
 
 	if (prop->type == RIM_PROP_EXPAND) {
 		// 'stretchy' can only be set in uiBoxAppend
@@ -423,6 +427,13 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			return 1;
 		}
 		break;
+	case RIM_HORIZONTAL_BOX:
+	case RIM_VERTICAL_BOX:
+		if (prop->type == RIM_PROP_GAP) {
+			uiBoxSetPadded((uiBox *)w->os_handle, libui_bool);
+			return 0;
+		}
+	break;
 	case RIM_LABEL:
 		if (prop->type == RIM_PROP_TEXT) {
 			uiLabelSetText((uiLabel *)w->os_handle, (const char *)prop->data);
@@ -458,21 +469,21 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		break;
 	case RIM_SLIDER:
 		switch (prop->type) {
-		case RIM_PROP_SLIDER_VALUE:
+		case RIM_PROP_NUMBER_VALUE:
 			uiSliderSetValue((uiSlider *)w->os_handle, (int)val32);
 			return 0;
 		}
 		break;
 	case RIM_SPINBOX:
 		switch (prop->type) {
-		case RIM_PROP_SPINBOX_VALUE:
+		case RIM_PROP_NUMBER_VALUE:
 			uiSpinboxSetValue((uiSpinbox *)w->os_handle, (int)val32);
 			return 0;
 		}
 		break;
 	case RIM_RADIO:
 		switch (prop->type) {
-		case RIM_PROP_RADIO_SELECTED:
+		case RIM_PROP_NUMBER_VALUE:
 			if (w->n_children > val32) {
 				uiRadioButtonsSetSelected((uiRadioButtons *)w->os_handle, (int)val32);
 			}
@@ -483,7 +494,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		switch (prop->type) {
 		case RIM_PROP_LABEL:
 			return 0;
-		case RIM_PROP_COMBOBOX_SELECTED:
+		case RIM_PROP_NUMBER_VALUE:
 			if (w->n_children > val32) {
 				uiComboboxSetSelected((uiCombobox *)w->os_handle, (int)val32);
 			}
@@ -491,7 +502,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		}
 		break;
 	case RIM_PROGRESS_BAR:
-		if (prop->type == RIM_PROP_PROGRESS_BAR_VALUE) {
+		if (prop->type == RIM_PROP_NUMBER_VALUE) {
 			uiProgressBarSetValue((uiProgressBar *)w->os_handle, (int)val32);
 			return 0;
 		}
@@ -505,7 +516,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			uiComboboxInsertAt((uiCombobox *)parent->os_handle, index, (const char *)prop->data);
 			// Just screwed with it so it needs to be updated again
 			uint32_t sel;
-			check_prop(rim_get_prop_u32(parent, RIM_PROP_COMBOBOX_SELECTED, &sel));
+			check_prop(rim_get_prop_u32(parent, RIM_PROP_NUMBER_VALUE, &sel));
 			uiComboboxSetSelected((uiCombobox *)parent->os_handle, (int)sel);
 			return 0;
 		}

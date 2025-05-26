@@ -149,8 +149,9 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	prop->set_after_children = 0;
 	prop->res1 = 0;
 	prop->res2 = 0;
+
 	// TODO: Better way of handling this
-	if (type == RIM_PROP_COMBOBOX_SELECTED || type == RIM_PROP_RADIO_SELECTED) {
+	if (type == RIM_PROP_NUMBER_VALUE) {
 		prop->set_after_children = 1;
 	}
 	

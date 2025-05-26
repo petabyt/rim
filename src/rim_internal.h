@@ -171,22 +171,13 @@ enum RimPropType {
 	RIM_PROP_DISABLED,
 	// Text tooltip that shows on hover
 	RIM_PROP_TOOLTIP,
-	// slider stuff
-	RIM_PROP_SLIDER_VALUE,
-	RIM_PROP_SLIDER_MIN,
-	RIM_PROP_SLIDER_MAX,
-	// spinbox stuff
-	RIM_PROP_SPINBOX_VALUE,
-	RIM_PROP_SPINBOX_MIN,
-	RIM_PROP_SPINBOX_MAX,
-
-	RIM_PROP_RADIO_SELECTED,
-	
-	/// @brief Valid values are 0-100
-	RIM_PROP_PROGRESS_BAR_VALUE,
-	// Combo box current selected value/child index
-	RIM_PROP_COMBOBOX_SELECTED,
-	// Set to 1 to make entry read-only
+	// Integer value of an input widget
+	RIM_PROP_NUMBER_VALUE,
+	// Min integer value of an input widget
+	RIM_PROP_NUMBER_MIN,
+	// Max integer value of an input widget
+	RIM_PROP_NUMBER_MAX,
+	// Bool
 	RIM_PROP_ENTRY_READ_ONLY,
 	// Secondary internal ID for extensions to use
 	RIM_PROP_SECONDARY_ID,

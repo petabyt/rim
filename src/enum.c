@@ -55,15 +55,9 @@ const char *rim_eval_prop_type(uint32_t type) {
 	case RIM_PROP_GAP: return "gap";
 	case RIM_PROP_DISABLED: return "disabled";
 	case RIM_PROP_TOOLTIP: return "tooltip";
-	case RIM_PROP_SLIDER_VALUE: return "slider_value";
-	case RIM_PROP_SLIDER_MIN: return "slider_min";
-	case RIM_PROP_SLIDER_MAX: return "slider_max";
-	case RIM_PROP_SPINBOX_VALUE: return "spinbox_value";
-	case RIM_PROP_SPINBOX_MIN: return "spinbox_min";
-	case RIM_PROP_SPINBOX_MAX: return "spinbox_max";
-	case RIM_PROP_RADIO_SELECTED: return "radio_selected";
-	case RIM_PROP_PROGRESS_BAR_VALUE: return "progress_bar_value";
-	case RIM_PROP_COMBOBOX_SELECTED: return "combobox_selected";
+	case RIM_PROP_NUMBER_VALUE: return "number_value";
+	case RIM_PROP_NUMBER_MIN: return "number_min";
+	case RIM_PROP_NUMBER_MAX: return "number_max";
 	case RIM_PROP_ENTRY_READ_ONLY: return "entry_read_only";
 	case RIM_PROP_SECONDARY_ID: return "secondary_id";
 	case RIM_PROP_META: return "meta";

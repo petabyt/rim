@@ -208,7 +208,7 @@ int rim_widget_tweak(struct RimContext *ctx, struct WidgetHeader *w, struct Prop
 		}
 	}
 	if (w->type < 0x1000) {
-		printf("Failed to change property %d on '%s'\n", prop->type, rim_eval_widget_type(w->type));
+		printf("Failed to change property '%s' on '%s'\n", rim_eval_prop_type(prop->type), rim_eval_widget_type(w->type));
 	} else {
 		printf("Failed to change property %d on custom widget %d\n", w->type, prop->type);
 	}

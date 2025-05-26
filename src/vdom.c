@@ -217,11 +217,6 @@ int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int 
 	(*new_of_p) += sizeof(struct WidgetHeader);
 	(*old_of_p) += sizeof(struct WidgetHeader);
 
-	// TODO: Set up properties after children are done?
-	// Would be problematic in the case of a layout that declares X number of rows/columns as a property
-	// TODO: Allow properties to be get themselves set before/after children?
-	// Ugh, would have to diff properties twice
-
 	unsigned int props_old_of_p = (*old_of_p);
 	unsigned int props_new_of_p = (*new_of_p);
 	int has_set_after_children = rim_patch_props(ctx, old_h, new_h, old_of_p, new_of_p, 0);
@@ -252,6 +247,7 @@ int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int 
 		}
 	}
 
+	// Don't run prop patcher again unless necessary
 	if (has_set_after_children) {
 		rim_patch_props(ctx, old_h, new_h, &props_old_of_p, &props_new_of_p, 1);
 	}
