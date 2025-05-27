@@ -7,7 +7,7 @@ changes to a native toolkit window in real time.
 
 If that doesn't make sense to you, imagine [React.js](https://react.dev/) but:
 - Replace Javascript with C
-- Replace JSX with an immediate-mode API
+- Replace JSX with imgui
 - Replace HTML/CSS with GTK, Cocoa, or any other UI toolkit
 
 That's what Rim is.
@@ -64,5 +64,5 @@ See [why](docs/why.md).
 - [ ] Widget Recycler
 - [ ] Support multiple sessions in one process
 - [ ] A way to handle RecyclerViews/tables
-- [ ] wxWidgets backend
-- [ ] Jetpack Compose or Android Views backend
+- [ ] Qt backend
+- [ ] Jetpack Compose/Views backend
