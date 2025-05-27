@@ -9,7 +9,7 @@ int main(void) {
 	while (rim_poll(ctx)) {
 		if (im_begin_window("Log Demo", 500, 500)) {
 			if (im_button("Click to add stuff"))
-				strncat(buffer, "Hello World\n", sizeof(buffer) - strlen(buffer) - 1);
+				strlcat(buffer, "Hello World\n", sizeof(buffer));
 			im_set_next_expand();
 			im_multiline_entry(buffer, sizeof(buffer));
 			if (im_button("Print contents"))
