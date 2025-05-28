@@ -146,14 +146,9 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	prop->type = type;
 	prop->already_fulfilled = 0;
 	prop->last_changed_by = 0;
-	prop->set_after_children = 0;
+	prop->res0 = 0;
 	prop->res1 = 0;
 	prop->res2 = 0;
-
-	// TODO: Better way of handling this
-	if (type == RIM_PROP_NUMBER_VALUE) {
-		prop->set_after_children = 1;
-	}
 	
 	tree->of += prop->length;
 	return prop;

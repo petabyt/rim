@@ -44,6 +44,33 @@ int is_base_control_class(uint32_t type) {
 	return 0;
 }
 
+static int get_prop_rules(void *priv, const struct WidgetHeader *w, const struct PropHeader *p) {
+	int flag = 0;
+	switch (w->type) {
+	case RIM_COMBOBOX:
+	case RIM_RADIO:
+	case RIM_TAB_BAR:
+	case RIM_SPINBOX:
+		// LibUI doesn't like it when you run eg uiComboboxSetSelected before appending entries
+		if (p->type == RIM_PROP_NUMBER_VALUE) {
+			flag |= RIM_FLAG_SET_PROP_AFTER_CHILDREN;
+		}
+		break;
+	}
+	return flag;
+}
+
+static int get_widget_rules(void *priv, const struct WidgetHeader *w, const struct WidgetHeader *parent) {
+	int flag = 0;
+	switch (w->type) {
+	case RIM_FORM_ENTRY:
+		// RIM_FORM_ENTRY is dummy node with a child
+		flag |= RIM_FLAG_INIT_CHILDREN_FIRST;
+		break;
+	}
+	return flag;
+}
+
 static int rim_backend_remove(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
 	if (parent == NULL) {
 		if (w->type != RIM_WINDOW) {
@@ -277,6 +304,10 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 		uiProgressBar *handle = uiNewProgressBar();
 		w->os_handle = (uintptr_t)handle;
 		} return 0;
+	case RIM_FORM: {
+		uiForm *handle = uiNewForm();
+		w->os_handle = (uintptr_t)handle;
+		} return 0;
 	case RIM_WINDOW_MENU_ITEM:
 	case RIM_WINDOW_MENU_BAR:
 	case RIM_WINDOW_MENU:
@@ -284,6 +315,7 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 			rim_abort("Menus can only be inited once in LibUI\n");
 		}
 		return 0;
+	case RIM_FORM_ENTRY:
 	case RIM_RADIO_ITEM:
 	case RIM_COMBOBOX_ITEM: {
 		w->os_handle = p->dummy;
@@ -389,17 +421,19 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
 		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
 		} return 0;
+	case RIM_FORM: {
+		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
+//		uiFormAppend((uiForm *)parent->os_handle)
+//		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
+		} return 0;
 	}
 	return 1;
 }
-
-
 
 static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHeader *prop, enum RimPropTrigger type) {
 	struct Priv *p = priv;
 	uint32_t val32 = 0;
 	memcpy(&val32, prop->data, 4); // assumes len>=4
-
 	int libui_bool = val32 ? 1 : 0;
 
 	if (prop->type == RIM_PROP_EXPAND) {
@@ -650,6 +684,8 @@ void rim_backend_start(struct RimContext *ctx, sem_t *done) {
 	ctx->backend.destroy = rim_backend_destroy;
 	ctx->backend.close = rim_backend_close;
 	ctx->backend.update_onclick = rim_backend_update_id;
+	ctx->backend.get_prop_rules = get_prop_rules;
+	ctx->backend.get_widget_rules = get_widget_rules;
 
 	uiInitOptions o = { 0 };
 	const char *err;

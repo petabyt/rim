@@ -267,6 +267,20 @@ int rim_widget_update_onclick(struct RimContext *ctx, struct WidgetHeader *w) {
 	return -1;
 }
 
+int rim_widget_get_rules(struct RimContext *ctx, const struct WidgetHeader *w, const struct WidgetHeader *parent) {
+	if (ctx->backend.get_widget_rules != NULL) {
+		return ctx->backend.get_widget_rules(ctx->backend.priv, w, parent);
+	}
+	return 0;
+}
+
+int rim_prop_get_rules(struct RimContext *ctx, const struct WidgetHeader *w, const struct PropHeader *p) {
+	if (ctx->backend.get_prop_rules != NULL) {
+		return ctx->backend.get_prop_rules(ctx->backend.priv, w, p);
+	}
+	return 0;
+}
+
 struct RimContext *rim_get_global_ctx(void) {
 	if (global_context == NULL) {
 		rim_abort("global_context is NULL\n");

@@ -36,9 +36,8 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct PropHeader *p = (struct PropHeader *)(buffer + of);
 		of += (int)p->length;
-		if (p->set_after_children) {
+		if (rim_prop_get_rules(ctx, h, p) | RIM_PROP_NUMBER_VALUE) {
 			has_set_after_children = 1;
-			continue;
 		}
 		if (p->already_fulfilled == 0) {
 			if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
@@ -55,7 +54,7 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 		for (size_t i = 0; i < h->n_props; i++) {
 			struct PropHeader *p = (struct PropHeader *)(buffer + prop_of);
 			prop_of += (int)p->length;
-			if (p->set_after_children && p->already_fulfilled == 0) {
+			if ((rim_prop_get_rules(ctx, h, p) | RIM_PROP_NUMBER_VALUE) && p->already_fulfilled == 0) {
 				if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 					printf("Failed to change property\n");
 				}
@@ -121,7 +120,7 @@ int rim_patch_props(struct RimContext *ctx, struct WidgetHeader *old_h, struct W
 		(*new_of_p) += (int)new_p->length;
 		(*old_of_p) += (int)old_p->length;
 
-		if (new_p->set_after_children && set_after_children == 0) {
+		if ((rim_prop_get_rules(ctx, new_h, new_p) | RIM_PROP_NUMBER_VALUE) && set_after_children == 0) {
 			has_set_after_children = 1;
 			continue;
 		}

@@ -31,8 +31,9 @@ struct __attribute__((packed)) WidgetHeader {
 	/// This is needed to make inserting widgets work, because the backend doesn't have an 'insert' method yet.
 	uint8_t invalidate;
 
+	// uint8_t init_children_before_itself;
 	uint8_t res0;
-	uint8_t res1; // TODO: os_handle_is_valid
+	uint8_t res1;
 
 	/// @brief Pointer handle for UI backend
 	uintptr_t os_handle;
@@ -54,10 +55,10 @@ struct __attribute__((packed)) PropHeader {
 	// It's also used to prevent SetText being called on a widget on every keystroke. This messes with the cursor in some toolkits.
 	uint8_t already_fulfilled;
 	// If 1, then this property will be set once the widget it belongs to has all its children set up.
-	uint8_t set_after_children;
+	uint8_t res0;
 	uint8_t res1;
 	uint8_t res2;
-	// Last Event ID that caused this property to change
+	/// @brief Last Event ID that caused this property to change
 	uint32_t last_changed_by;
 	uint8_t data[];
 };
@@ -137,9 +138,10 @@ enum RimWidgetType {
 	RIM_WINDOW_MENU_ITEM,
 	// A fast scrollable table
 	RIM_TABLE,
-	// A form container that has form entries
+	// A form container that has neatly arranged form entries
+	// https://doc.qt.io/qt-6/qformlayout.html
 	RIM_FORM,
-	// A form entry with a label and a child widget
+	// A form entry with text and a child widget, normally a single input widget.
 	RIM_FORM_ENTRY,
 };
 
@@ -185,7 +187,7 @@ enum RimPropType {
 	RIM_PROP_META,
 };
 
-/// @brief im_ API will return widget events rather than 1/0 or bool.
+/// @brief API event codes. im_ functions will return these events rather than 1/0 or bool.
 enum RimWidgetEvent {
 	RIM_EVENT_NONE = 0,
 	RIM_EVENT_CLICK = 1,
@@ -232,6 +234,16 @@ struct RimEvent {
 
 typedef void rim_on_run_callback(void *priv);
 
+enum RimPropFlags {
+	// Force this property to only be set after children have been appended to the node
+	// and all other proeprties that don't have this flag have been set.
+	RIM_FLAG_SET_PROP_AFTER_CHILDREN = (1 << 0),
+};
+enum RimWidgetFlags {
+	// Force children of this node to be initialized before initializing this node itself
+	RIM_FLAG_INIT_CHILDREN_FIRST = (1 << 0),
+};
+
 /// @brief Structure holding handlers for an extension (or backend).
 /// This is a basic abstraction layer over a retained-mode toolkit, giving the tree differ
 /// what it needs to maintain state.
@@ -256,6 +268,13 @@ struct RimExtension {
 	int (*update_onclick)(void *priv, struct WidgetHeader *w);
 	/// @brief Close down any context and handle freeing data in 'priv'
 	void (*close)(void *priv);
+
+	/// @brief Get rules for how to treat a property
+	/// @see enum RimPropFlags
+	int (*get_prop_rules)(void *priv, const struct WidgetHeader *w, const struct PropHeader *p);
+	/// @brief Get rules for how to treat/initialize a widget
+	/// @see enum RimWidgetFlags
+	int (*get_widget_rules)(void *priv, const struct WidgetHeader *w, const struct WidgetHeader *parent);
 };
 
 struct RimContext {
@@ -311,6 +330,8 @@ int rim_widget_append(struct RimContext *ctx, struct WidgetHeader *w, struct Wid
 int rim_widget_remove(struct RimContext *ctx, struct WidgetHeader *w, struct WidgetHeader *parent);
 int rim_widget_destroy(struct RimContext *ctx, struct WidgetHeader *w);
 int rim_widget_update_onclick(struct RimContext *ctx, struct WidgetHeader *w);
+int rim_widget_get_rules(struct RimContext *ctx, const struct WidgetHeader *w, const struct WidgetHeader *parent);
+int rim_prop_get_rules(struct RimContext *ctx, const struct WidgetHeader *w, const struct PropHeader *p);
 /// @}
 
 /// @brief Create a widget tree
