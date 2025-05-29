@@ -297,6 +297,14 @@ int im_menu_item(const char *title) {
 	return rim_last_widget_event(0);
 }
 
+void im_end_menu(void) {
+	im_end(RIM_WINDOW_MENU);
+}
+
+void im_end_menu_bar(void) {
+	im_end(RIM_WINDOW_MENU_BAR);
+}
+
 void im_spinbox(int min, int max, int *value) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_SPINBOX);
@@ -311,12 +319,26 @@ void im_spinbox(int min, int max, int *value) {
 	}
 }
 
-void im_end_menu(void) {
-	im_end(RIM_WINDOW_MENU);
+int im_begin_form(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_FORM);
+	im_apply_prop();
+	return IM_CHILDREN_VISIBLE;
 }
-
-void im_end_menu_bar(void) {
-	im_end(RIM_WINDOW_MENU_BAR);
+int im_begin_form_entry(const char *label) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_add_widget(tree, RIM_FORM_ENTRY);
+	rim_add_prop_string(tree, RIM_PROP_LABEL, label);
+	im_apply_prop();
+	return IM_CHILDREN_VISIBLE;
+}
+void im_end_form_entry(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_end_widget(tree, RIM_FORM_ENTRY);
+}
+void im_end_form(void) {
+	struct RimTree *tree = rim_get_current_tree();
+	rim_end_widget(tree, RIM_FORM);
 }
 
 void im_end_window(void) { im_end(RIM_WINDOW); }

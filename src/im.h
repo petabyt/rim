@@ -87,8 +87,8 @@ void im_radio_item(const char *label);
 void im_end_radio(void);
 
 
-void im_begin_form(void);
-void im_begin_form_entry(const char *label);
+int im_begin_form(void);
+int im_begin_form_entry(const char *label);
 void im_end_form_entry(void);
 void im_end_form(void);
 

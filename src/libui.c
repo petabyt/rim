@@ -396,7 +396,7 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 
 	char *title = NULL;
 
-	switch (parent->type) {
+	switch (parent->type) {	
 	case RIM_WINDOW:
 		if (p->make_window_a_layout) {
 			uiBoxAppend((uiBox *)parent->os_handle, (uiControl *)w->os_handle, expand);
@@ -422,10 +422,13 @@ static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetH
 		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
 		} return 0;
 	case RIM_FORM: {
-		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &title));
-//		uiFormAppend((uiForm *)parent->os_handle)
-//		uiRadioButtonsAppend((uiRadioButtons *)parent->os_handle, title);
+		check_prop(rim_get_prop_string(w, RIM_PROP_LABEL, &title));
+		struct WidgetHeader *entry_child = rim_get_child(w, 0);
+		if (entry_child == NULL) rim_abort("no entry_child\n");
+		uiFormAppend((uiForm *)parent->os_handle, title, (uiControl *)entry_child->os_handle, 0);
 		} return 0;
+	case RIM_FORM_ENTRY:
+		return 0;
 	}
 	return 1;
 }
@@ -555,9 +558,28 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			return 0;
 		}
 		break;
-	// Ignore all properties for now
-	case RIM_RADIO_ITEM:
 	case RIM_TAB:
+		if (prop->type == RIM_PROP_INNER_PADDING) {
+			struct WidgetHeader *parent = (struct WidgetHeader *)(rim_get_current_tree()->buffer + w->parent_of);
+			int index = rim_get_child_index(w, parent);
+			if (index == -1) rim_abort("child index failed\n");
+			uiTabSetMargined((uiTab *)parent->os_handle, index, libui_bool);
+			return 0;
+		}
+		if (prop->type == RIM_PROP_GAP) {
+			uiBoxSetPadded((uiBox *)w->os_handle, libui_bool);
+			return 0;
+		}
+		break;
+	case RIM_FORM:
+		if (prop->type == RIM_PROP_GAP) {
+			uiFormSetPadded((uiForm *)w->os_handle, libui_bool);
+			return 0;
+		}
+		break;
+	// Ignore all properties on these widgets for now
+	case RIM_FORM_ENTRY:
+	case RIM_RADIO_ITEM:
 	case RIM_TAB_BAR:
 	case RIM_WINDOW_MENU:
 	case RIM_WINDOW_MENU_ITEM:

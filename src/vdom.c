@@ -26,9 +26,11 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 		rim_abort("BUG: h->os_handle is null\n");
 	}
 
-	rc = rim_widget_append(ctx, h, parent);
-	if (rc) {
-		rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
+	if (!(rim_widget_get_rules(ctx, h, parent) & RIM_FLAG_INIT_CHILDREN_FIRST)) {
+		rc = rim_widget_append(ctx, h, parent);
+		if (rc) {
+			rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
+		}
 	}
 
 	int has_set_after_children = 0;
@@ -36,7 +38,7 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 	for (size_t i = 0; i < h->n_props; i++) {
 		struct PropHeader *p = (struct PropHeader *)(buffer + of);
 		of += (int)p->length;
-		if (rim_prop_get_rules(ctx, h, p) | RIM_PROP_NUMBER_VALUE) {
+		if (rim_prop_get_rules(ctx, h, p) & RIM_PROP_NUMBER_VALUE) {
 			has_set_after_children = 1;
 		}
 		if (p->already_fulfilled == 0) {
@@ -54,11 +56,18 @@ unsigned int rim_init_tree_widgets(struct RimContext *ctx, struct RimTree *tree,
 		for (size_t i = 0; i < h->n_props; i++) {
 			struct PropHeader *p = (struct PropHeader *)(buffer + prop_of);
 			prop_of += (int)p->length;
-			if ((rim_prop_get_rules(ctx, h, p) | RIM_PROP_NUMBER_VALUE) && p->already_fulfilled == 0) {
+			if ((rim_prop_get_rules(ctx, h, p) & RIM_PROP_NUMBER_VALUE) && p->already_fulfilled == 0) {
 				if (rim_widget_tweak(ctx, h, p, RIM_PROP_ADDED)) {
 					printf("Failed to change property\n");
 				}
 			}
+		}
+	}
+
+	if (rim_widget_get_rules(ctx, h, parent) & RIM_FLAG_INIT_CHILDREN_FIRST) {
+		rc = rim_widget_append(ctx, h, parent);
+		if (rc) {
+			rim_abort("Couldn't append widget '%s' to '%s'\n", rim_eval_widget_type(h->type), rim_eval_widget_type(parent->type));
 		}
 	}
 
@@ -120,7 +129,7 @@ int rim_patch_props(struct RimContext *ctx, struct WidgetHeader *old_h, struct W
 		(*new_of_p) += (int)new_p->length;
 		(*old_of_p) += (int)old_p->length;
 
-		if ((rim_prop_get_rules(ctx, new_h, new_p) | RIM_PROP_NUMBER_VALUE) && set_after_children == 0) {
+		if ((rim_prop_get_rules(ctx, new_h, new_p) & RIM_PROP_NUMBER_VALUE) && set_after_children == 0) {
 			has_set_after_children = 1;
 			continue;
 		}
