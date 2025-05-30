@@ -570,6 +570,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			uiBoxSetPadded((uiBox *)w->os_handle, libui_bool);
 			return 0;
 		}
+		if (prop->type == RIM_PROP_TITLE) return 0;
 		break;
 	case RIM_FORM:
 		if (prop->type == RIM_PROP_GAP) {

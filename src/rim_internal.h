@@ -31,7 +31,6 @@ struct __attribute__((packed)) WidgetHeader {
 	/// This is needed to make inserting widgets work, because the backend doesn't have an 'insert' method yet.
 	uint8_t invalidate;
 
-	// uint8_t init_children_before_itself;
 	uint8_t res0;
 	uint8_t res1;
 
@@ -408,7 +407,11 @@ void rim_on_widget_event_data(struct RimContext *ctx, enum RimWidgetEvent event,
 /// @brief Run the tree differ using old and new tree
 int rim_diff_tree(struct RimContext *ctx);
 
+/// @brief Init a new tree (to get the differ cycle started)
+int rim_init_tree(struct RimContext *ctx);
+
 // debugging only
+void rim_dump_tree(struct RimTree *tree);
 const char *rim_eval_widget_type(uint32_t type);
 const char *rim_eval_prop_type(uint32_t type);
 __attribute__((noreturn))

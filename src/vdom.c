@@ -96,10 +96,6 @@ unsigned int rim_destroy_tree_widgets(struct RimContext *ctx, struct RimTree *tr
 		of += rim_destroy_tree_widgets(ctx, tree, base + of, h);
 	}
 
-	if (h->is_detached) {
-		rim_abort("BUG: Widget already detached from parent\n");
-	}
-
 	if (h->os_handle == 0x0) {
 		rim_abort("BUG: Widget handle is NULL\n");
 	}
@@ -180,9 +176,11 @@ int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int 
 
 	// TODO: Fix diff_tree instead of using this overflow hack
 	if ((*old_of_p) >= ctx->tree_old->of) {
+		printf("TODO\n");
 		return 0;
 	}
 	if ((*new_of_p) >= ctx->tree_new->of) {
+		printf("TODO\n");
 		return 0;
 	}
 
@@ -194,10 +192,16 @@ int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int 
 		rim_abort("BUG: Tree patcher doesn't tear down trees\n");
 	}
 
-	if (new_h->is_detached || old_h->is_detached) {
+	if (new_h->is_detached && !old_h->is_detached) {
 		// Check if this node has been detached by rim_last_widget_detach.
 		// If so then this node is dead.
-		(*new_of_p) += rim_get_node_length(new_h);
+		(*new_of_p) += rim_get_node_length(new_h); // TODO: Maybe use rim_destroy_tree_widgets, does the same thing
+		(*old_of_p) += rim_get_node_length(old_h);
+		return 0;
+	}
+	if (old_h->is_detached && !new_h->is_detached) {
+		// Prevent differ from assuming previously detached widget can be re-used
+		(*new_of_p) += rim_init_tree_widgets(ctx, ctx->tree_new, (*new_of_p), old_parent);
 		(*old_of_p) += rim_get_node_length(old_h);
 		return 0;
 	}
@@ -219,6 +223,7 @@ int rim_patch_tree(struct RimContext *ctx, unsigned int *old_of_p, unsigned int 
 	}
 
 	if (new_h->os_handle == 0x0) {
+		rim_dump_tree(ctx->tree_new);
 		rim_abort("BUG: new_h->os_handle is null '%s'\n", rim_eval_widget_type(new_h->type));
 	}
 
@@ -279,20 +284,19 @@ int rim_diff_tree(struct RimContext *ctx) {
 			// Window added
 			new_of += rim_init_tree_widgets(ctx, ctx->tree_new, new_of, NULL);
 		} else {
-			// Handling windows being removed doesn't work well with the fact that they've already been closed down.
-			// TODO: Remove this hack
-			// TODO: This also fails when a widget is added/removed to a previous window... so bad
-			if (old_h->unique_id != new_h->unique_id) {
-				printf("TODO: Support for removing windows at root is not working yet\n");
-				ctx->quit_immediately = 1;
-				break;
-			}
-		
 			int rc = rim_patch_tree(ctx, &old_of, &new_of, NULL);
 			if (rc) rim_abort("differ failed\n");
 		}
 	}
 
+	return 0;
+}
+
+int rim_init_tree(struct RimContext *ctx) {
+	unsigned int base = 0;
+	for (unsigned int i = 0; i < ctx->tree_new->n_root_children; i++) {
+		base += rim_init_tree_widgets(ctx, ctx->tree_new, base, NULL);
+	}
 	return 0;
 }
 
@@ -302,7 +306,6 @@ static void fulfill_matching_event_prop(struct RimContext *ctx, struct WidgetHea
 		if (p == NULL) return;
 		p->already_fulfilled = 1;
 		p->last_changed_by = ctx->current_event_id;
-		//rim_mark_prop_fulfilled(w, ctx->last_event.affected_property);
 	}
 }
 
@@ -389,10 +392,7 @@ void rim_trigger_event(void) {
 
 static void init_tree(void *priv) {
 	struct RimContext *ctx = (struct RimContext *)priv;
-	unsigned int base = 0;
-	for (int i = 0; i < ctx->tree_new->n_root_children; i++) {
-		base += rim_init_tree_widgets(ctx, ctx->tree_new, base, NULL);
-	}
+	rim_init_tree(ctx);
 	sem_post(ctx->backend_done_signal);
 }
 

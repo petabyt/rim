@@ -140,6 +140,7 @@ void rim_close(struct RimContext *ctx) {
 	sem_unlink("backend_done_signal");
 	sem_unlink("event_consumed_signal");
 #endif
+	// TODO: Tear down trees
 }
 
 int rim_get_prop_default_value(struct RimContext *ctx, enum RimPropType type, uint8_t *buffer, unsigned int length) {

@@ -154,6 +154,46 @@ struct PropHeader *rim_add_prop(struct RimTree *tree, enum RimPropType type) {
 	return prop;
 }
 
+const char *get_tab(int level) {
+	switch (level) {
+	case 0:
+		return "";
+	case 1:
+		return "  ";
+	case 2:
+		return "    ";
+	case 3:
+		return "      ";
+	default:
+		return "        ";
+	}
+}
+unsigned int rim_dump_tree_r(struct RimTree *tree, unsigned int of, int level) {
+	struct WidgetHeader *w = (struct WidgetHeader *)(tree->buffer + of);
+	of += sizeof(struct WidgetHeader);
+
+	printf("%s%s:\n", get_tab(level), rim_eval_widget_type(w->type));
+	printf("%s- os_handle: %lx\n", get_tab(level), w->os_handle);
+	printf("%s- is_detached: %d\n", get_tab(level), w->is_detached);
+
+	for (unsigned int i = 0; i < w->n_props; i++) {
+		struct PropHeader *p = (struct PropHeader *)(tree->buffer + of);
+		of += p->length;
+	}
+
+	for (unsigned int i = 0; i < w->n_children; i++) {
+		struct WidgetHeader *c = (struct WidgetHeader *)(tree->buffer + of);
+		of = rim_dump_tree_r(tree, of, level + 1);
+	}
+
+	return of;
+}
+void rim_dump_tree(struct RimTree *tree) {
+	unsigned int of = 0;
+	for (unsigned int i = 0; i < tree->n_root_children; i++) {
+		of = rim_dump_tree_r(tree, of, 0);
+	}
+}
 
 void rim_add_prop_string(struct RimTree *tree, enum RimPropType type, const char *value) {
 	ensure_buffer_size(tree, sizeof(struct PropHeader) + strlen(value) + 8);
@@ -188,6 +228,16 @@ void rim_add_prop_data(struct RimTree *tree, enum RimPropType type, void *val, u
 	prop->length += length;
 	tree->of += length;
 }
+
+int rim_remove_prop(struct RimTree *tree, unsigned int w_of, int type) {
+	struct WidgetHeader *w = (struct WidgetHeader *)(tree->buffer + w_of);
+	if (w->n_children != 0) {
+		rim_abort("Can't remove property when node has children");
+	}
+	// ...
+	return -1;
+}
+
 
 struct PropHeader *rim_get_prop(struct WidgetHeader *h, int type) {
 	unsigned int of = 0;
@@ -243,6 +293,11 @@ unsigned int rim_get_node_length(struct WidgetHeader *w) {
 }
 
 int rim_get_child_index(struct WidgetHeader *w, struct WidgetHeader *parent) {
+	if (parent == NULL) {
+		// Getting child index in a root widget is unsupported
+		return -1;
+	}
+
 	unsigned int of = 0;
 	for (size_t i = 0; i < parent->n_props; i++) {
 		struct PropHeader *p = (struct PropHeader *)(parent->data + of);
