@@ -16,7 +16,7 @@ option(RIM_PACKAGE_EDITOR "" OFF)
 
 set(RIM_LIBUI_DEV_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev CACHE STRING "libui dir")
 set(RIM_LIBUI_SCINTILLA_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla CACHE STRING "libui-scintilla dir")
-set(RIM_LUA53_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libs/lua-cmake CACHE STRING "lua dir")
+set(RIM_LUA53_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../lua53 CACHE STRING "lua dir")
 
 set(RIM_CORE src/tree.c src/im.c src/main.c src/vdom.c src/enum.c)
 
@@ -104,7 +104,7 @@ if(RIM_COMPILE_DEMOS)
 	add_demo(remap examples/remap.c)
 	add_demo(minimal examples/minimal.c)
 	add_demo(menus examples/menus.c)
-	add_demo(fudge examples/fudge.c)
+	#add_demo(fudge examples/fudge.c)
 
 	add_executable(test test/test.c)
 	target_link_libraries(test rim_base ${WIN_LINK_LIBS})
