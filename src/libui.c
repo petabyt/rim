@@ -346,7 +346,7 @@ static int rim_backend_update_id(void *priv, struct WidgetHeader *w) {
 	case RIM_RADIO_ITEM:
 		return 0;
 	case RIM_WINDOW:
-		uiWindowOnClosing((uiWindow *)w->os_handle, window_closed, (void *)(uintptr_t)w->unique_id);
+		uiWindowOnClosing((uiWindow *)uiControlParent((uiControl *)w->os_handle), window_closed, (void *)(uintptr_t)w->unique_id);
 		return 0;
 	case RIM_WINDOW_MENU_ITEM:
 		uiMenuItemOnClicked((uiMenuItem *)w->os_handle, on_menu_item_clicked, (void *)(uintptr_t)w->unique_id);
