@@ -14,6 +14,7 @@ int main(void) {
 			im_end_window();
 		}
 		if (im_begin_window_ex(title2, 400, 300, &open2)) {
+			if (im_button("Show other window")) open1 = !open1;
 			if (im_button("Change window text")) title1 = "cool";
 			im_end_window();
 		}

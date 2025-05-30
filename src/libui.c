@@ -447,18 +447,28 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 	switch (w->type) {
 	case RIM_WINDOW:
 		switch (prop->type) {
-		case RIM_PROP_WIDTH_DP:
+		case RIM_PROP_WIDTH_DP: {
+			uint32_t height;
+			check_prop(rim_get_prop_u32(w, RIM_PROP_HEIGHT_DP, &height));
+			uiWindowSetContentSize((uiWindow *)uiControlParent((uiControl *)w->os_handle), val32, height);
+			} return 0;
 		case RIM_PROP_HEIGHT_DP:
 			return 0;
 		case RIM_PROP_INNER_PADDING:
 			if (p->make_window_a_layout) {
-				uiWindowSetMargined((uiWindow *)uiControlParent((uiControl *)w->os_handle), (int)val32);
+				uiWindowSetMargined((uiWindow *)uiControlParent((uiControl *)w->os_handle), libui_bool);
 				return 0;
 			}
 			return 1;
 		case RIM_PROP_TITLE:
 			if (p->make_window_a_layout) {
 				uiWindowSetTitle((uiWindow *)uiControlParent((uiControl *)w->os_handle), (const char *)prop->data);
+				return 0;
+			}
+			return 1;
+		case RIM_PROP_GAP:
+			if (p->make_window_a_layout) {
+				uiBoxSetPadded((uiBox *)w->os_handle, libui_bool);
 				return 0;
 			}
 			return 1;
@@ -491,7 +501,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			uiEntrySetText((uiEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
 		case RIM_PROP_ENTRY_READ_ONLY:
-			uiEntrySetReadOnly((uiEntry *)w->os_handle, (int)val32);
+			uiEntrySetReadOnly((uiEntry *)w->os_handle, libui_bool);
 			return 0;
 		}
 		break;
@@ -500,7 +510,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			uiMultilineEntrySetText((uiMultilineEntry *)w->os_handle, (const char *)prop->data);
 			return 0;
 		} else if (prop->type == RIM_PROP_ENTRY_READ_ONLY) {
-			uiMultilineEntrySetReadOnly((uiMultilineEntry *)w->os_handle, (int)val32);
+			uiMultilineEntrySetReadOnly((uiMultilineEntry *)w->os_handle, libui_bool);
 			return 0;
 		}
 		break;

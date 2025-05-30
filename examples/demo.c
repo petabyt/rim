@@ -8,6 +8,7 @@ int mymain(struct RimContext *ctx, void *arg) {
 	int selected = 0;
 	while (rim_poll(ctx)) {
 		im_set_next_inner_padding(1);
+		im_set_next_gap(1);
 		if (im_begin_window("My Window", 500, 500)) {
 			char buffer[64];
 			sprintf(buffer, "Events: %04d", counter);
