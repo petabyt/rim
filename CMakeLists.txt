@@ -104,9 +104,10 @@ if(RIM_COMPILE_DEMOS)
 	add_demo(remap examples/remap.c)
 	add_demo(minimal examples/minimal.c)
 	add_demo(menus examples/menus.c)
+	add_demo(fudge examples/fudge.c)
 
-	add_executable(test_differ test/test_differ.c)
-	target_link_libraries(test_differ rim_base ${WIN_LINK_LIBS})
+	add_executable(test test/test.c)
+	target_link_libraries(test rim_base ${WIN_LINK_LIBS})
 endif()
 
 if(RIM_COMPILE_LUA_EDITOR AND RIM_COMPILE_LIBUI)

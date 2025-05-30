@@ -31,7 +31,11 @@ static int rim_backend_remove(void *priv, struct WidgetHeader *w, struct WidgetH
 	assert(w->os_handle != 0);
 	w->os_handle = 2; // indicates no parent
 	int index = rim_get_child_index(w, parent);
-	printf("Removing widget '%s' (index %d) from '%s'\n", rim_eval_widget_type(w->type), index, rim_eval_widget_type(parent->type));
+	if (parent == NULL) {
+		printf("Removing widget '%s' (index %d) from root\n", rim_eval_widget_type(w->type), index);
+	} else {
+		printf("Removing widget '%s' (index %d) from '%s'\n", rim_eval_widget_type(w->type), index, rim_eval_widget_type(parent->type));
+	}
 	return 0;
 }
 static int rim_backend_append(void *priv, struct WidgetHeader *w, struct WidgetHeader *parent) {
@@ -68,26 +72,6 @@ void rim_backend_start(struct RimContext *ctx, sem_t *done) {
 	// TODO: Busy wait?
 }
 
-static void build_ui2(int counter) {
-	if (im_begin_window("My Window", 500, 500)) {
-		char buffer[64];
-		sprintf(buffer, "Events: %04d\n", counter);
-		im_label(buffer);
-		if (counter & 1) {
-			im_label("Hello, World");
-		}
-		if (im_button("Show More")) {}
-
-		im_label("Two labels with the same text!");
-		im_label("Two labels with the same text!");
-		im_end_window();
-	}
-	if (im_begin_window("Window 2", 500, 500)) {
-		im_label("123");
-		im_end_window();
-	}
-}
-
 static void swap_trees(struct RimContext *ctx) {
 	struct RimTree *temp = ctx->tree_old;
 	ctx->tree_old = ctx->tree_new;
@@ -95,20 +79,69 @@ static void swap_trees(struct RimContext *ctx) {
 	rim_reset_tree(ctx->tree_new);
 }
 
-int main(void) {
+static void test_differ(void (*build)(int state), int iterations) {
+	printf("--- test_differ start ---\n");
 	struct RimContext *ctx = rim_init();
 	rim_backend_start(ctx, NULL);
 	int state = 0;
-	build_ui2(state);
-	rim_init_tree_widgets(ctx, ctx->tree_new, 0, NULL);
+	build(state);
+	rim_init_tree(ctx);
 
-	for (int i = 1; i < 3; i++) {
-		state++;
+	for (int i = 1; i < iterations; i++) {
 		swap_trees(ctx);
-		build_ui2(state);
+		printf("Building UI with state %d\n", state);
+		build(state);
 		printf("--- diff %d ---\n", i);
 		rim_diff_tree(ctx);
+		state++;
 	}
 
+	rim_close(ctx);
+}
+
+static void build_ui2(int counter) {
+	if (counter == 0) {
+		if (im_begin_window("My Window", 500, 500)) {
+			char buffer[64];
+			sprintf(buffer, "Events: %04d\n", counter);
+			im_label(buffer);
+			if (counter & 1) {
+				im_label("Hello, World");
+			}
+			if (im_button("Show More")) {}
+
+			im_label("Two labels with the same text!");
+			im_label("Two labels with the same text!");
+			im_end_window();
+		}
+	}
+	if (im_begin_window("Window 2", 500, 500)) {
+		im_label("123");
+		im_end_window();
+	}
+}
+
+static void close_window(int counter) {
+	static const char *title1 = "Big window";
+	static const char *title2 = "Small window";
+	static int open1 = 1;
+	static int open2 = 1;
+
+	if (counter) open1 = 0;
+
+	if (im_begin_window_ex(title1, 600, 600, &open1)) {
+		if (im_button("Change other window text")) title2 = "123";
+		if (im_button("Show other window")) open2 = !open2;
+		im_end_window();
+	}
+	if (im_begin_window_ex(title2, 400, 300, &open2)) {
+		if (im_button("Change window text")) title1 = "cool";
+		im_end_window();
+	}
+}
+
+int main(void) {
+	//test_differ(build_ui2, 3);
+	test_differ(close_window, 5);
 	return 0;
 }
