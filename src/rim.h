@@ -1,6 +1,10 @@
 #ifndef NAITVE_IMGUI_H
 #define NAITVE_IMGUI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <im.h>
 
 typedef struct RimContext rim_ctx_t;
@@ -62,6 +66,10 @@ int main(int argc, char **argv) {
 }
 // Force main() to always take arguments
 #define main(__ARGV__) rim_main(int argc, char **argv)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

@@ -7,7 +7,6 @@
 #include <stdarg.h>
 #include "rim_internal.h"
 
-// This is probably not the ideal way to do this
 void rim_tree_save_state(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
 	memcpy(&ctx->tree_saved, ctx->tree_new, sizeof(struct RimTree));
@@ -16,8 +15,12 @@ void rim_tree_save_state(void) {
 }
 void rim_tree_restore_state(void) {
 	struct RimContext *ctx = rim_get_global_ctx();
+	if (ctx->tree_saved.buffer == NULL) rim_abort("ctx->tree_saved.buffer is NULL\n");
 	free(ctx->tree_new->buffer);
 	memcpy(ctx->tree_new, &ctx->tree_saved, sizeof(struct RimTree));
+
+	free(ctx->tree_saved.buffer);
+	ctx->tree_saved.buffer = NULL;
 }
 
 // Ensures 'size' can fit into the space left in the buffer

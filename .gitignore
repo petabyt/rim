@@ -3,5 +3,8 @@
 cmake-build-debug
 .idea
 build
+build_win
+build_osx
+build_wx
 .cache
 Makefile
