@@ -1,6 +1,11 @@
 #ifndef RIM_INTERNAL_H
 #define RIM_INTERNAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#define _Static_assert static_assert
+#endif
+
 #include <stdint.h>
 #include <semaphore.h>
 #include <pthread.h>
@@ -415,7 +420,7 @@ void rim_dump_tree(struct RimTree *tree);
 const char *rim_eval_widget_type(uint32_t type);
 const char *rim_eval_prop_type(uint32_t type);
 __attribute__((noreturn))
-void rim_abort(char *fmt, ...);
+void rim_abort(const char *fmt, ...);
 
 /// @brief Returns the tree that is currently being built up.
 /// Will never return NULL.
@@ -434,5 +439,9 @@ static void check_prop(int c) {
 		rim_abort("Getting prop failed\n");
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

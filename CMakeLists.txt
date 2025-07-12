@@ -2,17 +2,12 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 project(rim)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-	set(CMAKE_C_FLAGS_RELEASE "-O2")
-else()
-	set(CMAKE_C_FLAGS_DEBUG "-g")
-	set(CMAKE_CPP_FLAGS_DEBUG "-g")
-endif()
-
 option(RIM_COMPILE_DEMOS "Compile demos" ON)
 option(RIM_COMPILE_LIBUI "Compile LibUI backend" ON)
+option(RIM_COMPILE_WXWIDGETS "Compile wxWidgets backend" ON)
 option(RIM_COMPILE_LIBUI_SCINTILLA "Compile LibUI Scintilla extension" OFF)
-option(RIM_PACKAGE_EDITOR "" OFF)
+option(RIM_COMPILE_LUA_EDITOR "Compile Lua editor demo" OFF)
+option(RIM_PACKAGE_EDITOR "Package Lua editor as AppImage" OFF)
 
 set(RIM_LIBUI_DEV_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-dev CACHE STRING "libui dir")
 set(RIM_LIBUI_SCINTILLA_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../libui-scintilla CACHE STRING "libui-scintilla dir")
@@ -24,6 +19,22 @@ add_library(rim_base STATIC ${RIM_CORE})
 target_include_directories(rim_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/extensions)
 
 set(RIM_CFLAGS -Wall -Wshadow -Wcast-qual -Wpedantic -Werror=implicit-function-declaration -Werror=incompatible-pointer-types -Werror=return-type -Wno-unused-variable -Wno-unused-function)
+
+if(RIM_COMPILE_WXWIDGETS)
+	find_package(wxWidgets REQUIRED COMPONENTS core base)
+	if(wxWidgets_USE_FILE) # not defined in CONFIG mode
+	    include(${wxWidgets_USE_FILE})
+	endif()
+	add_library(rim_wx STATIC
+		${RIM_CORE}
+		src/wxwidgets.cpp
+	)
+	target_include_directories(rim_wx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/extensions)
+	#target_compile_options(${RIM_LIB_NAME} PRIVATE ${RIM_CFLAGS})
+	target_include_directories(rim_wx PRIVATE ${wxWidgets_INCLUDE_DIRS})
+	target_link_libraries(rim_wx ${wxWidgets_LIBRARIES})
+	set(RIM_LIB_NAME rim_wx)
+endif()
 
 if(RIM_COMPILE_LIBUI)
 	if(NOT EXISTS ${RIM_LIBUI_DEV_LOCATION})
@@ -58,7 +69,6 @@ if(RIM_COMPILE_LIBUI)
 	target_include_directories(${RIM_LIB_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/extensions)
 	target_compile_options(${RIM_LIB_NAME} PRIVATE ${RIM_CFLAGS})
 	add_library(Rim::RimLibUI ALIAS ${RIM_LIB_NAME})
-	add_library(Rim::Rim ALIAS ${RIM_LIB_NAME})
 
 	if(RIM_COMPILE_LIBUI_SCINTILLA)
 		if(NOT EXISTS ${RIM_LIBUI_SCINTILLA_LOCATION})
@@ -72,6 +82,8 @@ if(RIM_COMPILE_LIBUI)
 		add_library(Rim::ScintillaLibUI ALIAS rim_libui_scintilla)
 	endif()
 endif()
+
+add_library(Rim::Rim ALIAS ${RIM_LIB_NAME})
 
 if(WIN32)
 	set(WIN_LINK_LIBS -s -luser32 -lkernel32 -lgdi32 -lcomctl32 -luxtheme -lmsimg32 -lcomdlg32 -ld2d1 -ldwrite -lole32 -loleaut32 -loleacc -lssp -lurlmon -luuid -lws2_32 -static-libgcc -static-libstdc++ -lpthread -limm32)
@@ -110,7 +122,10 @@ if(RIM_COMPILE_DEMOS)
 	target_link_libraries(test rim_base ${WIN_LINK_LIBS})
 endif()
 
-if(RIM_COMPILE_LUA_EDITOR AND RIM_COMPILE_LIBUI)
+if(RIM_COMPILE_LUA_EDITOR)
+	if(NOT RIM_COMPILE_LIBUI)
+		message(FATAL_ERROR "editor requires libui")
+	endif()
 	function(create_appimage)
 	    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "TARGET;ICON;DESKTOP" "")
 

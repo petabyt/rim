@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <rim_internal.h>
-#include <string.h>
+//#include <string.h>
 #include <rim_internal.h>
 #include <rim.h>
 #include <rim_internal.h>
@@ -14,6 +14,7 @@
 
 #define EXTENSION_ID 0x5C1
 #define RIM_SCINTILLA 0x1000
+// Holds pointer to init handler function
 #define RIM_PROP_SC_INIT 0x1000
 
 struct Priv {

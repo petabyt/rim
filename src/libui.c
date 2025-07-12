@@ -720,7 +720,7 @@ void rim_backend_start(struct RimContext *ctx, sem_t *done) {
 	ctx->backend.get_prop_rules = get_prop_rules;
 	ctx->backend.get_widget_rules = get_widget_rules;
 
-	uiInitOptions o = { 0 };
+	uiInitOptions o = {0};
 	const char *err;
 
 	printf("Calling uiInit\n");
