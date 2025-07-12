@@ -16,7 +16,6 @@ extern "C" {
 /// the tree buffer can be reallocated by the tree builder
 struct __attribute__((packed)) WidgetHeader {
 	// Internal 32 bit widget type
-	// If UI_CUSTOM, then a custom handler will be called
 	uint32_t type;
 	// Offset of this widget's parent. If 0xffffffff, then this is a top-level widget.
 	uint32_t parent_of;
