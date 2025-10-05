@@ -11,8 +11,7 @@ In Rim this is `RIM_PROP_GAP`
 LibUI: Space around a control (`SetMargined`)
 CSS: Space around a control
 
-In Rim, 'space around a control' is `RIM_PROP_INNER_PADDING`.
-TODO: Rename to margin? Not a big difference. mainly unique to imgui so not a big deal.
+In Rim, 'space around a control' is `RIM_PROP_MARGIN`.
 
 # Expand
 

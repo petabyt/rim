@@ -49,7 +49,7 @@ void im_set_next_disabled(int opt);
 void im_set_next_expand(void);
 /// @brief Set the inner padding of the next widget, equivalent to:
 /// box-sizing: border-box; padding: x;
-void im_set_next_inner_padding(int dp);
+void im_set_next_margin(int dp);
 /// @brief Set gap between children in dp, similar to css 'gap' property
 void im_set_next_gap(int dp);
 

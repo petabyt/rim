@@ -169,7 +169,7 @@ enum RimPropType {
 	// Whether to expand horizontally & vertically
 	RIM_PROP_EXPAND,
 	// Padding inside a container in dp
-	RIM_PROP_INNER_PADDING,
+	RIM_PROP_MARGIN,
 	// Gap in dp between children
 	RIM_PROP_GAP,
 	// Set to 1 to disable widget

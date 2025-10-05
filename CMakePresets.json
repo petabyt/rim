@@ -1,0 +1,48 @@
+{
+	"version": 3,
+	"configurePresets": [
+		{
+			"name": "build",
+			"generator": "Ninja",
+			"binaryDir": "build",
+			"cacheVariables": {
+				"RIM_COMPILE_DEMOS": "ON",
+				"RIM_COMPILE_LIBUI_SCINTILLA": "ON",
+				"RIM_COMPILE_LUA_EDITOR": "ON",
+				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		},
+		{
+			"name": "release",
+			"generator": "Ninja",
+			"binaryDir": "build",
+			"cacheVariables": {
+				"RIM_PACKAGE_EDITOR": "ON",
+				"RIM_COMPILE_DEMOS": "ON",
+				"RIM_COMPILE_LIBUI_SCINTILLA": "ON",
+				"RIM_COMPILE_LUA_EDITOR": "ON",
+				"CMAKE_BUILD_TYPE": "Release"
+			}
+		},
+		{
+			"name": "win",
+			"generator": "Ninja",
+			"binaryDir": "build_win",
+			"cacheVariables": {
+				"RIM_COMPILE_LIBUI_SCINTILLA": "ON",
+				"RIM_COMPILE_LUA_EDITOR": "ON",
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_TOOLCHAIN_FILE": "/home/daniel/dotfiles/mingw.cmake"
+			}
+		},
+		{
+			"name": "osx",
+			"generator": "Ninja",
+			"binaryDir": "build_osx",
+			"cacheVariables": {
+				"RIM_COMPILE_DEMOS": "ON",
+				"CMAKE_TOOLCHAIN_FILE": "/home/daniel/dotfiles/osx.cmake"
+			}
+		}
+	]
+}

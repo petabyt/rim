@@ -454,7 +454,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			} return 0;
 		case RIM_PROP_HEIGHT_DP:
 			return 0;
-		case RIM_PROP_INNER_PADDING:
+		case RIM_PROP_MARGIN:
 			if (p->make_window_a_layout) {
 				uiWindowSetMargined((uiWindow *)uiControlParent((uiControl *)w->os_handle), libui_bool);
 				return 0;
@@ -569,7 +569,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		}
 		break;
 	case RIM_TAB:
-		if (prop->type == RIM_PROP_INNER_PADDING) {
+		if (prop->type == RIM_PROP_MARGIN) {
 			struct WidgetHeader *parent = (struct WidgetHeader *)(rim_get_current_tree()->buffer + w->parent_of);
 			int index = rim_get_child_index(w, parent);
 			if (index == -1) rim_abort("child index failed\n");
