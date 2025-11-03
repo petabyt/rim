@@ -17,7 +17,7 @@ Dear ImGui uses a combination of both _ex functions and C++ optional parameters,
 
 `im_set_next_xxx` APIs allow:
 - Easier to maintain API backwards compatibility
-- Can be called before custom widget functions to mimick the Jetpack Compose `Modifier`
+- Can be called before custom widget functions to mimic the Jetpack Compose `Modifier`
 
 ## Implementation
 ```

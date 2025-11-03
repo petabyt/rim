@@ -51,7 +51,7 @@ const char *rim_eval_prop_type(uint32_t type) {
 	case RIM_PROP_TEXT: return "text";
 	case RIM_PROP_LABEL: return "label";
 	case RIM_PROP_EXPAND: return "expand";
-	case RIM_PROP_INNER_PADDING: return "inner_padding";
+	case RIM_PROP_MARGIN: return "margin";
 	case RIM_PROP_GAP: return "gap";
 	case RIM_PROP_DISABLED: return "disabled";
 	case RIM_PROP_TOOLTIP: return "tooltip";

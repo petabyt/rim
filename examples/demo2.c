@@ -6,7 +6,7 @@ int mymain(struct RimContext *ctx, void *arg) {
 	int selected = 0;
 	int n_options = 4;
 	while (rim_poll(ctx)) {
-		im_set_next_inner_padding(1);
+		im_set_next_margin(1);
 		if (im_begin_window("My Window", 500, 500)) {
 			if (im_button("Show more")) {
 				show_more = !show_more;

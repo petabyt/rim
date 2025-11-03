@@ -227,11 +227,8 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 		check_prop(rim_get_prop_string(w, RIM_PROP_TITLE, &string));
 
 		uint32_t win_width, win_height;
-		check_prop(rim_get_prop_u32(w, RIM_PROP_WIDTH_DP, &win_width));
-		check_prop(rim_get_prop_u32(w, RIM_PROP_HEIGHT_DP, &win_height));
-
-//		win_width = rim_dp_to_px(win_width);
-//		win_height = rim_dp_to_px(win_height);
+		check_prop(rim_get_prop_u32(w, RIM_PROP_WIDTH_PX, &win_width));
+		check_prop(rim_get_prop_u32(w, RIM_PROP_HEIGHT_PX, &win_height));
 
 		uiWindow *handle = uiNewWindow(string, (int)win_width, (int)win_height, has_menu);
 		uiWindowOnClosing(handle, window_closed, (void *)(uintptr_t)w->unique_id);
@@ -244,8 +241,8 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 			w->os_handle = (uintptr_t)handle;
 		}
 		rim_mark_prop_fulfilled(w, RIM_PROP_TITLE);
-		rim_mark_prop_fulfilled(w, RIM_PROP_WIDTH_DP);
-		rim_mark_prop_fulfilled(w, RIM_PROP_HEIGHT_DP);
+		rim_mark_prop_fulfilled(w, RIM_PROP_WIDTH_PX);
+		rim_mark_prop_fulfilled(w, RIM_PROP_HEIGHT_PX);
 		} return 0;
 	case RIM_BUTTON: {
 		check_prop(rim_get_prop_string(w, RIM_PROP_TEXT, &string));
@@ -324,7 +321,7 @@ static int rim_backend_create(void *priv, struct WidgetHeader *w) {
 		uint32_t min, max;
 		check_prop(rim_get_prop_u32(w, RIM_PROP_NUMBER_MIN, &min));
 		check_prop(rim_get_prop_u32(w, RIM_PROP_NUMBER_MAX, &max));
-		uiSpinbox *handle = uiNewSpinbox(min, max);
+		uiSpinbox *handle = uiNewSpinbox((int)min, (int)max);
 		w->os_handle = (uintptr_t)handle;
 		uiSpinboxOnChanged(handle, on_spinbox, (void *)(uintptr_t)w->unique_id);
 		rim_mark_prop_fulfilled(w, RIM_PROP_NUMBER_MIN);
@@ -454,7 +451,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 			} return 0;
 		case RIM_PROP_HEIGHT_DP:
 			return 0;
-		case RIM_PROP_INNER_PADDING:
+		case RIM_PROP_MARGIN:
 			if (p->make_window_a_layout) {
 				uiWindowSetMargined((uiWindow *)uiControlParent((uiControl *)w->os_handle), libui_bool);
 				return 0;
@@ -569,7 +566,7 @@ static int rim_backend_tweak(void *priv, struct WidgetHeader *w, struct PropHead
 		}
 		break;
 	case RIM_TAB:
-		if (prop->type == RIM_PROP_INNER_PADDING) {
+		if (prop->type == RIM_PROP_MARGIN) {
 			struct WidgetHeader *parent = (struct WidgetHeader *)(rim_get_current_tree()->buffer + w->parent_of);
 			int index = rim_get_child_index(w, parent);
 			if (index == -1) rim_abort("child index failed\n");
@@ -628,7 +625,7 @@ static struct WidgetHeader *get_current_window_old_tree(void) {
 		rim_abort("get_current_window: not a window\n");
 	}
 
-	// This this code is called in the tree-building phase, we have to get the window handle
+	// This code is called in the tree-building phase, we have to get the window handle
 	// from the old tree
 	tree = rim_get_old_tree();
 	unsigned int of = 0;

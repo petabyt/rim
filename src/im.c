@@ -7,7 +7,7 @@
 struct Props {
 	int gap;
 	int expand;
-	int inner_padding;
+	int margin;
 	int disabled;
 	int favicon;
 	int begin_disabled;
@@ -33,8 +33,8 @@ void im_set_next_expand(void) {
 void im_set_next_gap(int dp) {
 	props.gap = dp;
 }
-void im_set_next_inner_padding(int dp) {
-	props.inner_padding = dp;
+void im_set_next_margin(int dp) {
+	props.margin = dp;
 }
 void im_set_next_disabled(int opt) {
 	props.disabled = 1;
@@ -63,9 +63,9 @@ void im_apply_prop(void) {
 		rim_add_prop_string(tree, RIM_PROP_TOOLTIP, props.tooltip_text_ptr);
 		props.tooltip = 0;
 	}
-	if (props.inner_padding) {
-		rim_add_prop_u32(tree, RIM_PROP_INNER_PADDING, props.inner_padding);
-		props.inner_padding = 0;
+	if (props.margin) {
+		rim_add_prop_u32(tree, RIM_PROP_MARGIN, props.margin);
+		props.margin = 0;
 	}
 }
 
@@ -93,33 +93,33 @@ int im_label(const char *label) {
 	return 0;
 }
 
-int im_begin_vertical_box(void) {
+int im_begin_vbox(void) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_VERTICAL_BOX);
 	im_apply_prop();
 	return 1;
 }
 
-void im_end_vertical_box(void) {
+void im_end_vbox(void) {
 	im_end(RIM_VERTICAL_BOX);
 }
 
-int im_begin_horizontal_box(void) {
+int im_begin_hbox(void) {
 	struct RimTree *tree = rim_get_current_tree();
 	rim_add_widget(tree, RIM_HORIZONTAL_BOX);
 	im_apply_prop();
 	return 1;
 }
 
-void im_end_horizontal_box(void) {
+void im_end_hbox(void) {
 	im_end(RIM_HORIZONTAL_BOX);
 }
 
-static void window(struct RimTree *tree, const char *name, int width_dp, int height_dp) {
+static void window(struct RimTree *tree, const char *name, int width_px, int height_px) {
 	rim_add_widget(tree, RIM_WINDOW);
 	rim_add_prop_string(tree, RIM_PROP_TITLE, name);
-	rim_add_prop_u32(tree, RIM_PROP_WIDTH_DP, (uint32_t)width_dp);
-	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_DP, (uint32_t)height_dp);
+	rim_add_prop_u32(tree, RIM_PROP_WIDTH_PX, (uint32_t)width_px);
+	rim_add_prop_u32(tree, RIM_PROP_HEIGHT_PX, (uint32_t)height_px);
 	im_apply_prop();
 	if (props.favicon) {
 		struct RimPropData dat = {
@@ -132,9 +132,9 @@ static void window(struct RimTree *tree, const char *name, int width_dp, int hei
 	}
 }
 
-int im_begin_window(const char *name, int width_dp, int height_dp) {
+int im_begin_window(const char *name, int width_px, int height_px) {
 	struct RimTree *tree = rim_get_current_tree();
-	window(tree, name, width_dp, height_dp);
+	window(tree, name, width_px, height_px);
 
 	if (rim_last_widget_event(1) == RIM_EVENT_WINDOW_CLOSE) {
 		struct RimContext *ctx = rim_get_global_ctx();
@@ -146,10 +146,10 @@ int im_begin_window(const char *name, int width_dp, int height_dp) {
 	return 1;
 }
 
-int im_begin_window_ex(const char *name, int width_dp, int height_dp, int *is_open) {
+int im_begin_window_ex(const char *name, int width_px, int height_px, int *is_open) {
 	struct RimTree *tree = rim_get_current_tree();
 	if (*is_open) {
-		window(tree, name, width_dp, height_dp);
+		window(tree, name, width_px, height_px);
 
 		if (rim_last_widget_event(1) == RIM_EVENT_WINDOW_CLOSE) {
 			rim_last_widget_detach(1);

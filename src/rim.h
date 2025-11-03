@@ -9,11 +9,6 @@ extern "C" {
 
 typedef struct RimContext rim_ctx_t;
 
-/// @brief Try and get the correct DPI value for the system, ideally what has been set by the user
-int rim_get_dpi(void);
-
-#define rim_dp_to_px(dp) ((rim_get_dpi() * (dp)) / 160)
-
 /// @brief Initialize the context structure
 /// @note For testing use only
 rim_ctx_t *rim_init(void);

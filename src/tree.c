@@ -183,7 +183,6 @@ unsigned int rim_dump_tree_r(struct RimTree *tree, unsigned int of, int level) {
 	}
 
 	for (unsigned int i = 0; i < w->n_children; i++) {
-		struct WidgetHeader *c = (struct WidgetHeader *)(tree->buffer + of);
 		of = rim_dump_tree_r(tree, of, level + 1);
 	}
 

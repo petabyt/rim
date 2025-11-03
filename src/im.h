@@ -31,12 +31,12 @@ enum ImReturnCode {
 };
 
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
-int im_begin_vertical_box(void);
-void im_end_vertical_box(void);
+int im_begin_vbox(void);
+void im_end_vbox(void);
 
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
-int im_begin_horizontal_box(void);
-void im_end_horizontal_box(void);
+int im_begin_hbox(void);
+void im_end_hbox(void);
 
 void im_begin_disabled(void);
 void im_end_disabled(void);
@@ -49,7 +49,7 @@ void im_set_next_disabled(int opt);
 void im_set_next_expand(void);
 /// @brief Set the inner padding of the next widget, equivalent to:
 /// box-sizing: border-box; padding: x;
-void im_set_next_inner_padding(int dp);
+void im_set_next_margin(int dp);
 /// @brief Set gap between children in dp, similar to css 'gap' property
 void im_set_next_gap(int dp);
 
@@ -86,8 +86,9 @@ int im_begin_radio(int *selected);
 void im_radio_item(const char *label);
 void im_end_radio(void);
 
-
+/// @returns IM_NONE, IM_CHILDREN_VISIBLE
 int im_begin_form(void);
+/// @returns IM_NONE, IM_CHILDREN_VISIBLE
 int im_begin_form_entry(const char *label);
 void im_end_form_entry(void);
 void im_end_form(void);
@@ -103,9 +104,9 @@ int im_button_ex(const char *label);
 int im_label(const char *label);
 
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
-int im_begin_window(const char *name, int width_dp, int height_dp);
+int im_begin_window(const char *name, int width_px, int height_px);
 /// @returns IM_NONE, IM_CHILDREN_VISIBLE
-int im_begin_window_ex(const char *name, int width_dp, int height_dp, int *is_open);
+int im_begin_window_ex(const char *name, int width_px, int height_px, int *is_open);
 void im_end_window(void);
 
 /// @param buffer Buffer that the text will be read from, and where characters will be written to

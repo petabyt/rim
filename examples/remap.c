@@ -10,11 +10,11 @@ int main(void) {
 			if (im_button("asd")) {
 				x++;
 			}
-			if (im_begin_vertical_box()) {
+			if (im_begin_vbox()) {
 				if (x & 1) {
 					im_label("Hello");
 				}
-				im_end_vertical_box();
+				im_end_vbox();
 			}
 			if (x & 3) {
 				// Test remapping button events

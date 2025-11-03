@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 In order for events to go from an onClick to being returned as an event value in functions like `im_button`, these two conditions must be guaranteed:
 
 1. `rim_poll` must only process one event at a time
-If more than one event were procesesed, then one event could completely change the layout and remove a widget that another event corrosponds to.
+If more than one event were processed, then one event could completely change the layout and remove a widget that another event corrosponds to.
 
 2. An event must come from a widget that existed in the old tree and will exist in the new tree in the same place.
 This is more of a rule than a design issue. In Rim, you can't have the layout of the tree change between events without an event affecting it. Changing properties is fine though.

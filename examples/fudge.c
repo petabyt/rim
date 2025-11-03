@@ -29,22 +29,22 @@ struct State {
 static int im_entry2(const char *label, char *buffer, unsigned int size) {
 	int rc = 0;
 	im_set_next_gap(1);
-	if (im_begin_horizontal_box()) {
+	if (im_begin_hbox()) {
 		im_label(label);
 		im_set_next_expand();
 		im_entry(label, buffer, size);
-		im_end_horizontal_box();
+		im_end_hbox();
 	}
 	return 0;
 }
 
 static void im_entry3(const char *label, char *buffer, unsigned int size) {
 	if (im_begin_form_entry(label)) {
-		if (im_begin_horizontal_box()) {
+		if (im_begin_hbox()) {
 			im_set_next_expand();
 			im_entry("", buffer, size);
 			im_button("Browse");
-			im_end_horizontal_box();
+			im_end_hbox();
 		}
 		im_end_form_entry();
 	}
@@ -57,10 +57,10 @@ int mymain(struct RimContext *ctx, void *arg) {
 	int selected = 1;
 	int n_options = 4;
 	while (rim_poll(ctx)) {
-		im_set_next_inner_padding(1);
+		im_set_next_margin(1);
 		if (im_begin_window("Fudge", 1000, 500)) {
 			if (im_begin_tab_bar(&selected)) {
-				im_set_next_inner_padding(1);
+				im_set_next_margin(1);
 				im_set_next_gap(1);
 				if (im_begin_tab("Backup/Restore")) {
 					im_set_next_gap(1);
@@ -75,7 +75,7 @@ int mymain(struct RimContext *ctx, void *arg) {
 					im_end_tab();
 				}
 				im_set_next_gap(1);
-				im_set_next_inner_padding(1);
+				im_set_next_margin(1);
 				if (im_begin_tab("Raw Conversion")) {
 					im_set_next_gap(1);
 					if (im_begin_form()) {
