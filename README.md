@@ -1,16 +1,11 @@
 # Rim
 *Retained &larr; Immediate Mode*
 
-Rim is an immediate-mode UI library that renders down to native retained-mode widgets.
-It's able to do this using a [virtual DOM](https://en.wikipedia.org/wiki/Virtual_DOM) to diff UI trees and apply
-changes to a native toolkit window in real time.
+Rim is an UI library that translates immediate-mode UI calls into a retained-mode UI tree.
+It's able to do this using a [virtual DOM](https://en.wikipedia.org/wiki/Virtual_DOM) that diffs UI trees and applies
+changes to a window using a native toolkit (such as GTK, Cocoa, etc)
 
-If that doesn't make sense to you, imagine [React.js](https://react.dev/) but:
-- Replace Javascript with C
-- Replace JSX with imgui
-- Replace HTML/CSS with GTK, Cocoa, or any other UI toolkit
-
-That's what Rim is.
+It's very similar to react.js, but provides a imgui-like API rather than something like JSX.
 
 ## Example
 ```
@@ -55,14 +50,14 @@ cmake -G Ninja -B build -DRIM_COMPILE_DEMOS=ON CMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-# Why?
-
-See [why](docs/why.md).
-
 ## Roadmap
 - [ ] Support tables
 - [ ] Widget Recycler
 - [ ] Support multiple sessions in one process
 - [ ] A way to handle RecyclerViews/tables
 - [ ] Qt backend
-- [ ] Jetpack Compose/Views backend
+- [ ] Jetpack Compose backend
+
+# Why?
+
+See [why](docs/why.md).
